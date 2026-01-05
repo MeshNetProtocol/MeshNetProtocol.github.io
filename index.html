@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="MeshNetProtocol - 基于区块链的分布式VPN协议，通过流量挖矿和实时结算实现去中心化网络">
     <meta name="keywords" content="MeshNetProtocol, VPN, 区块链, 流量挖矿, USDC, 分布式网络">
-    <title>MeshNetProtocol - 分布式VPN协议</title>
+    <title>MeshNetProtocol</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,10 +16,13 @@
                 <h1>MeshNetProtocol</h1>
             </div>
             <ul class="nav-links">
-                <li><a href="#features">特性</a></li>
-                <li><a href="#how-it-works">工作原理</a></li>
-                <li><a href="#tokenomics">代币经济</a></li>
-                <li><a href="#faq">常见问题</a></li>
+                <li><a href="#features" data-i18n="nav.features">特性</a></li>
+                <li><a href="#how-it-works" data-i18n="nav.howItWorks">工作原理</a></li>
+                <li><a href="#tokenomics" data-i18n="nav.tokenomics">代币经济</a></li>
+                <li><a href="#faq" data-i18n="nav.faq">常见问题</a></li>
+                <li class="language-toggle">
+                    <button id="langBtn" class="lang-btn" onclick="toggleLanguage()">EN/中文</button>
+                </li>
             </ul>
         </div>
     </nav>
@@ -28,11 +31,11 @@
     <section class="hero">
         <div class="container">
             <div class="hero-content">
-                <h2>去中心化的VPN网络</h2>
-                <p>通过区块链钱包实时结算，让每个人都可以参与流量挖矿</p>
+                <h2 data-i18n="hero.title">去中心化的VPN网络</h2>
+                <p data-i18n="hero.subtitle">通过区块链钱包实时结算，让每个人都可以参与流量挖矿</p>
                 <div class="cta-buttons">
-                    <button class="btn btn-primary">立即开始</button>
-                    <button class="btn btn-secondary">了解更多</button>
+                    <button class="btn btn-primary" data-i18n="buttons.getStarted">立即开始</button>
+                    <button class="btn btn-secondary" data-i18n="buttons.learnMore">了解更多</button>
                 </div>
             </div>
             <div class="hero-image">
