@@ -71,17 +71,17 @@ const i18n = {
             title: "Tokenomics",
             settlement: {
                 name: "Settlement Mechanism",
-                supportedTokens: "Supported Tokens: USDC Stablecoin",
-                customTokens: "Custom Tokens: Support project custom token settlement",
-                cycle: "Settlement Cycle: Real-time settlement by traffic block",
-                rewards: "Mining Rewards: Dynamically adjusted reward mechanism"
+                supportedTokens: "Supported Tokens:",
+                customTokens: "Custom Tokens:",
+                cycle: "Settlement Cycle:",
+                rewards: "Mining Rewards:"
             },
             participation: {
                 name: "How to Participate",
-                users: "Users: Pay traffic fees to access the network",
-                nodes: "Node Operators: Contribute bandwidth to earn traffic mining rewards",
-                liquidity: "Liquidity Providers: Participate in token liquidity to earn fees",
-                governance: "Community Governance: Token holders participate in protocol governance"
+                users: "Users:",
+                nodes: "Node Operators:",
+                liquidity: "Liquidity Providers:",
+                governance: "Community Governance:"
             }
         },
         // FAQ
@@ -197,17 +197,17 @@ const i18n = {
             title: "代币经济",
             settlement: {
                 name: "结算机制",
-                supportedTokens: "支持的代币：USDC 稳定币",
-                customTokens: "自定义代币：支持项目自定义代币结算",
-                cycle: "结算周期：实时按流量块结算",
-                rewards: "挖矿奖励：动态调整的奖励机制"
+                supportedTokens: "支持的代币：",
+                customTokens: "自定义代币：",
+                cycle: "结算周期：",
+                rewards: "挖矿奖励："
             },
             participation: {
                 name: "参与方式",
-                users: "使用者：支付流量费用获得网络访问",
-                nodes: "节点运营者：贡献带宽获得流量挖矿奖励",
-                liquidity: "流动性提供者：参与代币流动性获得手续费",
-                governance: "社区治理：代币持有者参与协议治理"
+                users: "使用者：",
+                nodes: "节点运营者：",
+                liquidity: "流动性提供者：",
+                governance: "社区治理："
             }
         },
         // FAQ
@@ -254,51 +254,70 @@ const i18n = {
     }
 };
 
-// 检测用户的浏览器语言
+/**
+ * 检测用户浏览器的语言
+ * 返回 'zh' 如果浏览器语言是中文，否则返回 'en'
+ */
 function detectLanguage() {
     const browserLang = navigator.language || navigator.userLanguage;
-    // 如果浏览器语言是中文（简体或繁体），返回 'zh'，否则返回 'en'
     if (browserLang.toLowerCase().startsWith('zh')) {
         return 'zh';
     }
     return 'en';
 }
 
-// 获取当前语言（优先使用localStorage中的设置，否则使用检测到的语言）
+/**
+ * 获取当前语言
+ * 优先使用 localStorage 保存的设置，如果没有则自动检测浏览器语言
+ */
 function getCurrentLanguage() {
-    return localStorage.getItem('language') || detectLanguage();
+    // 检查是否有保存的语言设置
+    const saved = localStorage.getItem('meshnet_language');
+    if (saved && (saved === 'en' || saved === 'zh')) {
+        return saved;
+    }
+    // 如果没有保存，自动检测浏览器语言
+    const detected = detectLanguage();
+    localStorage.setItem('meshnet_language', detected);
+    return detected;
 }
 
-// 设置语言
+/**
+ * 设置语言
+ */
 function setLanguage(lang) {
     if (i18n[lang]) {
-        localStorage.setItem('language', lang);
+        localStorage.setItem('meshnet_language', lang);
         updatePageLanguage(lang);
     }
 }
 
-// 更新页面语言
+/**
+ * 更新整个页面的语言
+ */
 function updatePageLanguage(lang) {
     const translations = i18n[lang];
     
     // 更新 HTML lang 属性
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
     
-    // 更新导航栏
+    // 更新所有带 data-i18n 属性的元素
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
         const text = getTranslation(translations, key);
         if (text) {
+            // 对于 input 和 button 标签，需要同时设置 value 和 textContent
             if (element.tagName === 'INPUT' || element.tagName === 'BUTTON') {
                 element.value = text;
                 element.textContent = text;
             } else {
+                // 对于其他标签，设置 textContent
                 element.textContent = text;
             }
         }
     });
     
-    // 更新 HTML 内容
+    // 更新所有带 data-i18n-html 属性的元素（支持 HTML 内容）
     document.querySelectorAll('[data-i18n-html]').forEach(element => {
         const key = element.getAttribute('data-i18n-html');
         const html = getTranslation(translations, key);
@@ -307,22 +326,30 @@ function updatePageLanguage(lang) {
         }
     });
     
-    // 触发自定义事件，以便其他脚本可以响应语言变化
+    // 触发自定义事件，允许其他脚本响应语言变化
     window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
 }
 
-// 递归获取嵌套的翻译
+/**
+ * 递归获取嵌套对象中的翻译文本
+ * 例如: getTranslation(translations, 'nav.features') 会获取 translations.nav.features
+ */
 function getTranslation(translations, path) {
     return path.split('.').reduce((obj, key) => obj?.[key], translations);
 }
 
-// 页面加载时初始化语言
+/**
+ * 页面加载完毕后初始化语言
+ * 根据浏览器语言自动设置页面语言
+ */
 document.addEventListener('DOMContentLoaded', function() {
     const currentLang = getCurrentLanguage();
     updatePageLanguage(currentLang);
 });
 
-// 导出函数供全局使用
+/**
+ * 将 i18n 函数暴露到全局作用域，以供其他脚本使用
+ */
 window.i18n = {
     setLanguage,
     getCurrentLanguage,
