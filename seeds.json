@@ -99,7 +99,7 @@
           "meshflux168",
           "meshflux252"
         ],
-        "default": "meshflux150"
+        "default": "meshflux168"
       },
       {
         "domain_strategy": "ipv4_only",
