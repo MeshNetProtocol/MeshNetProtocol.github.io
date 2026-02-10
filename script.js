@@ -12,39 +12,65 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
+// Copy Seed URL functionality
+const copyBtn = document.getElementById('copy-seed-btn');
+if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+        const urlText = document.getElementById('seed-url-text').innerText;
+        const btnText = this.querySelector('.btn-text'); // Define here
+        const originalText = btnText.innerText;
+
+        navigator.clipboard.writeText(urlText).then(() => {
+            this.style.backgroundColor = '#10b981'; // Success green
+            btnText.innerText = '已复制!';
+
+            setTimeout(() => {
+                this.style.backgroundColor = '';
+                btnText.innerText = originalText;
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            btnText.innerText = '失败';
+            setTimeout(() => {
+                btnText.innerText = originalText;
+            }, 2000);
+        });
+    });
+}
+
 // 页面滚动时导航栏效果
 let lastScrollTop = 0;
 const navbar = document.querySelector('.navbar');
 
-window.addEventListener('scroll', function() {
+window.addEventListener('scroll', function () {
     let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    
+
     if (scrollTop > 100) {
         navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
     } else {
         navbar.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.05)';
     }
-    
+
     lastScrollTop = scrollTop;
 });
 
 // 按钮点击效果
 document.querySelectorAll('.btn').forEach(button => {
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
         // 创建涟漪效果
         const ripple = document.createElement('span');
         const rect = this.getBoundingClientRect();
         const size = Math.max(rect.width, rect.height);
         const x = event.clientX - rect.left - size / 2;
         const y = event.clientY - rect.top - size / 2;
-        
+
         ripple.style.width = ripple.style.height = size + 'px';
         ripple.style.left = x + 'px';
         ripple.style.top = y + 'px';
         ripple.classList.add('ripple');
-        
+
         this.appendChild(ripple);
-        
+
         setTimeout(() => {
             ripple.remove();
         }, 600);
@@ -53,13 +79,13 @@ document.querySelectorAll('.btn').forEach(button => {
 
 // 交互的 FAQ 部分
 document.querySelectorAll('.faq-item').forEach(item => {
-    item.addEventListener('click', function() {
+    item.addEventListener('click', function () {
         this.classList.toggle('active');
     });
 });
 
 // 添加加载动画
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
     document.body.style.opacity = '1';
 });
 
@@ -69,7 +95,7 @@ const observerOptions = {
     rootMargin: '0px 0px -100px 0px'
 };
 
-const observer = new IntersectionObserver(function(entries) {
+const observer = new IntersectionObserver(function (entries) {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.style.animation = 'fadeInUp 0.6s ease forwards';
