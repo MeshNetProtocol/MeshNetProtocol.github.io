@@ -13,10 +13,10 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 });
 
 // Copy Seed URL functionality
-const copyBtn = document.getElementById('copy-seed-btn');
-if (copyBtn) {
-    copyBtn.addEventListener('click', function () {
-        const urlText = document.getElementById('seed-url-text').innerText;
+document.querySelectorAll('.copy-seed-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const seedBox = this.closest('.seed-box');
+        const urlText = seedBox.querySelector('.seed-url-text').innerText;
         const btnText = this.querySelector('.btn-text');
         const originalText = btnText.innerText;
 
@@ -36,31 +36,43 @@ if (copyBtn) {
             }, 2000);
         });
     });
-}
+});
 
 // Seed Modal Logic
-const viewSeedBtn = document.getElementById('view-seed-btn');
 const seedModal = document.getElementById('seed-modal');
 const seedContentDisplay = document.getElementById('seed-content-display');
 const copyContentBtn = document.getElementById('copy-content-btn');
 const closeModalBtns = document.querySelectorAll('.close-modal, .close-modal-btn, .modal-overlay');
 
-if (viewSeedBtn && seedModal) {
-    viewSeedBtn.addEventListener('click', function () {
+document.querySelectorAll('.view-seed-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const seedBox = this.closest('.seed-box');
+        const url = seedBox.querySelector('.seed-url-text').innerText;
+
         seedModal.classList.add('active');
         document.body.style.overflow = 'hidden'; // Prevent scrolling
+        seedContentDisplay.innerHTML = `<code>加载中... ${url}</code>`;
 
-        // Fetch seeds.json content if not already loaded or every time
-        fetch('seeds.json')
-            .then(response => response.json())
+        // Fetch seed content
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
             .then(data => {
                 seedContentDisplay.innerHTML = `<code>${JSON.stringify(data, null, 2)}</code>`;
             })
             .catch(err => {
-                seedContentDisplay.innerHTML = `<code style="color: #ef4444;">加载失败: ${err.message}</code>`;
+                let errorMessage = err.message;
+                if (window.location.protocol === 'https:' && url.startsWith('http:')) {
+                    errorMessage = "安全限制: 无法从 HTTPS 页面加载 HTTP 资源 (Mixed Content)。请尝试手动访问该链接。";
+                }
+                seedContentDisplay.innerHTML = `<code style="color: #ef4444;">加载失败: ${errorMessage}</code>`;
             });
     });
+});
 
+if (seedModal) {
     // Close modal logic
     closeModalBtns.forEach(btn => {
         btn.addEventListener('click', function () {
