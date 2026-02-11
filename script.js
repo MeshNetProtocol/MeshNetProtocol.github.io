@@ -63,11 +63,7 @@ document.querySelectorAll('.view-seed-btn').forEach(btn => {
                 seedContentDisplay.innerHTML = `<code>${JSON.stringify(data, null, 2)}</code>`;
             })
             .catch(err => {
-                let errorMessage = err.message;
-                if (window.location.protocol === 'https:' && url.startsWith('http:')) {
-                    errorMessage = "安全限制: 无法从 HTTPS 页面加载 HTTP 资源 (Mixed Content)。请尝试手动访问该链接。";
-                }
-                seedContentDisplay.innerHTML = `<code style="color: #ef4444;">加载失败: ${errorMessage}</code>`;
+                seedContentDisplay.innerHTML = `<code style="color: #ef4444;">加载失败: ${err.message}</code>`;
             });
     });
 });
