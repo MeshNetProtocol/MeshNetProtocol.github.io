@@ -17,7 +17,7 @@ const copyBtn = document.getElementById('copy-seed-btn');
 if (copyBtn) {
     copyBtn.addEventListener('click', function () {
         const urlText = document.getElementById('seed-url-text').innerText;
-        const btnText = this.querySelector('.btn-text'); // Define here
+        const btnText = this.querySelector('.btn-text');
         const originalText = btnText.innerText;
 
         navigator.clipboard.writeText(urlText).then(() => {
@@ -36,6 +36,57 @@ if (copyBtn) {
             }, 2000);
         });
     });
+}
+
+// Seed Modal Logic
+const viewSeedBtn = document.getElementById('view-seed-btn');
+const seedModal = document.getElementById('seed-modal');
+const seedContentDisplay = document.getElementById('seed-content-display');
+const copyContentBtn = document.getElementById('copy-content-btn');
+const closeModalBtns = document.querySelectorAll('.close-modal, .close-modal-btn, .modal-overlay');
+
+if (viewSeedBtn && seedModal) {
+    viewSeedBtn.addEventListener('click', function () {
+        seedModal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+
+        // Fetch seeds.json content if not already loaded or every time
+        fetch('seeds.json')
+            .then(response => response.json())
+            .then(data => {
+                seedContentDisplay.innerHTML = `<code>${JSON.stringify(data, null, 2)}</code>`;
+            })
+            .catch(err => {
+                seedContentDisplay.innerHTML = `<code style="color: #ef4444;">加载失败: ${err.message}</code>`;
+            });
+    });
+
+    // Close modal logic
+    closeModalBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            seedModal.classList.remove('active');
+            document.body.style.overflow = ''; // Restore scrolling
+        });
+    });
+
+    // Copy Content Logic
+    if (copyContentBtn) {
+        copyContentBtn.addEventListener('click', function () {
+            const content = seedContentDisplay.innerText;
+            const originalBtnText = this.innerText;
+
+            navigator.clipboard.writeText(content).then(() => {
+                this.innerText = '内容已复制到剪贴板!';
+                this.classList.add('btn-success');
+                setTimeout(() => {
+                    this.innerText = originalBtnText;
+                    this.classList.remove('btn-success');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy content: ', err);
+            });
+        });
+    }
 }
 
 // 页面滚动时导航栏效果

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <title>MeshNetProtocol</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <!-- 导航栏 -->
     <nav class="navbar">
@@ -35,16 +37,39 @@
                     <button class="btn btn-primary" data-i18n="buttons.getStarted">立即开始</button>
                     <button class="btn btn-secondary" data-i18n="buttons.learnMore">了解更多</button>
                 </div>
-                
+
                 <!-- Seed URL Copy Section -->
                 <div class="seed-url-container">
                     <div class="seed-label">Bootstrap Config URL:</div>
                     <div class="seed-box">
                         <code id="seed-url-text">https://meshnetprotocol.github.io/seeds.json</code>
-                        <button id="copy-seed-btn" class="btn-copy">
-                            <span class="btn-text">复制链接</span>
-                        </button>
+                        <div class="seed-actions">
+                            <button id="copy-seed-btn" class="btn-copy" title="复制链接">
+                                <span class="btn-text">复制链接</span>
+                            </button>
+                            <button id="view-seed-btn" class="btn-view" title="查看配置内容">
+                                <span class="btn-text">查看内容</span>
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Seed Content Modal -->
+                <div id="seed-modal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Seeds Configuration Contents</h3>
+                            <button class="close-modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <pre id="seed-content-display"><code>加载中...</code></pre>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="copy-content-btn" class="btn btn-primary">复制全部内容</button>
+                            <button class="btn btn-secondary close-modal-btn">关闭</button>
+                        </div>
+                    </div>
+                    <div class="modal-overlay"></div>
                 </div>
 
             </div>
@@ -161,7 +186,8 @@
             <div class="faq-items">
                 <div class="faq-item">
                     <h3 data-i18n="faq.q1.question">MeshNetProtocol 是什么？</h3>
-                    <p data-i18n="faq.q1.answer">MeshNetProtocol 是一个基于区块链的分布式 VPN 协议，通过实时结算和流量挖矿机制，让用户可以获得网络服务同时赚取收益。</p>
+                    <p data-i18n="faq.q1.answer">MeshNetProtocol 是一个基于区块链的分布式 VPN 协议，通过实时结算和流量挖矿机制，让用户可以获得网络服务同时赚取收益。
+                    </p>
                 </div>
                 <div class="faq-item">
                     <h3 data-i18n="faq.q2.question">如何开始使用？</h3>
@@ -220,4 +246,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>
