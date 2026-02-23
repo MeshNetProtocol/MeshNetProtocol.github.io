@@ -1,4 +1,7 @@
 (function () {
+    const PRODUCTION_API_BASE_URL = "https://openmesh-api.ribencong.workers.dev";
+    const LEGACY_API_HOSTS = ["market.openmesh.network"];
+
     const STORAGE_KEYS = {
         apiBaseUrl: "market_api_base_url",
         accessToken: "market_api_access_token",
@@ -20,7 +23,17 @@
         if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
             return "http://127.0.0.1:8787";
         }
-        return "https://market.openmesh.network";
+        return PRODUCTION_API_BASE_URL;
+    }
+
+    function isLegacyApiBaseUrl(url) {
+        if (!url) return false;
+        try {
+            const parsed = new URL(url);
+            return LEGACY_API_HOSTS.includes(parsed.hostname.toLowerCase());
+        } catch {
+            return false;
+        }
     }
 
     function normalizeApiBaseUrl(url) {
@@ -772,7 +785,12 @@ Expiration Time: ${args.expirationTime}`;
         dom.managerList = document.getElementById("manager-list");
 
         const savedApiBase = localStorage.getItem(STORAGE_KEYS.apiBaseUrl);
-        const initialApiBase = savedApiBase || getDefaultApiBaseUrl();
+        let initialApiBase = savedApiBase || getDefaultApiBaseUrl();
+        if (isLegacyApiBaseUrl(initialApiBase)) {
+            initialApiBase = getDefaultApiBaseUrl();
+            localStorage.setItem(STORAGE_KEYS.apiBaseUrl, initialApiBase);
+            setTextStatus(dom.apiBaseStatus, `检测到旧地址，已自动切换到：${initialApiBase}`, "success");
+        }
         setApiBaseUrl(initialApiBase, false);
 
         clearSupplierUi();
