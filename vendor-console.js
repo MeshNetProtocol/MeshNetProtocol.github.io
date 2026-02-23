@@ -19,6 +19,40 @@
 
     const dom = {};
 
+    function getLanguageBucket(bucketName) {
+        const lang = window.i18n && typeof window.i18n.getCurrentLanguage === "function"
+            ? window.i18n.getCurrentLanguage()
+            : "en";
+        const translations = window.i18n && window.i18n.translations ? window.i18n.translations : {};
+        return translations[lang] && translations[lang][bucketName] ? translations[lang][bucketName] : {};
+    }
+
+    function formatText(template, vars) {
+        if (typeof template !== "string") return "";
+        if (!vars) return template;
+        return template.replace(/\{(\w+)\}/g, function (_, key) {
+            return Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : `{${key}}`;
+        });
+    }
+
+    function tr(key, vars, fallback) {
+        const runtime = getLanguageBucket("vendorRuntime");
+        const template = runtime[key];
+        if (typeof template === "string") {
+            return formatText(template, vars);
+        }
+        return fallback || key;
+    }
+
+    function trPage(key, vars, fallback) {
+        const page = getLanguageBucket("vendorPage");
+        const template = page[key];
+        if (typeof template === "string") {
+            return formatText(template, vars);
+        }
+        return fallback || key;
+    }
+
     function getDefaultApiBaseUrl() {
         if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
             return "http://127.0.0.1:8787";
@@ -88,13 +122,13 @@
     function setApiBaseUrl(url, save) {
         const normalized = normalizeApiBaseUrl(url);
         if (!normalized) {
-            setTextStatus(dom.apiBaseStatus, "API 地址无效，请输入完整 URL。", "error");
+            setTextStatus(dom.apiBaseStatus, tr("apiInvalid", null, "API URL is invalid, please input a full URL."), "error");
             return false;
         }
         state.apiBaseUrl = normalized;
         if (dom.apiBaseInput) dom.apiBaseInput.value = normalized;
         if (save) localStorage.setItem(STORAGE_KEYS.apiBaseUrl, normalized);
-        setTextStatus(dom.apiBaseStatus, `当前 API：${normalized}`, "success");
+        setTextStatus(dom.apiBaseStatus, tr("apiCurrent", { url: normalized }, `Current API: ${normalized}`), "success");
         return true;
     }
 
@@ -109,7 +143,7 @@
     async function apiRequest(path, options) {
         const opts = options || {};
         const baseUrl = getApiBaseUrl();
-        if (!baseUrl) throw new Error("请先配置 API 地址。");
+        if (!baseUrl) throw new Error(tr("apiNeedConfig", null, "Please configure API URL first."));
         const url = `${baseUrl}${path}`;
         const headers = Object.assign({}, opts.headers || {});
         if (opts.body !== undefined) headers["Content-Type"] = "application/json";
@@ -152,13 +186,13 @@
         if (dom.supplierManagerCard) dom.supplierManagerCard.classList.add("hidden");
         if (dom.supplierCreateCard) dom.supplierCreateCard.classList.add("hidden");
         if (dom.managerList) dom.managerList.innerHTML = "";
-        if (dom.supplierSummary) dom.supplierSummary.textContent = "尚未加载供应商信息";
+        if (dom.supplierSummary) dom.supplierSummary.textContent = trPage("supplierSummaryIdle", null, "Supplier data not loaded");
     }
 
     function clearAuthState() {
         saveToken("");
         clearSupplierUi();
-        setTextStatus(dom.authStatus, "未登录", "muted");
+        setTextStatus(dom.authStatus, trPage("authStatusIdle", null, "Not signed in"), "muted");
     }
 
     function showCreateCard(show) {
@@ -169,18 +203,18 @@
     function renderManagerList(managers, canManage) {
         if (!dom.managerList) return;
         if (!managers || managers.length === 0) {
-            dom.managerList.innerHTML = '<p class="vendor-text muted">暂无 manager</p>';
+            dom.managerList.innerHTML = `<p class="vendor-text muted">${trPage("managerEmpty", null, "No managers yet")}</p>`;
             return;
         }
         dom.managerList.innerHTML = managers.map(item => {
             const removeBtn = canManage
-                ? `<button class="btn btn-danger remove-manager-btn" type="button" data-wallet="${item.manager_wallet}">移除</button>`
+                ? `<button class="btn btn-danger remove-manager-btn" type="button" data-wallet="${item.manager_wallet}">${trPage("removeManagerButton", null, "Remove")}</button>`
                 : "";
             return `
                 <div class="manager-item">
                     <div>
                         <div class="manager-wallet">${item.manager_wallet}</div>
-                        <div class="manager-meta">role=${item.role} · created=${item.created_at}</div>
+                        <div class="manager-meta">${tr("managerMeta", { role: item.role, created: item.created_at }, `role=${item.role} · created=${item.created_at}`)}</div>
                     </div>
                     ${removeBtn}
                 </div>
@@ -204,7 +238,16 @@
         showCreateCard(false);
 
         if (dom.supplierSummary) {
-            dom.supplierSummary.textContent = `supplier_id=${supplier.id} | role=${role}${payload.manager_role ? `(${payload.manager_role})` : ""} | owner=${supplier.owner_wallet}`;
+            dom.supplierSummary.textContent = tr(
+                "supplierSummaryLine",
+                {
+                    id: supplier.id,
+                    role,
+                    managerRole: payload.manager_role ? `(${payload.manager_role})` : "",
+                    owner: supplier.owner_wallet,
+                },
+                `supplier_id=${supplier.id} | role=${role}${payload.manager_role ? `(${payload.manager_role})` : ""} | owner=${supplier.owner_wallet}`
+            );
         }
         if (dom.supplierNameInput) dom.supplierNameInput.value = supplier.name || "";
         if (dom.supplierDescInput) dom.supplierDescInput.value = supplier.description || "";
@@ -220,15 +263,15 @@
         try {
             const payload = await apiRequest("/api/v1/suppliers/me");
             renderSupplierData(payload);
-            setTextStatus(dom.supplierProfileStatus, "供应商信息已刷新。", "success");
+            setTextStatus(dom.supplierProfileStatus, tr("supplierRefreshed", null, "Supplier profile refreshed."), "success");
         } catch (error) {
             if (error.status === 404) {
                 clearSupplierUi();
                 showCreateCard(true);
-                setTextStatus(dom.createSupplierStatus, "当前钱包尚未绑定供应商，请先创建。", "muted");
+                setTextStatus(dom.createSupplierStatus, tr("supplierNone", null, "Current wallet has no supplier yet. Please create one."), "muted");
                 return;
             }
-            setTextStatus(dom.supplierProfileStatus, getErrorMessage(error, "刷新供应商信息失败。"), "error");
+            setTextStatus(dom.supplierProfileStatus, getErrorMessage(error, tr("supplierRefreshFailed", null, "Failed to refresh supplier profile.")), "error");
         }
     }
 
@@ -239,9 +282,13 @@
             if (dom.configJsonInput) {
                 dom.configJsonInput.value = JSON.stringify(payload.config || {}, null, 2);
             }
-            setTextStatus(dom.supplierConfigStatus, `配置已刷新，最近更新：${payload.updated_at || "-"}`, "success");
+            setTextStatus(
+                dom.supplierConfigStatus,
+                tr("supplierConfigRefreshed", { time: payload.updated_at || "-" }, `Config refreshed. Last updated: ${payload.updated_at || "-"}`),
+                "success"
+            );
         } catch (error) {
-            setTextStatus(dom.supplierConfigStatus, getErrorMessage(error, "刷新配置失败。"), "error");
+            setTextStatus(dom.supplierConfigStatus, getErrorMessage(error, tr("supplierConfigRefreshFailed", null, "Failed to refresh config.")), "error");
         }
     }
 
@@ -254,7 +301,7 @@
 
     async function getEthereumProvider() {
         if (!window.ethereum) {
-            throw new Error("未检测到 MetaMask（window.ethereum 不存在）。");
+            throw new Error(tr("walletMissingProvider", null, "MetaMask not detected (window.ethereum missing)."));
         }
         return window.ethereum;
     }
@@ -269,10 +316,14 @@
 
     function renderWalletState() {
         if (!state.walletAddress) {
-            setTextStatus(dom.walletStatus, "钱包未连接", "muted");
+            setTextStatus(dom.walletStatus, tr("walletDisconnected", null, "Wallet not connected"), "muted");
             return;
         }
-        setTextStatus(dom.walletStatus, `已连接钱包：${shortAddress(state.walletAddress)} | chainId=${state.chainId || "-"}`, "success");
+        setTextStatus(
+            dom.walletStatus,
+            tr("walletConnected", { address: shortAddress(state.walletAddress), chainId: state.chainId || "-" }, `Wallet connected: ${shortAddress(state.walletAddress)} | chainId=${state.chainId || "-"}`),
+            "success"
+        );
     }
 
     async function connectWallet() {
@@ -280,7 +331,7 @@
         await provider.request({ method: "eth_requestAccounts" });
         await updateWalletState();
         renderWalletState();
-        setTextStatus(dom.authStatus, "钱包已连接，请点击“签名登录”。", "muted");
+        setTextStatus(dom.authStatus, tr("authNeedSign", null, "Wallet connected, click sign-in button to continue."), "muted");
     }
 
     function buildSiweMessage(args) {
@@ -322,7 +373,10 @@ Expiration Time: ${args.expirationTime}`;
         const chainHex = await provider.request({ method: "eth_chainId" });
         state.chainId = hexChainIdToNumber(chainHex);
         if (!allowedChainIds.includes(state.chainId)) {
-            throw new Error(`当前链 ${state.chainId} 不在允许列表 ${allowedChainIds.join(",")} 中。`);
+            throw new Error(tr("chainNotAllowed", {
+                chainId: state.chainId,
+                allowed: allowedChainIds.join(","),
+            }, `Current chain ${state.chainId} is not in allowed list: ${allowedChainIds.join(",")}.`));
         }
     }
 
@@ -356,7 +410,11 @@ Expiration Time: ${args.expirationTime}`;
             },
         });
         saveToken(verifyPayload.access_token);
-        setTextStatus(dom.authStatus, `登录成功：${shortAddress(verifyPayload.wallet)}（${verifyPayload.expires_in}s）`, "success");
+        setTextStatus(
+            dom.authStatus,
+            tr("authSignedIn", { address: shortAddress(verifyPayload.wallet), expires: verifyPayload.expires_in }, `Signed in: ${shortAddress(verifyPayload.wallet)} (${verifyPayload.expires_in}s)`),
+            "success"
+        );
         await refreshAllSupplierData();
     }
 
@@ -364,11 +422,15 @@ Expiration Time: ${args.expirationTime}`;
         if (!state.accessToken) return false;
         try {
             const payload = await apiRequest("/api/v1/auth/me");
-            setTextStatus(dom.authStatus, `已登录：${shortAddress(payload.wallet)}，token 到期 ${payload.token_expires_at}`, "success");
+            setTextStatus(
+                dom.authStatus,
+                tr("authTokenValid", { address: shortAddress(payload.wallet), time: payload.token_expires_at }, `Signed in: ${shortAddress(payload.wallet)}, token expires at ${payload.token_expires_at}`),
+                "success"
+            );
             return true;
         } catch {
             clearAuthState();
-            setTextStatus(dom.authStatus, "本地 token 已失效，请重新签名登录。", "error");
+            setTextStatus(dom.authStatus, tr("authTokenExpired", null, "Local token expired, please sign in again."), "error");
             return false;
         }
     }
@@ -377,7 +439,7 @@ Expiration Time: ${args.expirationTime}`;
         const name = dom.createSupplierNameInput ? dom.createSupplierNameInput.value.trim() : "";
         const description = dom.createSupplierDescInput ? dom.createSupplierDescInput.value.trim() : "";
         if (!name) {
-            setTextStatus(dom.createSupplierStatus, "供应商名称不能为空。", "error");
+            setTextStatus(dom.createSupplierStatus, tr("supplierCreateNameRequired", null, "Supplier name is required."), "error");
             return;
         }
         try {
@@ -385,23 +447,23 @@ Expiration Time: ${args.expirationTime}`;
                 method: "POST",
                 body: { name, description },
             });
-            setTextStatus(dom.createSupplierStatus, "供应商创建成功。", "success");
+            setTextStatus(dom.createSupplierStatus, tr("supplierCreateSuccess", null, "Supplier created successfully."), "success");
             await refreshAllSupplierData();
         } catch (error) {
-            setTextStatus(dom.createSupplierStatus, getErrorMessage(error, "创建供应商失败。"), "error");
+            setTextStatus(dom.createSupplierStatus, getErrorMessage(error, tr("supplierCreateFailed", null, "Failed to create supplier.")), "error");
         }
     }
 
     async function saveSupplierProfile() {
         if (!state.supplier) {
-            setTextStatus(dom.supplierProfileStatus, "当前无可更新的供应商。", "error");
+            setTextStatus(dom.supplierProfileStatus, tr("supplierProfileNoData", null, "No supplier available to update."), "error");
             return;
         }
         const name = dom.supplierNameInput ? dom.supplierNameInput.value.trim() : "";
         const description = dom.supplierDescInput ? dom.supplierDescInput.value.trim() : "";
         const status = dom.supplierStatusInput ? dom.supplierStatusInput.value : "active";
         if (!name) {
-            setTextStatus(dom.supplierProfileStatus, "供应商名称不能为空。", "error");
+            setTextStatus(dom.supplierProfileStatus, tr("supplierCreateNameRequired", null, "Supplier name is required."), "error");
             return;
         }
         try {
@@ -409,10 +471,10 @@ Expiration Time: ${args.expirationTime}`;
                 method: "PATCH",
                 body: { name, description, status },
             });
-            setTextStatus(dom.supplierProfileStatus, "供应商资料更新成功。", "success");
+            setTextStatus(dom.supplierProfileStatus, tr("supplierProfileSaveSuccess", null, "Supplier profile updated."), "success");
             await refreshSupplierProfile();
         } catch (error) {
-            setTextStatus(dom.supplierProfileStatus, getErrorMessage(error, "更新供应商资料失败。"), "error");
+            setTextStatus(dom.supplierProfileStatus, getErrorMessage(error, tr("supplierProfileSaveFailed", null, "Failed to update supplier profile.")), "error");
         }
     }
 
@@ -420,12 +482,12 @@ Expiration Time: ${args.expirationTime}`;
         if (!dom.configJsonInput) return;
         const raw = dom.configJsonInput.value.trim();
         if (!raw) {
-            setTextStatus(dom.supplierConfigStatus, "配置不能为空。", "error");
+            setTextStatus(dom.supplierConfigStatus, tr("supplierConfigEmpty", null, "Config cannot be empty."), "error");
             return;
         }
         const parsed = safeJsonParse(raw);
         if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            setTextStatus(dom.supplierConfigStatus, "配置必须是 JSON 对象。", "error");
+            setTextStatus(dom.supplierConfigStatus, tr("supplierConfigInvalid", null, "Config must be a JSON object."), "error");
             return;
         }
         try {
@@ -433,10 +495,10 @@ Expiration Time: ${args.expirationTime}`;
                 method: "PUT",
                 body: parsed,
             });
-            setTextStatus(dom.supplierConfigStatus, "配置保存成功。", "success");
+            setTextStatus(dom.supplierConfigStatus, tr("supplierConfigSaveSuccess", null, "Config saved successfully."), "success");
             await refreshSupplierConfig();
         } catch (error) {
-            setTextStatus(dom.supplierConfigStatus, getErrorMessage(error, "保存配置失败。"), "error");
+            setTextStatus(dom.supplierConfigStatus, getErrorMessage(error, tr("supplierConfigSaveFailed", null, "Failed to save config.")), "error");
         }
     }
 
@@ -444,7 +506,7 @@ Expiration Time: ${args.expirationTime}`;
         const wallet = dom.managerWalletInput ? dom.managerWalletInput.value.trim() : "";
         const role = dom.managerRoleInput ? dom.managerRoleInput.value.trim() : "manager";
         if (!wallet) {
-            setTextStatus(dom.supplierManagerStatus, "请输入 manager 钱包地址。", "error");
+            setTextStatus(dom.supplierManagerStatus, tr("managerNeedWallet", null, "Please input manager wallet address."), "error");
             return;
         }
         try {
@@ -454,10 +516,10 @@ Expiration Time: ${args.expirationTime}`;
             });
             state.managers = payload.managers || [];
             renderManagerList(state.managers, true);
-            setTextStatus(dom.supplierManagerStatus, "Manager 添加成功。", "success");
+            setTextStatus(dom.supplierManagerStatus, tr("managerAddSuccess", null, "Manager added successfully."), "success");
             if (dom.managerWalletInput) dom.managerWalletInput.value = "";
         } catch (error) {
-            setTextStatus(dom.supplierManagerStatus, getErrorMessage(error, "添加 manager 失败。"), "error");
+            setTextStatus(dom.supplierManagerStatus, getErrorMessage(error, tr("managerAddFailed", null, "Failed to add manager.")), "error");
         }
     }
 
@@ -468,9 +530,9 @@ Expiration Time: ${args.expirationTime}`;
             });
             state.managers = payload.managers || [];
             renderManagerList(state.managers, true);
-            setTextStatus(dom.supplierManagerStatus, "Manager 已移除。", "success");
+            setTextStatus(dom.supplierManagerStatus, tr("managerRemoveSuccess", null, "Manager removed."), "success");
         } catch (error) {
-            setTextStatus(dom.supplierManagerStatus, getErrorMessage(error, "移除 manager 失败。"), "error");
+            setTextStatus(dom.supplierManagerStatus, getErrorMessage(error, tr("managerRemoveFailed", null, "Failed to remove manager.")), "error");
         }
     }
 
@@ -480,13 +542,13 @@ Expiration Time: ${args.expirationTime}`;
             await updateWalletState();
             renderWalletState();
             clearAuthState();
-            setTextStatus(dom.authStatus, "检测到钱包账户变化，请重新签名登录。", "muted");
+            setTextStatus(dom.authStatus, tr("authAccountChanged", null, "Wallet account changed, please sign in again."), "muted");
         });
         window.ethereum.on("chainChanged", async function () {
             await updateWalletState();
             renderWalletState();
             clearAuthState();
-            setTextStatus(dom.authStatus, "检测到网络变化，请重新签名登录。", "muted");
+            setTextStatus(dom.authStatus, tr("authChainChanged", null, "Network changed, please sign in again."), "muted");
         });
     }
 
@@ -497,22 +559,12 @@ Expiration Time: ${args.expirationTime}`;
             });
         }
 
-        if (dom.connectWalletBtn) {
-            dom.connectWalletBtn.addEventListener("click", async function () {
-                try {
-                    await connectWallet();
-                } catch (error) {
-                    setTextStatus(dom.walletStatus, getErrorMessage(error, "连接钱包失败。"), "error");
-                }
-            });
-        }
-
-        if (dom.signInBtn) {
-            dom.signInBtn.addEventListener("click", async function () {
+        if (dom.connectSigninBtn) {
+            dom.connectSigninBtn.addEventListener("click", async function () {
                 try {
                     await signIn();
                 } catch (error) {
-                    setTextStatus(dom.authStatus, getErrorMessage(error, "签名登录失败。"), "error");
+                    setTextStatus(dom.authStatus, getErrorMessage(error, tr("authSignInFailed", null, "Sign-in failed.")), "error");
                 }
             });
         }
@@ -520,7 +572,7 @@ Expiration Time: ${args.expirationTime}`;
         if (dom.logoutBtn) {
             dom.logoutBtn.addEventListener("click", function () {
                 clearAuthState();
-                setTextStatus(dom.authStatus, "已退出登录。", "muted");
+                setTextStatus(dom.authStatus, tr("authSignedOut", null, "Signed out."), "muted");
                 showCreateCard(false);
             });
         }
@@ -554,23 +606,13 @@ Expiration Time: ${args.expirationTime}`;
             });
         }
 
-        document.querySelectorAll(".cta-buttons .btn").forEach((btn, idx) => {
-            btn.addEventListener("click", function () {
-                const targetSelector = idx === 0 ? "#vendor-console" : "#features";
-                const target = document.querySelector(targetSelector);
-                if (target) {
-                    target.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
-            });
-        });
     }
 
     async function initializeVendorConsole() {
         dom.apiBaseInput = document.getElementById("api-base-url");
         dom.saveApiBaseBtn = document.getElementById("save-api-base-btn");
         dom.apiBaseStatus = document.getElementById("api-base-status");
-        dom.connectWalletBtn = document.getElementById("connect-wallet-btn");
-        dom.signInBtn = document.getElementById("sign-in-btn");
+        dom.connectSigninBtn = document.getElementById("connect-signin-btn");
         dom.logoutBtn = document.getElementById("logout-btn");
         dom.walletStatus = document.getElementById("wallet-status");
         dom.authStatus = document.getElementById("auth-status");
@@ -604,7 +646,7 @@ Expiration Time: ${args.expirationTime}`;
         if (isLegacyApiBaseUrl(initialApiBase)) {
             initialApiBase = getDefaultApiBaseUrl();
             localStorage.setItem(STORAGE_KEYS.apiBaseUrl, initialApiBase);
-            setTextStatus(dom.apiBaseStatus, `检测到旧地址，已自动切换到：${initialApiBase}`, "success");
+            setTextStatus(dom.apiBaseStatus, tr("legacyApiMigrated", { url: initialApiBase }, `Legacy API URL detected. Auto-switched to: ${initialApiBase}`), "success");
         }
         setApiBaseUrl(initialApiBase, false);
 
@@ -615,8 +657,8 @@ Expiration Time: ${args.expirationTime}`;
         try {
             await updateWalletState();
             renderWalletState();
-        } catch {
-            setTextStatus(dom.walletStatus, "未检测到钱包连接。", "muted");
+        } catch (error) {
+            setTextStatus(dom.walletStatus, getErrorMessage(error, tr("walletDisconnected", null, "Wallet not connected")), "muted");
         }
 
         const tokenValid = await validateExistingToken();

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MeshNetProtocol Supplier Console">
+    <title>MeshNetProtocol Supplier Console</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <img src="mesh_logo.png" alt="MeshNetProtocol Logo" class="logo-img">
+                <h1>MeshNetProtocol</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html" data-i18n="vendorPage.backHome">返回宣传页</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section id="vendor-console" class="vendor-console">
+        <div class="container">
+            <div class="vendor-header">
+                <h2 data-i18n="vendorPage.title">供应商控制台</h2>
+                <p data-i18n="vendorPage.subtitle">通过 MetaMask 鉴权后管理供应商资料、配置与 manager 钱包。</p>
+            </div>
+
+            <div class="vendor-grid">
+                <article class="vendor-card">
+                    <h3 data-i18n="vendorPage.sectionApiTitle">1) API 连接</h3>
+                    <p class="vendor-help" data-i18n="vendorPage.sectionApiHelp">填写 market-api 根地址（不带末尾斜杠）。</p>
+                    <label class="vendor-label" for="api-base-url" data-i18n="vendorPage.sectionApiLabel">Market API Base URL</label>
+                    <div class="vendor-inline">
+                        <input id="api-base-url" class="vendor-input" type="text"
+                            placeholder="https://openmesh-api.ribencong.workers.dev">
+                        <button id="save-api-base-btn" class="btn btn-secondary" type="button"
+                            data-i18n="vendorPage.saveApiButton">保存地址</button>
+                    </div>
+                    <p id="api-base-status" class="vendor-text muted" data-i18n="vendorPage.apiStatusIdle">尚未连接</p>
+                </article>
+
+                <article class="vendor-card">
+                    <h3 data-i18n="vendorPage.sectionAuthTitle">2) 钱包与鉴权</h3>
+                    <p class="vendor-help" data-i18n="vendorPage.sectionAuthHelp">使用一个按钮完成连接钱包与 SIWE 签名登录。</p>
+                    <div class="vendor-actions">
+                        <button id="connect-signin-btn" class="btn btn-primary" type="button"
+                            data-i18n="vendorPage.connectSignInButton">连接钱包并签名登录</button>
+                        <button id="logout-btn" class="btn btn-secondary" type="button"
+                            data-i18n="vendorPage.logoutButton">退出登录</button>
+                    </div>
+                    <p id="wallet-status" class="vendor-text muted" data-i18n="vendorPage.walletStatusIdle">钱包未连接</p>
+                    <p id="auth-status" class="vendor-text muted" data-i18n="vendorPage.authStatusIdle">未登录</p>
+                </article>
+            </div>
+
+            <article id="supplier-create-card" class="vendor-card">
+                <h3 data-i18n="vendorPage.sectionCreateTitle">3) 创建供应商</h3>
+                <p class="vendor-help" data-i18n="vendorPage.sectionCreateHelp">仅钱包首次绑定时可创建，成功后该钱包成为 owner。</p>
+                <div class="vendor-form-grid">
+                    <div>
+                        <label class="vendor-label" for="create-supplier-name"
+                            data-i18n="vendorPage.supplierNameLabel">供应商名称</label>
+                        <input id="create-supplier-name" class="vendor-input" type="text"
+                            data-i18n-placeholder="vendorPage.supplierNameLabel" placeholder="Supplier Name">
+                    </div>
+                    <div>
+                        <label class="vendor-label" for="create-supplier-description"
+                            data-i18n="vendorPage.supplierDescLabel">简介</label>
+                        <input id="create-supplier-description" class="vendor-input" type="text"
+                            data-i18n-placeholder="vendorPage.supplierDescLabel" placeholder="Description">
+                    </div>
+                </div>
+                <button id="create-supplier-btn" class="btn btn-primary" type="button"
+                    data-i18n="vendorPage.createSupplierButton">创建供应商</button>
+                <p id="create-supplier-status" class="vendor-text muted"></p>
+            </article>
+
+            <article id="supplier-manage-card" class="vendor-card hidden">
+                <h3 data-i18n="vendorPage.sectionManageTitle">4) 供应商管理</h3>
+                <p id="supplier-summary" class="vendor-text muted" data-i18n="vendorPage.supplierSummaryIdle">尚未加载供应商信息</p>
+                <div class="vendor-form-grid">
+                    <div>
+                        <label class="vendor-label" for="supplier-name" data-i18n="vendorPage.supplierNameLabel">供应商名称</label>
+                        <input id="supplier-name" class="vendor-input" type="text"
+                            data-i18n-placeholder="vendorPage.supplierNameLabel" placeholder="Supplier Name">
+                    </div>
+                    <div>
+                        <label class="vendor-label" for="supplier-status" data-i18n="vendorPage.supplierStatusLabel">状态</label>
+                        <select id="supplier-status" class="vendor-input">
+                            <option value="active">active</option>
+                            <option value="disabled">disabled</option>
+                        </select>
+                    </div>
+                </div>
+                <label class="vendor-label" for="supplier-description"
+                    data-i18n="vendorPage.supplierDescTextareaLabel">供应商简介</label>
+                <textarea id="supplier-description" class="vendor-textarea" rows="3"
+                    data-i18n-placeholder="vendorPage.supplierDescTextareaLabel" placeholder="Description"></textarea>
+                <div class="vendor-actions">
+                    <button id="refresh-supplier-btn" class="btn btn-secondary" type="button"
+                        data-i18n="vendorPage.refreshSupplierButton">刷新供应商信息</button>
+                    <button id="save-supplier-profile-btn" class="btn btn-primary" type="button"
+                        data-i18n="vendorPage.saveSupplierButton">保存资料</button>
+                </div>
+                <p id="supplier-profile-status" class="vendor-text muted"></p>
+            </article>
+
+            <article id="supplier-config-card" class="vendor-card hidden">
+                <h3 data-i18n="vendorPage.sectionConfigTitle">5) 配置管理</h3>
+                <p class="vendor-help" data-i18n="vendorPage.sectionConfigHelp">仅支持 JSON 对象，示例：{"webhook_url":"https://example.com/hook"}</p>
+                <textarea id="supplier-config-json" class="vendor-textarea code" rows="10" spellcheck="false"
+                    placeholder="{\n  &quot;webhook_url&quot;: &quot;https://example.com/hook&quot;\n}"></textarea>
+                <div class="vendor-actions">
+                    <button id="refresh-config-btn" class="btn btn-secondary" type="button"
+                        data-i18n="vendorPage.refreshConfigButton">刷新配置</button>
+                    <button id="save-config-btn" class="btn btn-primary" type="button"
+                        data-i18n="vendorPage.saveConfigButton">保存配置</button>
+                </div>
+                <p id="supplier-config-status" class="vendor-text muted"></p>
+            </article>
+
+            <article id="supplier-manager-card" class="vendor-card hidden">
+                <h3 data-i18n="vendorPage.sectionManagerTitle">6) Manager 管理（Owner）</h3>
+                <p class="vendor-help" data-i18n="vendorPage.sectionManagerHelp">owner 可增加或移除 manager 钱包。</p>
+                <div class="vendor-form-grid">
+                    <div>
+                        <label class="vendor-label" for="manager-wallet-input"
+                            data-i18n="vendorPage.managerWalletLabel">Manager 钱包地址</label>
+                        <input id="manager-wallet-input" class="vendor-input" type="text" placeholder="0x1234...">
+                    </div>
+                    <div>
+                        <label class="vendor-label" for="manager-role-input"
+                            data-i18n="vendorPage.managerRoleLabel">角色</label>
+                        <input id="manager-role-input" class="vendor-input" type="text" value="manager">
+                    </div>
+                </div>
+                <button id="add-manager-btn" class="btn btn-primary" type="button"
+                    data-i18n="vendorPage.addManagerButton">添加 Manager</button>
+                <p id="supplier-manager-status" class="vendor-text muted"></p>
+                <div id="manager-list" class="manager-list"></div>
+            </article>
+        </div>
+    </section>
+
+    <script src="i18n.js"></script>
+    <script src="site-interactions.js"></script>
+    <script src="vendor-console.js"></script>
+    <script src="vendor-page.js"></script>
+</body>
+
+</html>

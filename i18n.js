@@ -6,6 +6,7 @@ const i18n = {
             features: "Features",
             howItWorks: "How It Works",
             tokenomics: "Tokenomics",
+            supplierConsole: "Supplier Console",
             faq: "FAQ"
         },
         // 英雄部分
@@ -17,6 +18,11 @@ const i18n = {
         buttons: {
             getStarted: "Get Started",
             learnMore: "Learn More"
+        },
+        businessEntry: {
+            title: "Supplier Business Console",
+            subtitle: "Move from the product overview into wallet-authenticated supplier operations.",
+            button: "Open Console"
         },
         // 特性
         features: {
@@ -124,6 +130,84 @@ const i18n = {
             discord: "Discord",
             email: "Email",
             copyright: "© 2026 MeshNetProtocol. All rights reserved."
+        },
+        vendorPage: {
+            title: "Supplier Console",
+            subtitle: "Manage supplier profile, config and manager wallets via MetaMask authentication.",
+            backHome: "Back to Landing",
+            sectionApiTitle: "1) API Connection",
+            sectionApiHelp: "Fill in market-api base URL (without trailing slash).",
+            sectionApiLabel: "Market API Base URL",
+            saveApiButton: "Save URL",
+            apiStatusIdle: "Not connected yet",
+            sectionAuthTitle: "2) Wallet and Auth",
+            sectionAuthHelp: "Use one button to connect wallet and finish SIWE sign-in.",
+            connectSignInButton: "Connect Wallet & Sign In",
+            logoutButton: "Sign Out",
+            walletStatusIdle: "Wallet not connected",
+            authStatusIdle: "Not signed in",
+            sectionCreateTitle: "3) Create Supplier",
+            sectionCreateHelp: "Only available for wallet first binding; creator becomes owner.",
+            supplierNameLabel: "Supplier Name",
+            supplierDescLabel: "Description",
+            createSupplierButton: "Create Supplier",
+            sectionManageTitle: "4) Supplier Profile",
+            supplierSummaryIdle: "Supplier data not loaded",
+            supplierStatusLabel: "Status",
+            supplierDescTextareaLabel: "Supplier Description",
+            refreshSupplierButton: "Refresh Supplier",
+            saveSupplierButton: "Save Profile",
+            sectionConfigTitle: "5) Config Management",
+            sectionConfigHelp: "Only JSON object is accepted. Example: {\"webhook_url\":\"https://example.com/hook\"}",
+            refreshConfigButton: "Refresh Config",
+            saveConfigButton: "Save Config",
+            sectionManagerTitle: "6) Manager Wallets (Owner)",
+            sectionManagerHelp: "Owner can add or remove manager wallets.",
+            managerWalletLabel: "Manager Wallet Address",
+            managerRoleLabel: "Role",
+            addManagerButton: "Add Manager",
+            removeManagerButton: "Remove",
+            managerEmpty: "No managers yet"
+        },
+        vendorRuntime: {
+            apiInvalid: "API URL is invalid, please input a full URL.",
+            apiCurrent: "Current API: {url}",
+            apiNeedConfig: "Please configure API URL first.",
+            walletMissingProvider: "MetaMask not detected (window.ethereum missing).",
+            walletConnected: "Wallet connected: {address} | chainId={chainId}",
+            walletDisconnected: "Wallet not connected",
+            chainNotAllowed: "Current chain {chainId} is not in allowed list: {allowed}.",
+            authNeedSign: "Wallet connected, click sign-in button to continue.",
+            authSignInFailed: "Sign-in failed.",
+            authSignedOut: "Signed out.",
+            authSignedIn: "Signed in: {address} ({expires}s)",
+            authTokenValid: "Signed in: {address}, token expires at {time}",
+            authTokenExpired: "Local token expired, please sign in again.",
+            authAccountChanged: "Wallet account changed, please sign in again.",
+            authChainChanged: "Network changed, please sign in again.",
+            supplierNone: "Current wallet has no supplier yet. Please create one.",
+            supplierSummaryLine: "supplier_id={id} | role={role}{managerRole} | owner={owner}",
+            supplierRefreshed: "Supplier profile refreshed.",
+            supplierRefreshFailed: "Failed to refresh supplier profile.",
+            supplierCreateNameRequired: "Supplier name is required.",
+            supplierCreateSuccess: "Supplier created successfully.",
+            supplierCreateFailed: "Failed to create supplier.",
+            supplierProfileNoData: "No supplier available to update.",
+            supplierProfileSaveSuccess: "Supplier profile updated.",
+            supplierProfileSaveFailed: "Failed to update supplier profile.",
+            supplierConfigRefreshed: "Config refreshed. Last updated: {time}",
+            supplierConfigRefreshFailed: "Failed to refresh config.",
+            supplierConfigEmpty: "Config cannot be empty.",
+            supplierConfigInvalid: "Config must be a JSON object.",
+            supplierConfigSaveSuccess: "Config saved successfully.",
+            supplierConfigSaveFailed: "Failed to save config.",
+            managerNeedWallet: "Please input manager wallet address.",
+            managerMeta: "role={role} · created={created}",
+            managerAddSuccess: "Manager added successfully.",
+            managerAddFailed: "Failed to add manager.",
+            managerRemoveSuccess: "Manager removed.",
+            managerRemoveFailed: "Failed to remove manager.",
+            legacyApiMigrated: "Legacy API URL detected. Auto-switched to: {url}"
         }
     },
     zh: {
@@ -132,6 +216,7 @@ const i18n = {
             features: "特性",
             howItWorks: "工作原理",
             tokenomics: "代币经济",
+            supplierConsole: "供应商控制台",
             faq: "常见问题"
         },
         // 英雄部分
@@ -143,6 +228,11 @@ const i18n = {
         buttons: {
             getStarted: "立即开始",
             learnMore: "了解更多"
+        },
+        businessEntry: {
+            title: "供应商业务控制台",
+            subtitle: "从宣传页进入钱包鉴权后的供应商业务管理界面。",
+            button: "进入控制台"
         },
         // 特性
         features: {
@@ -250,6 +340,84 @@ const i18n = {
             discord: "Discord",
             email: "Email",
             copyright: "© 2026 MeshNetProtocol. 版权所有"
+        },
+        vendorPage: {
+            title: "供应商控制台",
+            subtitle: "通过 MetaMask 鉴权后管理供应商资料、配置与 manager 钱包。",
+            backHome: "返回宣传页",
+            sectionApiTitle: "1) API 连接",
+            sectionApiHelp: "填写 market-api 根地址（不带末尾斜杠）。",
+            sectionApiLabel: "Market API Base URL",
+            saveApiButton: "保存地址",
+            apiStatusIdle: "尚未连接",
+            sectionAuthTitle: "2) 钱包与鉴权",
+            sectionAuthHelp: "使用一个按钮完成连接钱包与 SIWE 签名登录。",
+            connectSignInButton: "连接钱包并签名登录",
+            logoutButton: "退出登录",
+            walletStatusIdle: "钱包未连接",
+            authStatusIdle: "未登录",
+            sectionCreateTitle: "3) 创建供应商",
+            sectionCreateHelp: "仅钱包首次绑定时可创建，成功后该钱包成为 owner。",
+            supplierNameLabel: "供应商名称",
+            supplierDescLabel: "简介",
+            createSupplierButton: "创建供应商",
+            sectionManageTitle: "4) 供应商管理",
+            supplierSummaryIdle: "尚未加载供应商信息",
+            supplierStatusLabel: "状态",
+            supplierDescTextareaLabel: "供应商简介",
+            refreshSupplierButton: "刷新供应商信息",
+            saveSupplierButton: "保存资料",
+            sectionConfigTitle: "5) 配置管理",
+            sectionConfigHelp: "仅支持 JSON 对象，示例：{\"webhook_url\":\"https://example.com/hook\"}",
+            refreshConfigButton: "刷新配置",
+            saveConfigButton: "保存配置",
+            sectionManagerTitle: "6) Manager 管理（Owner）",
+            sectionManagerHelp: "owner 可增加或移除 manager 钱包。",
+            managerWalletLabel: "Manager 钱包地址",
+            managerRoleLabel: "角色",
+            addManagerButton: "添加 Manager",
+            removeManagerButton: "移除",
+            managerEmpty: "暂无 manager"
+        },
+        vendorRuntime: {
+            apiInvalid: "API 地址无效，请输入完整 URL。",
+            apiCurrent: "当前 API：{url}",
+            apiNeedConfig: "请先配置 API 地址。",
+            walletMissingProvider: "未检测到 MetaMask（window.ethereum 不存在）。",
+            walletConnected: "已连接钱包：{address} | chainId={chainId}",
+            walletDisconnected: "钱包未连接",
+            chainNotAllowed: "当前链 {chainId} 不在允许列表 {allowed} 中。",
+            authNeedSign: "钱包已连接，请点击登录按钮。",
+            authSignInFailed: "签名登录失败。",
+            authSignedOut: "已退出登录。",
+            authSignedIn: "登录成功：{address}（{expires}s）",
+            authTokenValid: "已登录：{address}，token 到期 {time}",
+            authTokenExpired: "本地 token 已失效，请重新签名登录。",
+            authAccountChanged: "检测到钱包账户变化，请重新签名登录。",
+            authChainChanged: "检测到网络变化，请重新签名登录。",
+            supplierNone: "当前钱包尚未绑定供应商，请先创建。",
+            supplierSummaryLine: "supplier_id={id} | role={role}{managerRole} | owner={owner}",
+            supplierRefreshed: "供应商信息已刷新。",
+            supplierRefreshFailed: "刷新供应商信息失败。",
+            supplierCreateNameRequired: "供应商名称不能为空。",
+            supplierCreateSuccess: "供应商创建成功。",
+            supplierCreateFailed: "创建供应商失败。",
+            supplierProfileNoData: "当前无可更新的供应商。",
+            supplierProfileSaveSuccess: "供应商资料更新成功。",
+            supplierProfileSaveFailed: "更新供应商资料失败。",
+            supplierConfigRefreshed: "配置已刷新，最近更新：{time}",
+            supplierConfigRefreshFailed: "刷新配置失败。",
+            supplierConfigEmpty: "配置不能为空。",
+            supplierConfigInvalid: "配置必须是 JSON 对象。",
+            supplierConfigSaveSuccess: "配置保存成功。",
+            supplierConfigSaveFailed: "保存配置失败。",
+            managerNeedWallet: "请输入 manager 钱包地址。",
+            managerMeta: "角色={role} · 创建时间={created}",
+            managerAddSuccess: "Manager 添加成功。",
+            managerAddFailed: "添加 manager 失败。",
+            managerRemoveSuccess: "Manager 已移除。",
+            managerRemoveFailed: "移除 manager 失败。",
+            legacyApiMigrated: "检测到旧地址，已自动切换到：{url}"
         }
     }
 };
@@ -323,6 +491,15 @@ function updatePageLanguage(lang) {
         const html = getTranslation(translations, key);
         if (html) {
             element.innerHTML = html;
+        }
+    });
+
+    // 更新带 data-i18n-placeholder 的元素
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        const text = getTranslation(translations, key);
+        if (text) {
+            element.setAttribute('placeholder', text);
         }
     });
     
