@@ -22,6 +22,7 @@
                 <li><a href="#features" data-i18n="nav.features">特性</a></li>
                 <li><a href="#how-it-works" data-i18n="nav.howItWorks">工作原理</a></li>
                 <li><a href="#tokenomics" data-i18n="nav.tokenomics">代币经济</a></li>
+                <li><a href="#vendor-console">供应商控制台</a></li>
                 <li><a href="#faq" data-i18n="nav.faq">常见问题</a></li>
             </ul>
         </div>
@@ -179,6 +180,113 @@
         </div>
     </section>
 
+    <section id="vendor-console" class="vendor-console">
+        <div class="container">
+            <div class="vendor-header">
+                <h2>供应商控制台（Milestone C）</h2>
+                <p>通过 MetaMask 登录后管理供应商资料、配置与管理员钱包。</p>
+            </div>
+
+            <div class="vendor-grid">
+                <article class="vendor-card">
+                    <h3>1) API 连接</h3>
+                    <p class="vendor-help">填写 market-api 根地址（不带末尾斜杠）。</p>
+                    <label class="vendor-label" for="api-base-url">Market API Base URL</label>
+                    <div class="vendor-inline">
+                        <input id="api-base-url" class="vendor-input" type="text" placeholder="http://127.0.0.1:8787">
+                        <button id="save-api-base-btn" class="btn btn-secondary" type="button">保存地址</button>
+                    </div>
+                    <p id="api-base-status" class="vendor-text muted">尚未连接</p>
+                </article>
+
+                <article class="vendor-card">
+                    <h3>2) 钱包与鉴权</h3>
+                    <p class="vendor-help">连接钱包并完成 SIWE 签名登录。</p>
+                    <div class="vendor-actions">
+                        <button id="connect-wallet-btn" class="btn btn-primary" type="button">连接 MetaMask</button>
+                        <button id="sign-in-btn" class="btn btn-secondary" type="button">签名登录</button>
+                        <button id="logout-btn" class="btn btn-secondary" type="button">退出登录</button>
+                    </div>
+                    <p id="wallet-status" class="vendor-text muted">钱包未连接</p>
+                    <p id="auth-status" class="vendor-text muted">未登录</p>
+                </article>
+            </div>
+
+            <article id="supplier-create-card" class="vendor-card">
+                <h3>3) 创建供应商</h3>
+                <p class="vendor-help">仅钱包首次绑定时可创建，成功后该钱包成为 owner。</p>
+                <div class="vendor-form-grid">
+                    <div>
+                        <label class="vendor-label" for="create-supplier-name">供应商名称</label>
+                        <input id="create-supplier-name" class="vendor-input" type="text" placeholder="My Supplier">
+                    </div>
+                    <div>
+                        <label class="vendor-label" for="create-supplier-description">简介</label>
+                        <input id="create-supplier-description" class="vendor-input" type="text" placeholder="供应商简介">
+                    </div>
+                </div>
+                <button id="create-supplier-btn" class="btn btn-primary" type="button">创建供应商</button>
+                <p id="create-supplier-status" class="vendor-text muted"></p>
+            </article>
+
+            <article id="supplier-manage-card" class="vendor-card hidden">
+                <h3>4) 供应商管理</h3>
+                <p id="supplier-summary" class="vendor-text muted">尚未加载供应商信息</p>
+                <div class="vendor-form-grid">
+                    <div>
+                        <label class="vendor-label" for="supplier-name">供应商名称</label>
+                        <input id="supplier-name" class="vendor-input" type="text" placeholder="供应商名称">
+                    </div>
+                    <div>
+                        <label class="vendor-label" for="supplier-status">状态</label>
+                        <select id="supplier-status" class="vendor-input">
+                            <option value="active">active</option>
+                            <option value="disabled">disabled</option>
+                        </select>
+                    </div>
+                </div>
+                <label class="vendor-label" for="supplier-description">供应商简介</label>
+                <textarea id="supplier-description" class="vendor-textarea" rows="3" placeholder="简介"></textarea>
+                <div class="vendor-actions">
+                    <button id="refresh-supplier-btn" class="btn btn-secondary" type="button">刷新供应商信息</button>
+                    <button id="save-supplier-profile-btn" class="btn btn-primary" type="button">保存资料</button>
+                </div>
+                <p id="supplier-profile-status" class="vendor-text muted"></p>
+            </article>
+
+            <article id="supplier-config-card" class="vendor-card hidden">
+                <h3>5) 配置管理</h3>
+                <p class="vendor-help">仅支持 JSON 对象，示例：{"webhook_url":"https://example.com/hook"}</p>
+                <textarea id="supplier-config-json" class="vendor-textarea code" rows="10" spellcheck="false"
+                    placeholder="{\n  &quot;webhook_url&quot;: &quot;https://example.com/hook&quot;\n}"></textarea>
+                <div class="vendor-actions">
+                    <button id="refresh-config-btn" class="btn btn-secondary" type="button">刷新配置</button>
+                    <button id="save-config-btn" class="btn btn-primary" type="button">保存配置</button>
+                </div>
+                <p id="supplier-config-status" class="vendor-text muted"></p>
+            </article>
+
+            <article id="supplier-manager-card" class="vendor-card hidden">
+                <h3>6) Manager 管理（Owner）</h3>
+                <p class="vendor-help">owner 可增加或移除 manager 钱包。</p>
+                <div class="vendor-form-grid">
+                    <div>
+                        <label class="vendor-label" for="manager-wallet-input">Manager 钱包地址</label>
+                        <input id="manager-wallet-input" class="vendor-input" type="text"
+                            placeholder="0x1234...">
+                    </div>
+                    <div>
+                        <label class="vendor-label" for="manager-role-input">角色</label>
+                        <input id="manager-role-input" class="vendor-input" type="text" value="manager">
+                    </div>
+                </div>
+                <button id="add-manager-btn" class="btn btn-primary" type="button">添加 Manager</button>
+                <p id="supplier-manager-status" class="vendor-text muted"></p>
+                <div id="manager-list" class="manager-list"></div>
+            </article>
+        </div>
+    </section>
+
     <!-- 常见问题 -->
     <section id="faq" class="faq">
         <div class="container">
@@ -244,6 +352,7 @@
         </div>
     </footer>
 
+    <script src="i18n.js"></script>
     <script src="script.js"></script>
 </body>
 
