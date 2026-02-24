@@ -48,7 +48,7 @@
 ## 3.3 核心函数
 
 1. `registerCommercialWithAuthorization(string supplierId, string metadataURI, TransferAuthorization paymentAuthorization)`
-2. `renewCommercialWithAuthorization(bytes32 supplierIdHash, uint16 yearsToAdd, TransferAuthorization paymentAuthorization)`
+2. `renewCommercialWithAuthorization(bytes32 supplierIdHash, TransferAuthorization paymentAuthorization)`
 3. `updateMetadataURI(bytes32 supplierIdHash, string metadataURI)`
 4. `transferSupplierOwner(bytes32 supplierIdHash, address newOwner)`
 5. `suspendSupplier(bytes32 supplierIdHash)`
@@ -58,12 +58,14 @@
 9. `setTreasury(address newTreasury)`
 10. `getFeeConfig() -> (address treasury, uint16 withdrawFeePercent)`
 11. `getSupplierOwner(bytes32 supplierIdHash)`（给 Vault 调用）
-12. `isSupplierActive(bytes32 supplierIdHash)`
+12. `getSupplierCountByOwner(address supplierOwner)`（钱包登录后查询名下 profile 数量）
+13. `getSupplierHashesByOwner(address supplierOwner, uint256 offset, uint256 limit)`（分页查询名下 profile）
+14. `isSupplierActive(bytes32 supplierIdHash)`
 
 ## 3.4 registerCommercialWithAuthorization 执行逻辑
 
 1. `supplierIdHash = keccak256(bytes(supplierId))`。
-2. 检查 `supplierId` 未注册（只做唯一性约束，不做格式约束）。
+2. 检查 `supplierId` 未注册（只做唯一性约束，不做格式约束；若已被任意地址占用则注册失败）。
 3. 收取 1 年年费：`annualFeeUsdc`（仅 `receiveWithAuthorization` 路径）。
 4. 通过 `vaultImplementation` 克隆一个 `SupplierVault`，并初始化 `registry/supplierIdHash`。
 5. 保存供应商记录并发出 `SupplierRegistered` 事件。
@@ -73,7 +75,7 @@
 1. 供应商在链下签名 USDC `receiveWithAuthorization` 数据。
 2. 调用 `registerCommercialWithAuthorization(...)` 一次性完成“扣年费 + 注册 + 创建 Vault”。
 3. 该路径不需要额外的业务动作签名层，复杂度更低。
-4. `renewCommercialWithAuthorization(...)` 同理可用于续费。
+4. `renewCommercialWithAuthorization(...)` 每次续费固定增加 1 年，到期计算规则为 `max(block.timestamp, oldExpiry) + 365 days`，且允许任意地址代付续费。
 
 ## 3.5 事件（供 Cloudflare 缓存）
 
@@ -197,7 +199,7 @@ solc --base-path . --include-path . --abi --bin contracts/ProtocolRegistry.sol c
 10. 供应商 owner 调用 `previewWithdraw(10000)`，确认 `fee=1000`、`net=9000`。
 11. 供应商 owner 调用 `withdraw(10000, <supplierPayoutAddress>)`，确认 `treasury` 收到 `1000`、供应商收款地址收到 `9000`。
 12. 平台 owner 调用 `setWithdrawFeePercent(12)`，重复充值和提现，确认 Vault 自动按 12% 新费率扣费。
-13. 供应商续费走 `renewCommercialWithAuthorization(...)`（唯一路径）。
+13. 供应商续费走 `renewCommercialWithAuthorization(...)`（唯一路径，且每次固定 +1 年）。
 14. 平台 owner 调用 `suspendSupplier(supplierIdHash)` 后，`isSupplierActive` 返回 `false`；调用 `reactivateSupplier` 后恢复为 `true`（未过期前提下）。
 
 ## 11. 主流程验收清单（建议逐条打勾）
@@ -210,7 +212,7 @@ solc --base-path . --include-path . --abi --bin contracts/ProtocolRegistry.sol c
 6. supplier owner 提现时，平台费与净额分账正确。
 7. 修改 `withdrawFeePercent` 后，已存在 Vault 自动应用新费率。
 8. `withdrawFeePercent` 只能设置在 `0~100` 区间。
-9. `renewCommercialWithAuthorization`、`suspendSupplier`、`reactivateSupplier` 行为符合预期。
+9. `renewCommercialWithAuthorization`（固定 +1 年）、`suspendSupplier`、`reactivateSupplier` 行为符合预期。
 10. Cloudflare 能正确索引 `SupplierRegistered`、`SupplierMetadataUpdated`、`SupplierStatusChanged`。
 11. 终端检索可返回 `supplierId -> vault -> metadataURI -> activeStatus`。
 12. 个人供应商 API 不受商业合约收费链路影响。

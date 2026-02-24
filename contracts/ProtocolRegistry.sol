@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "./SupplierVault.sol";
+import "./SupplierProfile.sol";
 import "./utils/Clones.sol";
 import "./utils/ReentrancyGuard.sol";
 
@@ -26,13 +26,18 @@ interface IUSDCReceiveWithAuthorization {
     function authorizationState(address authorizer, bytes32 nonce) external view returns (bool);
 }
 
+interface ISupplierProfileView {
+    function owner() external view returns (address);
+}
+
 contract ProtocolRegistry is ReentrancyGuard {
     error NotOwner();
+    error NotProfile();
     error ZeroAddress();
-    error SupplierAlreadyExists();
+    error SupplierAlreadyExists(address existingOwner);
     error SupplierNotFound();
     error SupplierSuspended();
-    error InvalidYears();
+    error OwnerSyncMismatch(address expected, address actual);
     error InvalidFeePercent();
     error InvalidAmount();
     error InvalidUsdcContract();
@@ -43,9 +48,7 @@ contract ProtocolRegistry is ReentrancyGuard {
 
     struct SupplierRecord {
         string supplierId;
-        address owner;
-        address vault;
-        string metadataURI;
+        address profile;
         uint64 expiry;
         bool suspended;
     }
@@ -65,32 +68,34 @@ contract ProtocolRegistry is ReentrancyGuard {
         bytes32 indexed supplierIdHash,
         string supplierId,
         address indexed supplierOwner,
-        address indexed vault,
+        address indexed profile,
         string metadataURI,
         uint64 expiry
     );
-    event SupplierRenewed(bytes32 indexed supplierIdHash, uint64 newExpiry, uint16 yearsAdded);
-    event SupplierMetadataUpdated(bytes32 indexed supplierIdHash, string metadataURI);
-    event SupplierOwnerTransferred(bytes32 indexed supplierIdHash, address indexed previousOwner, address indexed newOwner);
+    event SupplierRenewed(bytes32 indexed supplierIdHash, uint64 newExpiry);
     event SupplierStatusChanged(bytes32 indexed supplierIdHash, bool suspended);
+    event SupplierOwnerIndexUpdated(bytes32 indexed supplierIdHash, address indexed previousOwner, address indexed newOwner);
 
     event AnnualFeeUpdated(uint256 previousFee, uint256 newFee);
     event WithdrawFeePercentUpdated(uint16 previousFeePercent, uint16 newFeePercent);
     event TreasuryUpdated(address indexed previousTreasury, address indexed newTreasury);
     event AnnualFeeCollected(address indexed payer, uint256 amount);
-    event VaultImplementationDeployed(address indexed implementation);
+    event ProfileImplementationDeployed(address indexed implementation);
 
     address public owner;
 
     address public immutable usdc;
-    address public immutable vaultImplementation;
+    address public immutable profileImplementation;
     address public treasury;
 
     uint256 public annualFeeUsdc;
     uint16 public withdrawFeePercent;
 
     mapping(bytes32 => SupplierRecord) private suppliers;
-    mapping(address => bytes32) public supplierHashByVault;
+    mapping(address => bytes32) public supplierHashByProfile;
+    mapping(bytes32 => address) private indexedOwnerBySupplier;
+    mapping(address => bytes32[]) private supplierHashesByOwner;
+    mapping(bytes32 => uint256) private supplierIndexInOwnerListPlusOne;
 
     uint256 private constant ONE_YEAR = 365 days;
     uint256 private constant DEFAULT_ANNUAL_FEE_USDC = 300_000_000; // 300 USDC (6 decimals)
@@ -115,12 +120,12 @@ contract ProtocolRegistry is ReentrancyGuard {
 
         owner = msg.sender;
         usdc = usdc_;
-        vaultImplementation = address(new SupplierVault());
+        profileImplementation = address(new SupplierProfile());
         treasury = msg.sender;
         annualFeeUsdc = DEFAULT_ANNUAL_FEE_USDC;
         withdrawFeePercent = DEFAULT_WITHDRAW_FEE_PERCENT;
 
-        emit VaultImplementationDeployed(vaultImplementation);
+        emit ProfileImplementationDeployed(profileImplementation);
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
@@ -136,55 +141,53 @@ contract ProtocolRegistry is ReentrancyGuard {
         string calldata supplierId,
         string calldata metadataURI,
         TransferAuthorization calldata paymentAuthorization
-    ) external nonReentrant returns (bytes32 supplierIdHash, address vault) {
-        _collectAnnualFeeWithAuthorization(msg.sender, 1, paymentAuthorization);
-        (supplierIdHash, vault) = _registerCommercialInternal(msg.sender, supplierId, metadataURI);
+    ) external nonReentrant returns (bytes32 supplierIdHash, address profile) {
+        _collectAnnualFeeWithAuthorization(msg.sender, paymentAuthorization);
+        (supplierIdHash, profile) = _registerCommercialInternal(msg.sender, supplierId, metadataURI);
     }
 
     function renewCommercialWithAuthorization(
         bytes32 supplierIdHash,
-        uint16 yearsToAdd,
         TransferAuthorization calldata paymentAuthorization
     ) external nonReentrant {
-        _assertRenewableByOwner(supplierIdHash, msg.sender, yearsToAdd);
-        _collectAnnualFeeWithAuthorization(msg.sender, yearsToAdd, paymentAuthorization);
-        _extendExpiry(supplierIdHash, yearsToAdd);
+        _assertRenewable(supplierIdHash);
+        _collectAnnualFeeWithAuthorization(msg.sender, paymentAuthorization);
+        _extendExpiryOneYear(supplierIdHash);
     }
 
-    function updateMetadataURI(bytes32 supplierIdHash, string calldata metadataURI) external nonReentrant {
-        SupplierRecord storage rec = suppliers[supplierIdHash];
-        if (rec.owner == address(0)) {
-            revert SupplierNotFound();
-        }
-        if (msg.sender != rec.owner) {
-            revert NotOwner();
-        }
-
-        rec.metadataURI = metadataURI;
-        emit SupplierMetadataUpdated(supplierIdHash, metadataURI);
-    }
-
-    function transferSupplierOwner(bytes32 supplierIdHash, address newSupplierOwner) external nonReentrant {
-        if (newSupplierOwner == address(0)) {
+    function onProfileOwnerChanged(bytes32 supplierIdHash, address oldOwner, address newOwner) external nonReentrant {
+        if (newOwner == address(0)) {
             revert ZeroAddress();
         }
 
         SupplierRecord storage rec = suppliers[supplierIdHash];
-        if (rec.owner == address(0)) {
+        if (rec.profile == address(0)) {
             revert SupplierNotFound();
         }
-        if (msg.sender != rec.owner) {
-            revert NotOwner();
+        if (msg.sender != rec.profile) {
+            revert NotProfile();
         }
 
-        address previousOwner = rec.owner;
-        rec.owner = newSupplierOwner;
-        emit SupplierOwnerTransferred(supplierIdHash, previousOwner, newSupplierOwner);
+        address expectedOldOwner = indexedOwnerBySupplier[supplierIdHash];
+        if (expectedOldOwner != oldOwner) {
+            revert OwnerSyncMismatch(expectedOldOwner, oldOwner);
+        }
+
+        address actualNewOwner = ISupplierProfileView(msg.sender).owner();
+        if (actualNewOwner != newOwner) {
+            revert OwnerSyncMismatch(actualNewOwner, newOwner);
+        }
+
+        _removeSupplierFromOwner(oldOwner, supplierIdHash);
+        _addSupplierToOwner(newOwner, supplierIdHash);
+        indexedOwnerBySupplier[supplierIdHash] = newOwner;
+
+        emit SupplierOwnerIndexUpdated(supplierIdHash, oldOwner, newOwner);
     }
 
     function suspendSupplier(bytes32 supplierIdHash) external onlyOwner nonReentrant {
         SupplierRecord storage rec = suppliers[supplierIdHash];
-        if (rec.owner == address(0)) {
+        if (rec.profile == address(0)) {
             revert SupplierNotFound();
         }
 
@@ -194,7 +197,7 @@ contract ProtocolRegistry is ReentrancyGuard {
 
     function reactivateSupplier(bytes32 supplierIdHash) external onlyOwner nonReentrant {
         SupplierRecord storage rec = suppliers[supplierIdHash];
-        if (rec.owner == address(0)) {
+        if (rec.profile == address(0)) {
             revert SupplierNotFound();
         }
 
@@ -245,20 +248,51 @@ contract ProtocolRegistry is ReentrancyGuard {
     }
 
     function getSupplierOwner(bytes32 supplierIdHash) external view returns (address) {
-        return suppliers[supplierIdHash].owner;
+        return indexedOwnerBySupplier[supplierIdHash];
+    }
+
+    function getProfileAddress(bytes32 supplierIdHash) external view returns (address) {
+        return suppliers[supplierIdHash].profile;
+    }
+
+    function getSupplierCountByOwner(address supplierOwner) external view returns (uint256) {
+        return supplierHashesByOwner[supplierOwner].length;
+    }
+
+    function getSupplierHashesByOwner(address supplierOwner, uint256 offset, uint256 limit)
+        external
+        view
+        returns (bytes32[] memory)
+    {
+        bytes32[] storage hashes = supplierHashesByOwner[supplierOwner];
+        uint256 total = hashes.length;
+        if (offset >= total || limit == 0) {
+            return new bytes32[](0);
+        }
+
+        uint256 endExclusive = offset + limit;
+        if (endExclusive > total) {
+            endExclusive = total;
+        }
+
+        uint256 size = endExclusive - offset;
+        bytes32[] memory page = new bytes32[](size);
+        for (uint256 i = 0; i < size; i++) {
+            page[i] = hashes[offset + i];
+        }
+        return page;
     }
 
     function isSupplierActive(bytes32 supplierIdHash) external view returns (bool) {
         SupplierRecord storage rec = suppliers[supplierIdHash];
-        return rec.owner != address(0) && !rec.suspended && rec.expiry >= block.timestamp;
+        return rec.profile != address(0) && !rec.suspended && rec.expiry >= block.timestamp;
     }
 
     function _collectAnnualFeeWithAuthorization(
         address from,
-        uint16 yearsToAdd,
         TransferAuthorization calldata authorization
     ) internal {
-        uint256 amount = annualFeeUsdc * uint256(yearsToAdd);
+        uint256 amount = annualFeeUsdc;
 
         try IUSDCReceiveWithAuthorization(usdc).receiveWithAuthorization(
             from,
@@ -280,53 +314,42 @@ contract ProtocolRegistry is ReentrancyGuard {
 
     function _registerCommercialInternal(address supplierOwner, string calldata supplierId, string calldata metadataURI)
         internal
-        returns (bytes32 supplierIdHash, address vault)
+        returns (bytes32 supplierIdHash, address profile)
     {
         supplierIdHash = keccak256(bytes(supplierId));
-        if (suppliers[supplierIdHash].owner != address(0)) {
-            revert SupplierAlreadyExists();
+        address existingOwner = indexedOwnerBySupplier[supplierIdHash];
+        if (existingOwner != address(0)) {
+            revert SupplierAlreadyExists(existingOwner);
         }
 
-        vault = Clones.clone(vaultImplementation);
-        SupplierVault(vault).initialize(address(this), supplierIdHash);
+        profile = Clones.clone(profileImplementation);
+        SupplierProfile(profile).initialize(address(this), supplierOwner, supplierId, supplierIdHash, metadataURI);
 
         uint64 expiry = uint64(block.timestamp + ONE_YEAR);
-        suppliers[supplierIdHash] = SupplierRecord({
-            supplierId: supplierId,
-            owner: supplierOwner,
-            vault: vault,
-            metadataURI: metadataURI,
-            expiry: expiry,
-            suspended: false
-        });
-        supplierHashByVault[vault] = supplierIdHash;
+        suppliers[supplierIdHash] = SupplierRecord({supplierId: supplierId, profile: profile, expiry: expiry, suspended: false});
+        supplierHashByProfile[profile] = supplierIdHash;
+        indexedOwnerBySupplier[supplierIdHash] = supplierOwner;
+        _addSupplierToOwner(supplierOwner, supplierIdHash);
 
-        emit SupplierRegistered(supplierIdHash, supplierId, supplierOwner, vault, metadataURI, expiry);
+        emit SupplierRegistered(supplierIdHash, supplierId, supplierOwner, profile, metadataURI, expiry);
     }
 
-    function _assertRenewableByOwner(bytes32 supplierIdHash, address caller, uint16 yearsToAdd) internal view {
-        if (yearsToAdd == 0) {
-            revert InvalidYears();
-        }
-
+    function _assertRenewable(bytes32 supplierIdHash) internal view {
         SupplierRecord storage rec = suppliers[supplierIdHash];
-        if (rec.owner == address(0)) {
+        if (rec.profile == address(0)) {
             revert SupplierNotFound();
         }
         if (rec.suspended) {
             revert SupplierSuspended();
         }
-        if (caller != rec.owner) {
-            revert NotOwner();
-        }
     }
 
-    function _extendExpiry(bytes32 supplierIdHash, uint16 yearsToAdd) internal {
+    function _extendExpiryOneYear(bytes32 supplierIdHash) internal {
         SupplierRecord storage rec = suppliers[supplierIdHash];
         uint256 base = rec.expiry > block.timestamp ? rec.expiry : block.timestamp;
-        rec.expiry = uint64(base + (uint256(yearsToAdd) * ONE_YEAR));
+        rec.expiry = uint64(base + ONE_YEAR);
 
-        emit SupplierRenewed(supplierIdHash, rec.expiry, yearsToAdd);
+        emit SupplierRenewed(supplierIdHash, rec.expiry);
     }
 
     function _assertUsdcCompatibility(address token) internal view {
@@ -353,5 +376,30 @@ contract ProtocolRegistry is ReentrancyGuard {
         if (returndata.length > 0 && !abi.decode(returndata, (bool))) {
             revert UsdcTransferFailed();
         }
+    }
+
+    function _addSupplierToOwner(address supplierOwner, bytes32 supplierIdHash) internal {
+        supplierHashesByOwner[supplierOwner].push(supplierIdHash);
+        supplierIndexInOwnerListPlusOne[supplierIdHash] = supplierHashesByOwner[supplierOwner].length;
+    }
+
+    function _removeSupplierFromOwner(address supplierOwner, bytes32 supplierIdHash) internal {
+        uint256 plusOne = supplierIndexInOwnerListPlusOne[supplierIdHash];
+        if (plusOne == 0) {
+            return;
+        }
+
+        bytes32[] storage hashes = supplierHashesByOwner[supplierOwner];
+        uint256 index = plusOne - 1;
+        uint256 lastIndex = hashes.length - 1;
+
+        if (index != lastIndex) {
+            bytes32 movedHash = hashes[lastIndex];
+            hashes[index] = movedHash;
+            supplierIndexInOwnerListPlusOne[movedHash] = index + 1;
+        }
+
+        hashes.pop();
+        delete supplierIndexInOwnerListPlusOne[supplierIdHash];
     }
 }

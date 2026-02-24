@@ -8,14 +8,14 @@ interface IERC20 {
     function transfer(address to, uint256 amount) external returns (bool);
 }
 
-interface IProtocolRegistryForVault {
+interface IProtocolRegistryForProfile {
     function usdc() external view returns (address);
     function getFeeConfig() external view returns (address treasury, uint16 withdrawFeePercent);
-    function getSupplierOwner(bytes32 supplierIdHash) external view returns (address);
+    function onProfileOwnerChanged(bytes32 supplierIdHash, address oldOwner, address newOwner) external;
 }
 
-contract SupplierVault is ReentrancyGuard {
-    error NotSupplierOwner();
+contract SupplierProfile is ReentrancyGuard {
+    error NotOwner();
     error NotInitialized();
     error AlreadyInitialized();
     error NotRegistry();
@@ -25,8 +25,18 @@ contract SupplierVault is ReentrancyGuard {
     error InvalidFeeConfig();
     error InvalidRegistry();
     error InvalidUsdcContract();
+    error InvalidSupplierIdHash();
+    error SameOwner();
 
-    event Initialized(address indexed registry, address indexed usdc, bytes32 indexed supplierIdHash);
+    event Initialized(
+        address indexed registry,
+        address indexed owner,
+        bytes32 indexed supplierIdHash,
+        string supplierId,
+        string metadataURI
+    );
+    event OwnerTransferred(address indexed previousOwner, address indexed newOwner);
+    event MetadataURIUpdated(string previousMetadataURI, string newMetadataURI);
     event Withdrawn(
         address indexed caller,
         address indexed to,
@@ -39,7 +49,10 @@ contract SupplierVault is ReentrancyGuard {
 
     address public registry;
     address public usdc;
+    address public owner;
     bytes32 public supplierIdHash;
+    string public supplierId;
+    string public metadataURI;
     bool public initialized;
 
     // Lock the implementation instance; clones start with initialized=false.
@@ -47,11 +60,17 @@ contract SupplierVault is ReentrancyGuard {
         initialized = true;
     }
 
-    function initialize(address registry_, bytes32 supplierIdHash_) external {
+    function initialize(
+        address registry_,
+        address owner_,
+        string calldata supplierId_,
+        bytes32 supplierIdHash_,
+        string calldata metadataURI_
+    ) external {
         if (initialized) {
             revert AlreadyInitialized();
         }
-        if (registry_ == address(0)) {
+        if (registry_ == address(0) || owner_ == address(0)) {
             revert ZeroAddress();
         }
         if (msg.sender != registry_) {
@@ -60,8 +79,11 @@ contract SupplierVault is ReentrancyGuard {
         if (registry_.code.length == 0) {
             revert InvalidRegistry();
         }
+        if (keccak256(bytes(supplierId_)) != supplierIdHash_) {
+            revert InvalidSupplierIdHash();
+        }
 
-        address usdc_ = IProtocolRegistryForVault(registry_).usdc();
+        address usdc_ = IProtocolRegistryForProfile(registry_).usdc();
         if (usdc_ == address(0) || usdc_.code.length == 0) {
             revert InvalidUsdcContract();
         }
@@ -73,10 +95,13 @@ contract SupplierVault is ReentrancyGuard {
 
         registry = registry_;
         usdc = usdc_;
+        owner = owner_;
         supplierIdHash = supplierIdHash_;
+        supplierId = supplierId_;
+        metadataURI = metadataURI_;
         initialized = true;
 
-        emit Initialized(registry_, usdc_, supplierIdHash_);
+        emit Initialized(registry_, owner_, supplierIdHash_, supplierId_, metadataURI_);
     }
 
     modifier onlyInitialized() {
@@ -86,12 +111,32 @@ contract SupplierVault is ReentrancyGuard {
         _;
     }
 
-    modifier onlySupplierOwner() {
-        address currentOwner = IProtocolRegistryForVault(registry).getSupplierOwner(supplierIdHash);
-        if (msg.sender != currentOwner) {
-            revert NotSupplierOwner();
+    modifier onlyOwner() {
+        if (msg.sender != owner) {
+            revert NotOwner();
         }
         _;
+    }
+
+    function transferOwner(address newOwner) external onlyInitialized onlyOwner nonReentrant {
+        if (newOwner == address(0)) {
+            revert ZeroAddress();
+        }
+        if (newOwner == owner) {
+            revert SameOwner();
+        }
+
+        address previousOwner = owner;
+        owner = newOwner;
+        IProtocolRegistryForProfile(registry).onProfileOwnerChanged(supplierIdHash, previousOwner, newOwner);
+
+        emit OwnerTransferred(previousOwner, newOwner);
+    }
+
+    function setMetadataURI(string calldata newMetadataURI) external onlyInitialized onlyOwner {
+        string memory oldMetadataURI = metadataURI;
+        metadataURI = newMetadataURI;
+        emit MetadataURIUpdated(oldMetadataURI, newMetadataURI);
     }
 
     function previewWithdraw(uint256 amount)
@@ -104,10 +149,11 @@ contract SupplierVault is ReentrancyGuard {
             revert InvalidAmount();
         }
 
-        (treasury, feePercent) = IProtocolRegistryForVault(registry).getFeeConfig();
+        (treasury, feePercent) = IProtocolRegistryForProfile(registry).getFeeConfig();
         if (treasury == address(0) || feePercent > 100) {
             revert InvalidFeeConfig();
         }
+
         feeAmount = (amount * feePercent) / 100;
         netAmount = amount - feeAmount;
     }
@@ -115,7 +161,7 @@ contract SupplierVault is ReentrancyGuard {
     function withdraw(uint256 amount, address to)
         external
         onlyInitialized
-        onlySupplierOwner
+        onlyOwner
         nonReentrant
         returns (uint256 feeAmount, uint256 netAmount)
     {
@@ -128,7 +174,7 @@ contract SupplierVault is ReentrancyGuard {
     function withdrawAll(address to)
         external
         onlyInitialized
-        onlySupplierOwner
+        onlyOwner
         nonReentrant
         returns (uint256 feeAmount, uint256 netAmount)
     {
@@ -143,10 +189,7 @@ contract SupplierVault is ReentrancyGuard {
         (feeAmount, netAmount) = _withdraw(amount, to);
     }
 
-    function _withdraw(uint256 amount, address to)
-        internal
-        returns (uint256 feeAmount, uint256 netAmount)
-    {
+    function _withdraw(uint256 amount, address to) internal returns (uint256 feeAmount, uint256 netAmount) {
         address treasury;
         uint16 feePercent;
         (feeAmount, netAmount, treasury, feePercent) = previewWithdraw(amount);
