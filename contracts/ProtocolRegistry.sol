@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "./SupplierVault.sol";
+import "./utils/Clones.sol";
 import "./utils/ReentrancyGuard.sol";
 
 interface IERC20Minimal {
@@ -27,14 +28,12 @@ interface IUSDCReceiveWithAuthorization {
 
 contract ProtocolRegistry is ReentrancyGuard {
     error NotOwner();
-    error NotPendingOwner();
     error ZeroAddress();
     error SupplierAlreadyExists();
     error SupplierNotFound();
     error SupplierSuspended();
-    error InvalidSupplierId();
     error InvalidYears();
-    error InvalidFeeBps();
+    error InvalidFeePercent();
     error InvalidAmount();
     error InvalidUsdcContract();
     error InvalidUsdcBalanceOf();
@@ -60,7 +59,6 @@ contract ProtocolRegistry is ReentrancyGuard {
         bytes32 s;
     }
 
-    event OwnershipTransferStarted(address indexed previousOwner, address indexed pendingOwner);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     event SupplierRegistered(
@@ -77,26 +75,26 @@ contract ProtocolRegistry is ReentrancyGuard {
     event SupplierStatusChanged(bytes32 indexed supplierIdHash, bool suspended);
 
     event AnnualFeeUpdated(uint256 previousFee, uint256 newFee);
-    event WithdrawFeeBpsUpdated(uint16 previousFeeBps, uint16 newFeeBps);
+    event WithdrawFeePercentUpdated(uint16 previousFeePercent, uint16 newFeePercent);
     event TreasuryUpdated(address indexed previousTreasury, address indexed newTreasury);
     event AnnualFeeCollected(address indexed payer, uint256 amount);
+    event VaultImplementationDeployed(address indexed implementation);
 
     address public owner;
-    address public pendingOwner;
 
     address public immutable usdc;
+    address public immutable vaultImplementation;
     address public treasury;
 
     uint256 public annualFeeUsdc;
-    uint16 public withdrawFeeBps;
-    uint16 public immutable maxWithdrawFeeBps;
+    uint16 public withdrawFeePercent;
 
     mapping(bytes32 => SupplierRecord) private suppliers;
     mapping(address => bytes32) public supplierHashByVault;
 
     uint256 private constant ONE_YEAR = 365 days;
-    uint256 private constant MIN_SUPPLIER_ID_LENGTH = 3;
-    uint256 private constant MAX_SUPPLIER_ID_LENGTH = 128;
+    uint256 private constant DEFAULT_ANNUAL_FEE_USDC = 300_000_000; // 300 USDC (6 decimals)
+    uint16 private constant DEFAULT_WITHDRAW_FEE_PERCENT = 10; // 10%
 
     modifier onlyOwner() {
         if (msg.sender != owner) {
@@ -105,53 +103,33 @@ contract ProtocolRegistry is ReentrancyGuard {
         _;
     }
 
-    constructor(
-        address usdc_,
-        address treasury_,
-        uint256 annualFeeUsdc_,
-        uint16 withdrawFeeBps_,
-        uint16 maxWithdrawFeeBps_
-    ) {
-        if (usdc_ == address(0) || treasury_ == address(0)) {
+    constructor(address usdc_) {
+        if (usdc_ == address(0)) {
             revert ZeroAddress();
         }
         if (usdc_.code.length == 0) {
             revert InvalidUsdcContract();
-        }
-        if (annualFeeUsdc_ == 0) {
-            revert InvalidAmount();
-        }
-        if (maxWithdrawFeeBps_ > 10_000 || withdrawFeeBps_ > maxWithdrawFeeBps_) {
-            revert InvalidFeeBps();
         }
 
         _assertUsdcCompatibility(usdc_);
 
         owner = msg.sender;
         usdc = usdc_;
-        treasury = treasury_;
-        annualFeeUsdc = annualFeeUsdc_;
-        withdrawFeeBps = withdrawFeeBps_;
-        maxWithdrawFeeBps = maxWithdrawFeeBps_;
+        vaultImplementation = address(new SupplierVault());
+        treasury = msg.sender;
+        annualFeeUsdc = DEFAULT_ANNUAL_FEE_USDC;
+        withdrawFeePercent = DEFAULT_WITHDRAW_FEE_PERCENT;
+
+        emit VaultImplementationDeployed(vaultImplementation);
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
         if (newOwner == address(0)) {
             revert ZeroAddress();
         }
-        pendingOwner = newOwner;
-        emit OwnershipTransferStarted(owner, newOwner);
-    }
-
-    function acceptOwnership() external {
-        if (msg.sender != pendingOwner) {
-            revert NotPendingOwner();
-        }
-
         address previousOwner = owner;
-        owner = msg.sender;
-        pendingOwner = address(0);
-        emit OwnershipTransferred(previousOwner, msg.sender);
+        owner = newOwner;
+        emit OwnershipTransferred(previousOwner, newOwner);
     }
 
     function registerCommercialWithAuthorization(
@@ -234,14 +212,14 @@ contract ProtocolRegistry is ReentrancyGuard {
         emit AnnualFeeUpdated(oldFee, newFee);
     }
 
-    function setWithdrawFeeBps(uint16 newFeeBps) external onlyOwner nonReentrant {
-        if (newFeeBps > maxWithdrawFeeBps) {
-            revert InvalidFeeBps();
+    function setWithdrawFeePercent(uint16 newFeePercent) external onlyOwner nonReentrant {
+        if (newFeePercent > 100) {
+            revert InvalidFeePercent();
         }
 
-        uint16 oldFeeBps = withdrawFeeBps;
-        withdrawFeeBps = newFeeBps;
-        emit WithdrawFeeBpsUpdated(oldFeeBps, newFeeBps);
+        uint16 oldFeePercent = withdrawFeePercent;
+        withdrawFeePercent = newFeePercent;
+        emit WithdrawFeePercentUpdated(oldFeePercent, newFeePercent);
     }
 
     function setTreasury(address newTreasury) external onlyOwner nonReentrant {
@@ -254,8 +232,8 @@ contract ProtocolRegistry is ReentrancyGuard {
         emit TreasuryUpdated(oldTreasury, newTreasury);
     }
 
-    function getFeeConfig() external view returns (address feeTreasury, uint16 feeBps) {
-        return (treasury, withdrawFeeBps);
+    function getFeeConfig() external view returns (address feeTreasury, uint16 feePercent) {
+        return (treasury, withdrawFeePercent);
     }
 
     function getSupplier(bytes32 supplierIdHash) external view returns (SupplierRecord memory) {
@@ -304,15 +282,13 @@ contract ProtocolRegistry is ReentrancyGuard {
         internal
         returns (bytes32 supplierIdHash, address vault)
     {
-        _validateSupplierId(supplierId);
-
         supplierIdHash = keccak256(bytes(supplierId));
         if (suppliers[supplierIdHash].owner != address(0)) {
             revert SupplierAlreadyExists();
         }
 
-        SupplierVault supplierVault = new SupplierVault(address(this), supplierIdHash);
-        vault = address(supplierVault);
+        vault = Clones.clone(vaultImplementation);
+        SupplierVault(vault).initialize(address(this), supplierIdHash);
 
         uint64 expiry = uint64(block.timestamp + ONE_YEAR);
         suppliers[supplierIdHash] = SupplierRecord({
@@ -376,43 +352,6 @@ contract ProtocolRegistry is ReentrancyGuard {
         }
         if (returndata.length > 0 && !abi.decode(returndata, (bool))) {
             revert UsdcTransferFailed();
-        }
-    }
-
-    function _validateSupplierId(string calldata supplierId) internal pure {
-        bytes calldata chars = bytes(supplierId);
-        uint256 len = chars.length;
-        if (len < MIN_SUPPLIER_ID_LENGTH || len > MAX_SUPPLIER_ID_LENGTH) {
-            revert InvalidSupplierId();
-        }
-
-        if (chars[0] == 0x2e || chars[len - 1] == 0x2e) {
-            revert InvalidSupplierId();
-        }
-
-        bool hasDot;
-        bytes1 prev;
-        for (uint256 i = 0; i < len; i++) {
-            bytes1 c = chars[i];
-
-            bool isLower = (c >= 0x61 && c <= 0x7a);
-            bool isDigit = (c >= 0x30 && c <= 0x39);
-            bool isDot = c == 0x2e;
-
-            if (!(isLower || isDigit || isDot)) {
-                revert InvalidSupplierId();
-            }
-            if (isDot) {
-                if (prev == 0x2e) {
-                    revert InvalidSupplierId();
-                }
-                hasDot = true;
-            }
-            prev = c;
-        }
-
-        if (!hasDot) {
-            revert InvalidSupplierId();
         }
     }
 }

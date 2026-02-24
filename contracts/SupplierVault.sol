@@ -10,12 +10,15 @@ interface IERC20 {
 
 interface IProtocolRegistryForVault {
     function usdc() external view returns (address);
-    function getFeeConfig() external view returns (address treasury, uint16 withdrawFeeBps);
+    function getFeeConfig() external view returns (address treasury, uint16 withdrawFeePercent);
     function getSupplierOwner(bytes32 supplierIdHash) external view returns (address);
 }
 
 contract SupplierVault is ReentrancyGuard {
     error NotSupplierOwner();
+    error NotInitialized();
+    error AlreadyInitialized();
+    error NotRegistry();
     error ZeroAddress();
     error InvalidAmount();
     error TransferFailed();
@@ -23,6 +26,7 @@ contract SupplierVault is ReentrancyGuard {
     error InvalidRegistry();
     error InvalidUsdcContract();
 
+    event Initialized(address indexed registry, address indexed usdc, bytes32 indexed supplierIdHash);
     event Withdrawn(
         address indexed caller,
         address indexed to,
@@ -30,29 +34,35 @@ contract SupplierVault is ReentrancyGuard {
         uint256 feeAmount,
         uint256 netAmount,
         address treasury,
-        uint16 feeBps
+        uint16 feePercent
     );
 
-    address public immutable registry;
-    address public immutable usdc;
-    bytes32 public immutable supplierIdHash;
+    address public registry;
+    address public usdc;
+    bytes32 public supplierIdHash;
+    bool public initialized;
 
-    constructor(address registry_, bytes32 supplierIdHash_) {
+    // Lock the implementation instance; clones start with initialized=false.
+    constructor() {
+        initialized = true;
+    }
+
+    function initialize(address registry_, bytes32 supplierIdHash_) external {
+        if (initialized) {
+            revert AlreadyInitialized();
+        }
         if (registry_ == address(0)) {
             revert ZeroAddress();
+        }
+        if (msg.sender != registry_) {
+            revert NotRegistry();
         }
         if (registry_.code.length == 0) {
             revert InvalidRegistry();
         }
 
-        registry = registry_;
-        supplierIdHash = supplierIdHash_;
-
         address usdc_ = IProtocolRegistryForVault(registry_).usdc();
-        if (usdc_ == address(0)) {
-            revert ZeroAddress();
-        }
-        if (usdc_.code.length == 0) {
+        if (usdc_ == address(0) || usdc_.code.length == 0) {
             revert InvalidUsdcContract();
         }
         (bool okBalance, bytes memory balanceRet) =
@@ -60,7 +70,20 @@ contract SupplierVault is ReentrancyGuard {
         if (!okBalance || balanceRet.length < 32) {
             revert InvalidUsdcContract();
         }
+
+        registry = registry_;
         usdc = usdc_;
+        supplierIdHash = supplierIdHash_;
+        initialized = true;
+
+        emit Initialized(registry_, usdc_, supplierIdHash_);
+    }
+
+    modifier onlyInitialized() {
+        if (!initialized) {
+            revert NotInitialized();
+        }
+        _;
     }
 
     modifier onlySupplierOwner() {
@@ -74,22 +97,24 @@ contract SupplierVault is ReentrancyGuard {
     function previewWithdraw(uint256 amount)
         public
         view
-        returns (uint256 feeAmount, uint256 netAmount, address treasury, uint16 feeBps)
+        onlyInitialized
+        returns (uint256 feeAmount, uint256 netAmount, address treasury, uint16 feePercent)
     {
         if (amount == 0) {
             revert InvalidAmount();
         }
 
-        (treasury, feeBps) = IProtocolRegistryForVault(registry).getFeeConfig();
-        if (treasury == address(0) || feeBps > 10_000) {
+        (treasury, feePercent) = IProtocolRegistryForVault(registry).getFeeConfig();
+        if (treasury == address(0) || feePercent > 100) {
             revert InvalidFeeConfig();
         }
-        feeAmount = (amount * feeBps) / 10_000;
+        feeAmount = (amount * feePercent) / 100;
         netAmount = amount - feeAmount;
     }
 
     function withdraw(uint256 amount, address to)
         external
+        onlyInitialized
         onlySupplierOwner
         nonReentrant
         returns (uint256 feeAmount, uint256 netAmount)
@@ -102,6 +127,7 @@ contract SupplierVault is ReentrancyGuard {
 
     function withdrawAll(address to)
         external
+        onlyInitialized
         onlySupplierOwner
         nonReentrant
         returns (uint256 feeAmount, uint256 netAmount)
@@ -122,15 +148,15 @@ contract SupplierVault is ReentrancyGuard {
         returns (uint256 feeAmount, uint256 netAmount)
     {
         address treasury;
-        uint16 feeBps;
-        (feeAmount, netAmount, treasury, feeBps) = previewWithdraw(amount);
+        uint16 feePercent;
+        (feeAmount, netAmount, treasury, feePercent) = previewWithdraw(amount);
 
         if (feeAmount > 0) {
             _safeTransfer(usdc, treasury, feeAmount);
         }
         _safeTransfer(usdc, to, netAmount);
 
-        emit Withdrawn(msg.sender, to, amount, feeAmount, netAmount, treasury, feeBps);
+        emit Withdrawn(msg.sender, to, amount, feeAmount, netAmount, treasury, feePercent);
     }
 
     function _safeTransfer(address token, address to, uint256 amount) internal {

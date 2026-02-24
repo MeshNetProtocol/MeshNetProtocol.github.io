@@ -13,7 +13,8 @@
 1. `ProtocolRegistry` 合并了“注册表 + 参数配置 + Vault 创建入口”。
 2. `SupplierVault` 负责“收款 + 提现 + 动态手续费扣除”。
 3. 手续费配置不放在 Vault 中，Vault 每次提现实时查询 Registry 的最新费率。
-4. 供应商索引缓存只需监听一个主合约（`ProtocolRegistry`）事件。
+4. 每个供应商 Vault 通过 EIP-1167 最小代理克隆创建，显著降低每次注册的部署 gas。
+5. 供应商索引缓存只需监听一个主合约（`ProtocolRegistry`）事件。
 
 ## 3. 合约一：ProtocolRegistry
 
@@ -22,20 +23,18 @@
 1. 商业供应商注册（年费 300 USDC，默认值可由 owner 修改）。
 2. 为每个商业供应商创建唯一的 `SupplierVault`。
 3. 维护 `supplierId -> owner -> vault -> metadataURI -> expiry -> status`。
-4. 提供给 Vault 的全局配置查询接口（`treasury`、`withdrawFeeBps`）。
+4. 提供给 Vault 的全局配置查询接口（`treasury`、`withdrawFeePercent`）。
 5. 提供给 Cloudflare/终端的查询接口与事件。
 
 ## 3.2 核心状态
 
 1. `address public owner`
-2. `address public pendingOwner`
-3. `address public immutable usdc`
-4. `address public treasury`
-5. `uint256 public annualFeeUsdc`（默认 `300e6`）
-6. `uint16 public withdrawFeeBps`（默认 `1000`，即 10%）
-7. `uint16 public immutable maxWithdrawFeeBps`
-8. `mapping(bytes32 => SupplierRecord) suppliers`
-9. `mapping(address => bytes32) supplierHashByVault`
+2. `address public immutable usdc`
+3. `address public treasury`
+4. `uint256 public annualFeeUsdc`（默认 `300e6`）
+5. `uint16 public withdrawFeePercent`（默认建议 `10`，即 10%）
+6. `mapping(bytes32 => SupplierRecord) suppliers`
+7. `mapping(address => bytes32) supplierHashByVault`
 
 `SupplierRecord` 字段：
 
@@ -55,20 +54,19 @@
 5. `suspendSupplier(bytes32 supplierIdHash)`
 6. `reactivateSupplier(bytes32 supplierIdHash)`
 7. `setAnnualFeeUsdc(uint256 newFee)`
-8. `setWithdrawFeeBps(uint16 newFeeBps)`
+8. `setWithdrawFeePercent(uint16 newFeePercent)`
 9. `setTreasury(address newTreasury)`
-10. `getFeeConfig() -> (address treasury, uint16 withdrawFeeBps)`
+10. `getFeeConfig() -> (address treasury, uint16 withdrawFeePercent)`
 11. `getSupplierOwner(bytes32 supplierIdHash)`（给 Vault 调用）
 12. `isSupplierActive(bytes32 supplierIdHash)`
 
 ## 3.4 registerCommercialWithAuthorization 执行逻辑
 
-1. 校验 `supplierId` 格式（小写、数字、点分隔、不能首尾点、不能连续点）。
-2. `supplierIdHash = keccak256(bytes(supplierId))`。
-3. 检查 `supplierId` 未注册。
-4. 收取 1 年年费：`annualFeeUsdc`（仅 `receiveWithAuthorization` 路径）。
-5. 创建 `SupplierVault` 实例，参数为：`registry`, `supplierIdHash`（供应商 owner 动态从 Registry 查询）。
-6. 保存供应商记录并发出 `SupplierRegistered` 事件。
+1. `supplierIdHash = keccak256(bytes(supplierId))`。
+2. 检查 `supplierId` 未注册（只做唯一性约束，不做格式约束）。
+3. 收取 1 年年费：`annualFeeUsdc`（仅 `receiveWithAuthorization` 路径）。
+4. 通过 `vaultImplementation` 克隆一个 `SupplierVault`，并初始化 `registry/supplierIdHash`。
+5. 保存供应商记录并发出 `SupplierRegistered` 事件。
 
 唯一支付路径：
 
@@ -85,7 +83,7 @@
 4. `SupplierOwnerTransferred`
 5. `SupplierStatusChanged`
 6. `AnnualFeeUpdated`
-7. `WithdrawFeeBpsUpdated`
+7. `WithdrawFeePercentUpdated`
 8. `TreasuryUpdated`
 
 ## 4. 合约二：SupplierVault
@@ -94,29 +92,31 @@
 
 1. 接收用户支付的 USDC（直接转入 Vault 地址）。
 2. 支持供应商提现。
-3. 提现时按 Registry 的最新 `withdrawFeeBps` 扣平台服务费到 `treasury`。
+3. 提现时按 Registry 的最新 `withdrawFeePercent` 扣平台服务费到 `treasury`。
 
 ## 4.2 核心状态
 
-1. `address public immutable registry`
-2. `address public immutable usdc`
-3. `bytes32 public immutable supplierIdHash`
+1. `address public registry`
+2. `address public usdc`
+3. `bytes32 public supplierIdHash`
+4. `bool public initialized`
 
 ## 4.3 核心函数
 
-1. `previewWithdraw(uint256 amount)`
-2. `withdraw(uint256 amount, address to)`
-3. `withdrawAll(address to)`
+1. `initialize(address registry, bytes32 supplierIdHash)`（仅 Registry 在创建 clone 后调用一次）
+2. `previewWithdraw(uint256 amount)`
+3. `withdraw(uint256 amount, address to)`
+4. `withdrawAll(address to)`
 
 ## 4.4 withdraw 执行逻辑
 
 1. 调用 `ProtocolRegistry.getSupplierOwner(supplierIdHash)` 校验调用者权限。
-2. 调用 `ProtocolRegistry.getFeeConfig()` 获取最新 `treasury` 和 `withdrawFeeBps`。
-3. 计算 `fee = amount * bps / 10000`，`net = amount - fee`。
+2. 调用 `ProtocolRegistry.getFeeConfig()` 获取最新 `treasury` 和 `withdrawFeePercent`。
+3. 计算 `fee = amount * feePercent / 100`，`net = amount - fee`。
 4. `fee` 转给 `treasury`，`net` 转给 `to`。
 5. 发出 `Withdrawn` 事件。
 6. `withdrawAll` 在 Vault 余额为 0 时返回 `(0,0)`，不抛错。
-7. Vault 会防御性校验 `treasury != 0` 且 `withdrawFeeBps <= 10000`。
+7. Vault 会防御性校验 `treasury != 0` 且 `withdrawFeePercent <= 100`。
 
 ## 5. 终端与供应商结算节点的小账本（链下双签）
 
@@ -160,7 +160,7 @@
 ## 8. 关键安全约束
 
 1. `supplierId` 全局唯一。
-2. `withdrawFeeBps` 必须有上限（例如 <= 2000）。
+2. `withdrawFeePercent` 取值必须在 `0~100` 之间。
 3. Vault 提现权限以 Registry 中的最新 supplier owner 为准。
 4. 所有 USDC 交互必须检查返回值（防静默失败）。
 5. 供应商是否展示给终端，由 `isSupplierActive` 决定（`!suspended && expiry >= now`）。
@@ -169,6 +169,7 @@
 8. 部署阶段对 USDC 合约做能力探测：`balanceOf` 与 `authorizationState`（Registry）必须可用。
 9. 关键链上追踪事件：`AnnualFeeCollected`、`SupplierRegistered`、`Withdrawn`。
 10. 错误码已细分（如 `UsdcReceiveWithAuthorizationFailed`、`InvalidUsdcBalanceOf`），便于链上定位问题。
+11. 每次供应商注册创建的是最小代理 Vault（clone），不是完整逻辑合约重复部署。
 
 ## 9. 实施顺序
 
@@ -180,22 +181,22 @@
 
 ## 10. Base Sepolia 逐步部署清单
 
-1. 准备网络与账户：使用 `Base Sepolia`（`chainId=84532`），准备 `平台Owner`、`平台Treasury`、`商业供应商测试账户`，并给这些地址准备测试 ETH。
+1. 准备网络与账户：使用 `Base Sepolia`（`chainId=84532`），准备 `平台Owner`、`商业供应商测试账户`，并给这些地址准备测试 ETH。
 2. 确认 USDC 地址：使用你当前项目配置中的 Base Sepolia USDC 地址。
 3. 本地编译合约：
 ```bash
 cd /Users/wesley/MeshNetProtocol/MeshNetProtocol.github.io
 solc --base-path . --include-path . --abi --bin contracts/ProtocolRegistry.sol contracts/SupplierVault.sol -o /tmp/meshnet-solc-out --overwrite
 ```
-4. 部署 `ProtocolRegistry`，构造参数按顺序填入：`usdc_`、`treasury_`、`annualFeeUsdc_=300000000`、`withdrawFeeBps_=1000`、`maxWithdrawFeeBps_=2000`。
-5. 部署后读链确认：`usdc()`、`treasury()`、`annualFeeUsdc()`、`withdrawFeeBps()`、`maxWithdrawFeeBps()` 都等于预期。
+4. 部署 `ProtocolRegistry`，构造参数仅填入：`usdc_`。
+5. 部署后读链确认：`usdc()`、`owner()`、`treasury()`、`annualFeeUsdc()`、`withdrawFeePercent()`、`vaultImplementation()` 都等于预期（默认分别为 `300000000` 与 `10`，且 `treasury` 默认等于部署者 `owner`）。
 6. 商业供应商注册建议使用“授权支付”路径：链下签署 USDC `receiveWithAuthorization` 参数，然后调用 `registerCommercialWithAuthorization(...)`。
 7. 注册成功后记录 `SupplierRegistered` 事件中的 `supplierIdHash` 和 `vault`。
 8. 调用 `getSupplierById("com.meshi.app.v1")`，核对 `owner`、`vault`、`expiry`、`suspended=false`。
 9. 用终端用户测试账户向 `vault` 直接转 `10000`（0.01 USDC），再检查 `USDC.balanceOf(vault)` 是否增加。
 10. 供应商 owner 调用 `previewWithdraw(10000)`，确认 `fee=1000`、`net=9000`。
 11. 供应商 owner 调用 `withdraw(10000, <supplierPayoutAddress>)`，确认 `treasury` 收到 `1000`、供应商收款地址收到 `9000`。
-12. 平台 owner 调用 `setWithdrawFeeBps(1200)`，重复充值和提现，确认 Vault 自动按 12% 新费率扣费。
+12. 平台 owner 调用 `setWithdrawFeePercent(12)`，重复充值和提现，确认 Vault 自动按 12% 新费率扣费。
 13. 供应商续费走 `renewCommercialWithAuthorization(...)`（唯一路径）。
 14. 平台 owner 调用 `suspendSupplier(supplierIdHash)` 后，`isSupplierActive` 返回 `false`；调用 `reactivateSupplier` 后恢复为 `true`（未过期前提下）。
 
@@ -207,8 +208,8 @@ solc --base-path . --include-path . --abi --bin contracts/ProtocolRegistry.sol c
 4. 用户可直接向 Vault 支付 `0.01 USDC`。
 5. 非 supplier owner 调用 Vault 提现会失败。
 6. supplier owner 提现时，平台费与净额分账正确。
-7. 修改 `withdrawFeeBps` 后，已存在 Vault 自动应用新费率。
-8. `withdrawFeeBps` 不可超过 `maxWithdrawFeeBps`。
+7. 修改 `withdrawFeePercent` 后，已存在 Vault 自动应用新费率。
+8. `withdrawFeePercent` 只能设置在 `0~100` 区间。
 9. `renewCommercialWithAuthorization`、`suspendSupplier`、`reactivateSupplier` 行为符合预期。
 10. Cloudflare 能正确索引 `SupplierRegistered`、`SupplierMetadataUpdated`、`SupplierStatusChanged`。
 11. 终端检索可返回 `supplierId -> vault -> metadataURI -> activeStatus`。
@@ -219,4 +220,4 @@ solc --base-path . --include-path . --abi --bin contracts/ProtocolRegistry.sol c
 
 1. `registerCommercialWithAuthorization` / `renewCommercialWithAuthorization` 失败时，检查 `receiveWithAuthorization` 的 `validBefore`、`nonce`、签名参数以及 USDC 合约地址是否正确。
 2. Vault 提现失败时，检查调用地址是否为 Registry 记录的当前 supplier owner、Vault USDC 余额是否充足、`treasury` 是否被误配置。
-3. 费率不符合预期时，先读 `ProtocolRegistry.withdrawFeeBps()`，再用 Vault `previewWithdraw` 验证实际执行费率。
+3. 费率不符合预期时，先读 `ProtocolRegistry.withdrawFeePercent()`，再用 Vault `previewWithdraw` 验证实际执行费率。
