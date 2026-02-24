@@ -1,2 +1,8 @@
 /.idea/
 contracts/artifacts
+contracts/.prettierrc_1.json
+contracts/.prettierrc_2.json
+contracts/.prettierrc.json
+contracts/remix.config_1.json
+contracts/remix.config_2.json
+contracts/remix.config.json
