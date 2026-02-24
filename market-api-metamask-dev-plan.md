@@ -1,254 +1,343 @@
-# Market API + MetaMask 集成开发计划（可实施、可测试）
+# Market API + Base 链重构方案计划书（V2）
 
-## 1. 项目目标与边界
+## 1. 重构目标
 
-### 1.1 目标
-- 在 `openmesh-cli/market-api` 中新增供应商创建与“供应商管理自身配置”的 API。
-- 在 `MeshNetProtocol.github.io` 中接入 MetaMask，实现对 `market-api` 的访问鉴权。
-- 形成可回归测试的端到端流程：连接钱包 -> 签名登录 -> 获取令牌 -> 管理供应商配置。
+本次为不兼容旧逻辑的重大重构，目标是把系统从“中心化鉴权驱动”改成“链上状态驱动”：
 
-### 1.2 范围
-- 包含：SIWE（EIP-4361）登录、供应商 API、前端接入、安全基线。
-- 不包含：复杂财务结算逻辑、跨多链统一账户体系、第三方 IAM 平台集成。
-
-### 1.3 成功标准（总体验收）
-- 用户可使用 MetaMask 完成登录并获取 token。
-- 已绑定供应商的钱包可读写自己的配置；无权限钱包无法越权访问。
-- 关键安全控制（nonce 防重放、签名校验、权限校验、限流）通过测试。
-- 提供一组可在 CI 执行的自动化测试（单元+集成+E2E）。
+1. 商业供应商的准入、续费、收费、分账以智能合约为准。
+2. 私人供应商不进入公共市场，不提供收费能力，仅支持本地导入/手动更新。
+3. 后端降级为最小服务：仅负责供应商 `supplierId` 全局唯一性登记与基础查询聚合。
+4. 客户端公共市场只展示商业供应商；私人供应商通过文件或 URL 本地导入。
+5. 支付链固定为 Base，支持主网与测试网切换。
 
 ---
 
-## 2. 总体技术方案（对应方面 1：鉴权总体）
+## 2. 已确认业务约束（冻结）
 
-### 2.1 架构决策
-- 鉴权模式：`MetaMask 签名（SIWE） -> market-api 验签 -> JWT/Session Token`。
-- 权限模式：钱包地址为身份主键，后端维护供应商与角色映射（owner/manager）。
-- API 访问：前端统一带 `Authorization: Bearer <token>` 调用 `market-api`。
-
-### 2.2 核心流程
-1. 前端请求 `GET /auth/nonce`。
-2. 后端返回一次性 nonce（短时有效）。
-3. 前端调用 MetaMask 签名 SIWE message。
-4. 前端提交 `POST /auth/verify`（message + signature）。
-5. 后端验签成功后签发 access token（可选 refresh token）。
-6. 前端携带 token 调用供应商相关 API。
-
-### 2.3 数据模型（最小集）
-- `wallet_sessions`: nonce、wallet_address、expired_at、used_at。
-- `suppliers`: id、name、owner_wallet、status、created_at。
-- `supplier_managers`: supplier_id、manager_wallet、role。
-- `supplier_configs`: supplier_id、config_json、updated_at、updated_by_wallet。
-
-### 2.4 里程碑 A（鉴权基础）
-
-#### 开发步骤
-1. 新增 `auth/nonce` 与 `auth/verify` 接口。
-2. 实现 SIWE message 校验（domain、uri、chainId、nonce、issuedAt、expirationTime）。
-3. 实现 nonce 一次性消费机制与过期策略。
-4. 实现 token 签发与中间件鉴权。
-
-#### 测试步骤
-1. 单元测试：签名校验函数、nonce 状态机（未使用/已使用/已过期）。
-2. 集成测试：完整登录流程（成功、过期 nonce、重复 nonce、错误签名）。
-3. 安全测试：重放攻击测试（同签名二次提交必须失败）。
-
-#### 验收标准
-- 正常登录成功率 100%（测试集）。
-- 错误签名、过期 nonce、重放请求均返回预期 401/400。
-- access token 可访问受保护接口，过期后不可访问。
-
-#### 交付物
-- `market-api` 鉴权接口说明文档。
-- 鉴权中间件与测试报告（测试命令、通过截图或日志）。
+1. 商业供应商入驻费：`300 USDC / 年`。
+2. 入驻费可由合约 `owner` 修改（链上参数）。
+3. 商业供应商每年续费一次，未续费即失效。
+4. 服务费：商业供应商提取 USDC 时按 `10%` 收取。
+5. 服务费接收地址：合约 `owner`（管理员地址）。
+6. `supplierId` 采用苹果 App Store 风格反向域名格式，如：`com.meshi.app.v1`。
+7. 私人与商业供应商都必须有全局唯一 `supplierId`。
+8. 商业供应商配置只在链上存 `profileUrl`（关键索引信息），不在服务器存完整配置。
+9. 私人供应商配置来源为文件或 URL；客户端已有解析逻辑，本次不改 profile JSON 格式。
 
 ---
 
-## 3. 供应商 API 开发计划（对应方面 2：供应商 API 设计）
+## 3. 总体架构（重构后）
 
-### 3.1 API 清单（建议最小版本）
-- `POST /suppliers`：创建供应商（首次绑定 owner wallet）。
-- `GET /suppliers/me`：获取当前钱包所属供应商信息。
-- `PATCH /suppliers/me`：更新供应商基本信息（例如名称、公开简介）。
-- `GET /suppliers/me/config`：读取供应商配置。
-- `PUT /suppliers/me/config`：更新供应商配置。
-- `POST /suppliers/me/managers`：新增 manager（可选，owner only）。
-- `DELETE /suppliers/me/managers/:wallet`：移除 manager（可选，owner only）。
+## 3.1 组件职责
 
-### 3.2 权限规则
-- `owner`：可管理供应商资料、配置、manager。
-- `manager`：可管理配置，不可变更 owner 与 manager 列表（可按业务收紧）。
-- 未绑定供应商的钱包：仅允许调用创建接口或只读公共接口。
+1. 智能合约（Base Mainnet / Base Sepolia）
+- 负责商业供应商：入驻、续费、状态、生效期、profile URL、支付收款、提取分账。
+- 链上事件作为收费与账本事实来源。
 
-### 3.3 里程碑 B（供应商域能力）
+2. `market-api`（V2）
+- 只负责 `supplierId` 全局唯一登记（private/commercial 统一命名空间）。
+- 提供商业供应商聚合查询接口（可缓存链上结果）。
+- 不再提供 SIWE/JWT/nonce/supplier-manager 等旧鉴权与后端配置管理。
 
-#### 开发步骤
-1. 创建供应商相关数据表与迁移脚本。
-2. 实现 `/suppliers` 与 `/suppliers/me*` 接口。
-3. 增加 RBAC 中间件（owner/manager）。
-4. 统一错误码（未授权、资源不存在、参数错误、冲突）。
+3. `MeshNetProtocol.github.io`（客户端）
+- 宣传页与业务页分离。
+- 商业供应商：钱包交互合约、支付、续费、更新 URL。
+- 私人供应商：导入文件/URL、本地 profile、手动刷新。
+- 公共市场只展示商业供应商。
 
-#### 测试步骤
-1. 单元测试：权限判断函数（owner/manager/anonymous）。
-2. 集成测试：同一 token 访问不同接口的权限表现。
-3. 回归测试：供应商配置更新后读取一致性。
+4. 后续新工程（账本与 VPN 授权服务）
+- 消费链上支付事件，驱动 VPN 服务授权与账本同步。
+- 本计划只做接口预留，不在本仓库实现完整账本系统。
 
-#### 验收标准
-- owner/manager/anonymous 的权限结果与预期矩阵一致。
-- 任意钱包无法操作不属于自己的供应商数据。
-- 配置写入与读取一致，版本字段或更新时间正确变化。
+## 3.2 关键设计原则
 
-#### 交付物
-- OpenAPI/接口文档更新。
-- 权限矩阵文档（接口 x 角色）。
+1. 链上状态优先：商业供应商有效性以合约为准。
+2. 后端最小化：避免重复中心化鉴权。
+3. 不兼容迁移：删除旧表、旧接口、旧鉴权逻辑，不保留兼容层。
 
 ---
 
-## 4. 前端接入与交互计划（对应方面 3：前端接入流程）
+## 4. 智能合约重构方案
 
-### 4.1 页面与模块
-- `WalletConnect`：连接 MetaMask、显示地址与链 ID。
-- `AuthLogin`：获取 nonce、触发签名、提交 verify、存储 token。
-- `SupplierDashboard`：展示 `GET /suppliers/me` 信息。
-- `SupplierConfigForm`：编辑并提交 `PUT /suppliers/me/config`。
+## 4.1 合约模块建议
 
-### 4.2 前端状态流
-1. 用户点击“连接钱包”。
-2. 检查网络链 ID（不符则提示切换）。
-3. 发起 nonce 请求并签名。
-4. 完成 verify 后保存 token（建议内存 + 短期持久化策略）。
-5. 使用 token 拉取供应商资料与配置。
-6. 处理 token 过期：自动跳转重新签名或 refresh 流程。
+建议拆分为两个合约（也可合并为一个）：
 
-### 4.3 里程碑 C（前端可用版本）
+1. `SupplierRegistry`
+- 管理商业供应商注册、续费、到期时间、profile URL。
+- 维护 `annualFeeUsdc`（默认 300e6，6 位 USDC 精度），`owner` 可更新。
 
-#### 开发步骤
-1. 集成 EIP-1193 provider（MetaMask）与账户/网络监听。
-2. 封装 `authClient` 与 `marketApiClient`（自动注入 token）。
-3. 完成供应商状态页与配置编辑页。
-4. 增加异常提示：拒绝签名、切链失败、token 失效。
+2. `PaymentHub`
+- 接收用户 x402 支付（USDC）。
+- 记录供应商可提取余额。
+- 提取时自动按 90% 给供应商、10% 给 owner（服务费）。
 
-#### 测试步骤
-1. 组件测试：钱包连接状态、错误提示渲染。
-2. E2E 测试：连接钱包 -> 登录 -> 修改配置 -> 刷新后验证。
-3. 兼容性测试：主流 Chromium 环境下 MetaMask 扩展流程。
+## 4.2 链上核心状态
 
-#### 验收标准
-- 用户可在 1 次会话内完成登录与配置更新闭环。
-- 页面可正确处理拒签、断网、401 返回并给出可操作提示。
-- E2E 用例稳定通过（至少连续 3 次）。
+1. `annualFeeUsdc`：年费，默认 `300 USDC`，`onlyOwner` 可改。
+2. `serviceFeeBps`：固定 `1000`（10%）。
+3. `supplierIdHash => Supplier`：商业供应商链上状态。
+4. `supplierBalanceUsdc`：每个商业供应商可提取余额。
+5. `isActive(supplierId)`：以 `paidUntil >= block.timestamp` 判定是否有效。
 
-#### 交付物
-- 前端页面与 API 调用封装。
-- E2E 脚本与执行说明。
+## 4.3 核心方法
 
----
+1. `registerCommercialSupplier(supplierId, profileUrl, years)`
+- 支付 `annualFeeUsdc * years`（USDC transferFrom）。
+- 首次注册或续费。
+- 校验 `supplierId` 格式与唯一性（链上商业域内唯一）。
 
-## 5. 安全与运维计划（对应方面 4：安全要点）
+2. `renewCommercialSupplier(supplierId, years)`
+- 续费并延长 `paidUntil`。
 
-### 5.1 安全控制清单
-- nonce 一次性 + TTL（例如 5 分钟）。
-- SIWE 严格字段校验（domain/uri/chainId/nonce/time window）。
-- access token 短效（例如 15 分钟）+ refresh 机制（可选）。
-- CORS 白名单仅允许 `MeshNetProtocol.github.io` 域名。
-- 接口限流（按 IP + 钱包地址维度）。
-- 审计日志：登录、验签失败、权限拒绝、配置变更。
+3. `updateProfileUrl(supplierId, profileUrl)`
+- 仅供应商 owner 可更新链上 URL。
 
-### 5.2 里程碑 D（安全加固）
+4. `payForService(supplierId, orderId, amountUsdc, payer)`
+- 用户支付入口（供 x402 集成调用）。
+- 写入支付事件。
 
-#### 开发步骤
-1. 增加统一安全中间件（限流、CORS、安全响应头）。
-2. 增加审计日志字段并接入日志系统。
-3. 对敏感操作（如变更 owner）引入二次签名（如启用 manager 管理时）。
-4. 编写安全基线检查脚本（配置项完整性）。
+5. `withdrawRevenue(supplierId, amountUsdc)`
+- 供应商提取收入。
+- 自动分账：10% 给合约 owner，90% 给供应商提现地址。
 
-#### 测试步骤
-1. 安全测试：重放、伪造 domain、跨域请求、暴力调用。
-2. 稳定性测试：高并发下 nonce 与 token 行为。
-3. 审计测试：关键行为日志是否完整且可追踪。
+6. `setAnnualFeeUsdc(newFee)` / `setOwner(newOwner)`
+- 合约治理与参数更新。
 
-#### 验收标准
-- 关键攻击路径均被拦截并记录日志。
-- 日志可追溯到钱包地址、请求 ID、接口与结果码。
-- 限流生效且不影响正常用户流量。
+## 4.4 事件（后续账本服务依赖）
 
-#### 交付物
-- 安全测试报告。
-- 运行手册（安全配置项、告警阈值、日志字段说明）。
+1. `CommercialSupplierRegistered`
+2. `CommercialSupplierRenewed`
+3. `CommercialSupplierProfileUrlUpdated`
+4. `ServicePaid`
+5. `RevenueWithdrawn`（含 gross / fee / net）
+6. `AnnualFeeUpdated`
 
 ---
 
-## 6. 分阶段排期建议（可执行顺序）
+## 5. market-api（V2）重构方案
 
-1. 里程碑 A：鉴权基础（3-5 天）
-2. 里程碑 B：供应商 API（4-6 天）
-3. 里程碑 C：前端接入（4-6 天）
-4. 里程碑 D：安全加固（2-4 天）
+## 5.1 旧代码删除范围（必须执行）
 
-> 建议先完成 A+B+C 形成可用闭环，再进入 D。
+删除 `/Users/wesley/MeshNetProtocol/openmesh-cli/market-api/src/index.ts` 中以下逻辑：
 
----
+1. `/api/v1/auth/nonce`
+2. `/api/v1/auth/verify`
+3. `/api/v1/auth/me`
+4. `/api/v1/suppliers*` 全部接口
+5. JWT、nonce、RBAC、manager、supplier config 存储相关实现
 
-## 7. 主流程测试方案（测试用例最小集）
+删除旧数据库表及迁移：
 
-以下用例仅用于验证主流程是否“可用可走通”，不追求全覆盖。
+1. `auth_nonces`
+2. `suppliers`
+3. `supplier_configs`
+4. `supplier_managers`
+5. `audit_logs`（若仅服务旧鉴权流程）
+6. 旧 `providers` 表（若完全改为商业链上索引）
 
-### 7.1 用例 1：MetaMask 签名登录成功
-1. 前置条件：浏览器已安装 MetaMask；`market-api` 可访问；配置正确链 ID。
-2. 操作步骤：连接钱包 -> 获取 nonce -> 签名 -> 调用 `/api/v1/auth/verify`。
-3. 预期结果：返回 `200`，包含 `access_token`；调用 `/api/v1/auth/me` 返回当前钱包地址。
+## 5.2 新后端最小数据模型
 
-### 7.2 用例 2：首次创建供应商成功
-1. 前置条件：使用未绑定供应商的钱包，已完成登录。
-2. 操作步骤：调用 `POST /api/v1/suppliers` 提交 name/description。
-3. 预期结果：返回 `201`；`GET /api/v1/suppliers/me` 返回 `role=owner` 且 supplier 信息正确。
+仅保留 `supplier_ids`（全局唯一命名空间）：
 
-### 7.3 用例 3：Owner 更新资料与配置成功
-1. 前置条件：owner 钱包已登录且已有 supplier。
-2. 操作步骤：调用 `PATCH /api/v1/suppliers/me` 更新资料；调用 `PUT /api/v1/suppliers/me/config` 更新配置。
-3. 预期结果：两个接口均返回 `200`；随后 `GET /api/v1/suppliers/me/config` 返回最新配置。
+1. `supplier_id`（PK，唯一）
+2. `supplier_type`（`private` / `commercial`）
+3. `owner_wallet`
+4. `chain_id`（商业供应商记录 Base chainId）
+5. `status`（`reserved` / `active` / `expired`）
+6. `created_at`
+7. `updated_at`
+8. `last_verified_tx`（商业供应商可选）
 
-### 7.4 用例 4：Owner 添加 Manager，Manager 可改配置
-1. 前置条件：owner 与 manager 两个钱包均可登录。
-2. 操作步骤：owner 调用 `POST /api/v1/suppliers/me/managers` 添加 manager；manager 登录后调用 `PUT /api/v1/suppliers/me/config`。
-3. 预期结果：添加 manager 返回 `200`；manager 改配置成功返回 `200`。
+说明：
+- 该表只做 ID 全局唯一与基础映射，不存商业配置 JSON。
+- 私人配置文件内容不入库。
 
-### 7.5 用例 5：Manager 不能改 Owner 资料与管理名单
-1. 前置条件：manager 已绑定到 supplier。
-2. 操作步骤：manager 调用 `PATCH /api/v1/suppliers/me`，以及 `POST /api/v1/suppliers/me/managers`。
-3. 预期结果：均返回 `403`（`SUPPLIER_FORBIDDEN`）。
+## 5.3 新 API（建议 `/api/v2`）
 
-### 7.6 用例 6：安全主流程（重放/CORS/限流）
-1. 前置条件：开启安全配置（CORS 白名单、限流、审计日志）。
-2. 操作步骤：
-   - 重放同一个 nonce 的 verify 请求；
-   - 用非白名单 Origin 调用 API；
-   - 连续触发 nonce 超过阈值。
-3. 预期结果：
-   - 重放返回 `401`（`NONCE_ALREADY_USED`）；
-   - 非白名单返回 `403`（`CORS_ORIGIN_FORBIDDEN`）；
-   - 超阈值返回 `429`（`RATE_LIMITED`）。
+1. `POST /api/v2/supplier-ids/reserve`
+- 钱包签名声明（非 JWT）申请占用 `supplierId`。
+- 校验格式与唯一性。
 
----
+2. `POST /api/v2/supplier-ids/confirm-commercial`
+- 提交链上交易哈希，后端校验注册/续费事件后激活。
 
-## 8. 风险与应对
+3. `POST /api/v2/supplier-ids/register-private`
+- 私人供应商登记（仅记录 ID 与 owner，不公开）。
 
-- 风险：前端钱包兼容差异导致登录失败。
-- 应对：优先 MetaMask 主流程，记录 provider 错误码并做降级提示。
+4. `GET /api/v2/commercial-suppliers`
+- 返回商业供应商列表（来自链上或链上缓存）。
+- 仅商业供应商对外可见。
 
-- 风险：链 ID 不一致导致签名不可用。
-- 应对：登录前强校验链 ID，提供“一键切链”引导。
+5. `GET /api/v2/commercial-suppliers/:supplierId`
+- 返回链上状态（owner、paidUntil、profileUrl、active）。
 
-- 风险：权限模型后期扩展复杂。
-- 应对：先落地 owner/manager 两级 RBAC，保留角色扩展字段。
+6. `GET /api/v2/networks`
+- 返回当前支持网络（Base Mainnet / Base Sepolia）与合约地址。
 
 ---
 
-## 9. 执行检查清单（落地用）
+## 6. 客户端重构方案（MeshNetProtocol.github.io）
 
-1. 确认 `market-api` 数据库迁移与环境变量模板。
-2. 完成 SIWE 鉴权接口与 token 中间件。
-3. 完成供应商 API 与 RBAC。
-4. 完成前端 MetaMask 登录与供应商配置页面。
-5. 补齐单元/集成/E2E 测试并接入 CI。
-6. 完成安全加固与审计日志。
+## 6.1 页面与模块
+
+1. 宣传页：仅产品介绍 + “进入供应商控制台”。
+2. 供应商控制台页：拆成两个区块。
+- 商业供应商（链上）
+- 私人供应商（本地）
+3. 钱包连接：保留单按钮流程，但改为“连接钱包 + 链上操作准备”，不再做 JWT 登录。
+
+## 6.2 商业供应商流程（前端）
+
+1. 连接钱包并选择 Base 网络（主网/测试网）。
+2. 输入 `supplierId` 与 `profileUrl`。
+3. 调用后端 reserve（签名声明）。
+4. 调用合约注册并支付年费（300 USDC/年，或当时链上参数）。
+5. 回传 txHash 给后端确认，状态置为 active。
+6. 商业市场页面只读取商业供应商列表并展示。
+
+## 6.3 私人供应商流程（前端）
+
+1. 输入 `supplierId` 并登记（后端唯一性校验）。
+2. 通过文件导入或 URL 导入 profile。
+3. profile 仅存本地，不上链，不进公共市场。
+4. 仅支持手动刷新（重新导入或手动拉取 URL），不做自动更新。
+
+## 6.4 明确不修改内容
+
+1. 现有客户端对 private profile 的 JSON 解析逻辑不改。
+2. 不新增 private profile schema 版本体系。
+
+---
+
+## 7. 网络、环境与配置
+
+## 7.1 仅支持网络
+
+1. Base Mainnet（chainId: 8453）
+2. Base Sepolia（chainId: 84532）
+
+## 7.2 关键配置项（后端与前端）
+
+1. `BASE_MAINNET_RPC_URL`
+2. `BASE_SEPOLIA_RPC_URL`
+3. `SUPPLIER_REGISTRY_ADDRESS_MAINNET`
+4. `SUPPLIER_REGISTRY_ADDRESS_SEPOLIA`
+5. `PAYMENT_HUB_ADDRESS_MAINNET`
+6. `PAYMENT_HUB_ADDRESS_SEPOLIA`
+7. `USDC_ADDRESS_MAINNET`
+8. `USDC_ADDRESS_SEPOLIA`
+9. `DEFAULT_CHAIN_ENV`（mainnet/sepolia）
+
+---
+
+## 8. 实施里程碑（逐个验收）
+
+## 里程碑 A：删除旧鉴权与旧供应商后端
+
+1. 删除旧 API 路由和相关实现。
+2. 删除旧 D1 表迁移文件并建立新 `supplier_ids` 迁移。
+3. 清理旧环境变量（JWT、nonce、RBAC）。
+
+验收：
+1. `/api/v1/auth/*` 与 `/api/v1/suppliers/*` 不再可用（404/410）。
+2. 新库结构只保留 V2 所需最小表。
+
+## 里程碑 B：合约开发与 Base Sepolia 部署
+
+1. 完成 `SupplierRegistry` + `PaymentHub`。
+2. 实现 300 USDC/年年费与 owner 可修改。
+3. 实现 10% 服务费分账到 owner。
+
+验收：
+1. 商业注册支付成功并可查询 `paidUntil`。
+2. 提取时 fee/net 金额正确。
+3. owner 修改年费后新交易生效。
+
+## 里程碑 C：market-api V2（最小后端）
+
+1. 完成 supplierId reserve/confirm/register-private。
+2. 完成商业列表聚合查询接口。
+3. 接入链上事件验证。
+
+验收：
+1. 同名 `supplierId`（含 private/commercial）被拒绝。
+2. 未完成链上注册的商业供应商不会出现在公共列表。
+
+## 里程碑 D：前端业务页重构
+
+1. 商业与私人入口拆分清晰。
+2. 移除 JWT 登录流程，改为钱包链上交互流程。
+3. 公共市场仅显示商业供应商。
+
+验收：
+1. 私人供应商不可见于公共市场。
+2. 商业供应商可完整完成“登记->支付->上架”。
+
+## 里程碑 E：联调与发布（先测试网后主网）
+
+1. Sepolia 全流程压测与主流程回归。
+2. 主网地址切换与灰度发布。
+3. 文档、运行手册、监控告警同步更新。
+
+验收：
+1. Sepolia 与 Mainnet 均可完成主流程。
+2. 关键异常（支付失败、ID 冲突、链切换）有明确提示。
+
+---
+
+## 9. 主流程测试用例（最小集）
+
+1. 商业供应商首次入驻
+- 步骤：reserve ID -> 支付年费注册 -> confirm。
+- 预期：状态 active，`paidUntil` 正确。
+
+2. 商业供应商续费
+- 步骤：调用续费交易。
+- 预期：`paidUntil` 延长 1 年（或 years 对应时长）。
+
+3. 商业供应商修改 profile URL
+- 步骤：owner 调用更新 URL。
+- 预期：链上 URL 更新，客户端下次拉取生效。
+
+4. 用户支付与供应商提取
+- 步骤：用户支付 USDC -> 供应商提取。
+- 预期：提取时 10% 到 owner，90% 到供应商。
+
+5. 私人供应商导入
+- 步骤：登记 private ID -> 导入文件或 URL。
+- 预期：本地 profile 可用，不出现在公共市场。
+
+6. 私人供应商手动更新
+- 步骤：再次导入文件或手动拉取 URL。
+- 预期：本地 profile 更新成功，不触发自动更新。
+
+7. 全局 ID 冲突
+- 步骤：已存在 `com.meshi.app.v1` 后再次申请。
+- 预期：后端返回冲突，不允许重名。
+
+8. 网络切换
+- 步骤：在 Base Sepolia 与 Base Mainnet 间切换。
+- 预期：合约地址、USDC 地址、读取与交易逻辑同步切换。
+
+---
+
+## 10. 风险与控制
+
+1. 风险：链上与后端状态短时不一致（事件确认延迟）。
+- 控制：confirm-commercial 使用交易回执 + 确认块数策略。
+
+2. 风险：USDC 精度与费用计算错误。
+- 控制：全部按 6 位精度整数计算，增加单元测试和边界测试。
+
+3. 风险：`supplierId` 风格不一致。
+- 控制：统一小写校验规则，后端与合约同一正则约束。
+
+---
+
+## 11. 不在本次实现范围
+
+1. 私人 profile JSON 结构改造。
+2. 完整的“收费验证服务与 VPN 账本服务”实现（仅预留接口与事件契约）。
+3. 旧 API 兼容层与数据平滑迁移（本次直接重构替换）。
+
