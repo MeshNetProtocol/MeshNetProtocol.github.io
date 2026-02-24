@@ -2,12 +2,30 @@
 pragma solidity ^0.8.24;
 
 import "./SupplierVault.sol";
+import "./utils/ReentrancyGuard.sol";
 
-interface IERC20TransferFrom {
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+interface IERC20Minimal {
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address to, uint256 amount) external returns (bool);
 }
 
-contract ProtocolRegistry {
+interface IUSDCReceiveWithAuthorization {
+    function receiveWithAuthorization(
+        address from,
+        address to,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
+    function authorizationState(address authorizer, bytes32 nonce) external view returns (bool);
+}
+
+contract ProtocolRegistry is ReentrancyGuard {
     error NotOwner();
     error NotPendingOwner();
     error ZeroAddress();
@@ -18,6 +36,10 @@ contract ProtocolRegistry {
     error InvalidYears();
     error InvalidFeeBps();
     error InvalidAmount();
+    error InvalidUsdcContract();
+    error InvalidUsdcBalanceOf();
+    error InvalidUsdcAuthorizationState();
+    error UsdcReceiveWithAuthorizationFailed();
     error UsdcTransferFailed();
 
     struct SupplierRecord {
@@ -27,6 +49,15 @@ contract ProtocolRegistry {
         string metadataURI;
         uint64 expiry;
         bool suspended;
+    }
+
+    struct TransferAuthorization {
+        uint256 validAfter;
+        uint256 validBefore;
+        bytes32 nonce;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
     }
 
     event OwnershipTransferStarted(address indexed previousOwner, address indexed pendingOwner);
@@ -48,6 +79,7 @@ contract ProtocolRegistry {
     event AnnualFeeUpdated(uint256 previousFee, uint256 newFee);
     event WithdrawFeeBpsUpdated(uint16 previousFeeBps, uint16 newFeeBps);
     event TreasuryUpdated(address indexed previousTreasury, address indexed newTreasury);
+    event AnnualFeeCollected(address indexed payer, uint256 amount);
 
     address public owner;
     address public pendingOwner;
@@ -83,12 +115,19 @@ contract ProtocolRegistry {
         if (usdc_ == address(0) || treasury_ == address(0)) {
             revert ZeroAddress();
         }
+        if (usdc_.code.length == 0) {
+            revert InvalidUsdcContract();
+        }
+        if (annualFeeUsdc_ == 0) {
+            revert InvalidAmount();
+        }
         if (maxWithdrawFeeBps_ > 10_000 || withdrawFeeBps_ > maxWithdrawFeeBps_) {
             revert InvalidFeeBps();
         }
 
-        owner = msg.sender;
+        _assertUsdcCompatibility(usdc_);
 
+        owner = msg.sender;
         usdc = usdc_;
         treasury = treasury_;
         annualFeeUsdc = annualFeeUsdc_;
@@ -108,68 +147,33 @@ contract ProtocolRegistry {
         if (msg.sender != pendingOwner) {
             revert NotPendingOwner();
         }
+
         address previousOwner = owner;
         owner = msg.sender;
         pendingOwner = address(0);
-
         emit OwnershipTransferred(previousOwner, msg.sender);
     }
 
-    function registerCommercial(string calldata supplierId, string calldata metadataURI)
-        external
-        returns (bytes32 supplierIdHash, address vault)
-    {
-        _validateSupplierId(supplierId);
-
-        supplierIdHash = keccak256(bytes(supplierId));
-        if (suppliers[supplierIdHash].owner != address(0)) {
-            revert SupplierAlreadyExists();
-        }
-
-        _collectAnnualFee(msg.sender, 1);
-
-        SupplierVault supplierVault = new SupplierVault(address(this), supplierIdHash);
-        vault = address(supplierVault);
-
-        uint64 expiry = uint64(block.timestamp + ONE_YEAR);
-        suppliers[supplierIdHash] = SupplierRecord({
-            supplierId: supplierId,
-            owner: msg.sender,
-            vault: vault,
-            metadataURI: metadataURI,
-            expiry: expiry,
-            suspended: false
-        });
-        supplierHashByVault[vault] = supplierIdHash;
-
-        emit SupplierRegistered(supplierIdHash, supplierId, msg.sender, vault, metadataURI, expiry);
+    function registerCommercialWithAuthorization(
+        string calldata supplierId,
+        string calldata metadataURI,
+        TransferAuthorization calldata paymentAuthorization
+    ) external nonReentrant returns (bytes32 supplierIdHash, address vault) {
+        _collectAnnualFeeWithAuthorization(msg.sender, 1, paymentAuthorization);
+        (supplierIdHash, vault) = _registerCommercialInternal(msg.sender, supplierId, metadataURI);
     }
 
-    function renewCommercial(bytes32 supplierIdHash, uint16 yearsToAdd) external {
-        if (yearsToAdd == 0) {
-            revert InvalidYears();
-        }
-
-        SupplierRecord storage rec = suppliers[supplierIdHash];
-        if (rec.owner == address(0)) {
-            revert SupplierNotFound();
-        }
-        if (rec.suspended) {
-            revert SupplierSuspended();
-        }
-        if (msg.sender != rec.owner) {
-            revert NotOwner();
-        }
-
-        _collectAnnualFee(msg.sender, yearsToAdd);
-
-        uint256 base = rec.expiry > block.timestamp ? rec.expiry : block.timestamp;
-        rec.expiry = uint64(base + (uint256(yearsToAdd) * ONE_YEAR));
-
-        emit SupplierRenewed(supplierIdHash, rec.expiry, yearsToAdd);
+    function renewCommercialWithAuthorization(
+        bytes32 supplierIdHash,
+        uint16 yearsToAdd,
+        TransferAuthorization calldata paymentAuthorization
+    ) external nonReentrant {
+        _assertRenewableByOwner(supplierIdHash, msg.sender, yearsToAdd);
+        _collectAnnualFeeWithAuthorization(msg.sender, yearsToAdd, paymentAuthorization);
+        _extendExpiry(supplierIdHash, yearsToAdd);
     }
 
-    function updateMetadataURI(bytes32 supplierIdHash, string calldata metadataURI) external {
+    function updateMetadataURI(bytes32 supplierIdHash, string calldata metadataURI) external nonReentrant {
         SupplierRecord storage rec = suppliers[supplierIdHash];
         if (rec.owner == address(0)) {
             revert SupplierNotFound();
@@ -182,7 +186,7 @@ contract ProtocolRegistry {
         emit SupplierMetadataUpdated(supplierIdHash, metadataURI);
     }
 
-    function transferSupplierOwner(bytes32 supplierIdHash, address newSupplierOwner) external {
+    function transferSupplierOwner(bytes32 supplierIdHash, address newSupplierOwner) external nonReentrant {
         if (newSupplierOwner == address(0)) {
             revert ZeroAddress();
         }
@@ -197,11 +201,10 @@ contract ProtocolRegistry {
 
         address previousOwner = rec.owner;
         rec.owner = newSupplierOwner;
-
         emit SupplierOwnerTransferred(supplierIdHash, previousOwner, newSupplierOwner);
     }
 
-    function suspendSupplier(bytes32 supplierIdHash) external onlyOwner {
+    function suspendSupplier(bytes32 supplierIdHash) external onlyOwner nonReentrant {
         SupplierRecord storage rec = suppliers[supplierIdHash];
         if (rec.owner == address(0)) {
             revert SupplierNotFound();
@@ -211,7 +214,7 @@ contract ProtocolRegistry {
         emit SupplierStatusChanged(supplierIdHash, true);
     }
 
-    function reactivateSupplier(bytes32 supplierIdHash) external onlyOwner {
+    function reactivateSupplier(bytes32 supplierIdHash) external onlyOwner nonReentrant {
         SupplierRecord storage rec = suppliers[supplierIdHash];
         if (rec.owner == address(0)) {
             revert SupplierNotFound();
@@ -221,7 +224,7 @@ contract ProtocolRegistry {
         emit SupplierStatusChanged(supplierIdHash, false);
     }
 
-    function setAnnualFeeUsdc(uint256 newFee) external onlyOwner {
+    function setAnnualFeeUsdc(uint256 newFee) external onlyOwner nonReentrant {
         if (newFee == 0) {
             revert InvalidAmount();
         }
@@ -231,7 +234,7 @@ contract ProtocolRegistry {
         emit AnnualFeeUpdated(oldFee, newFee);
     }
 
-    function setWithdrawFeeBps(uint16 newFeeBps) external onlyOwner {
+    function setWithdrawFeeBps(uint16 newFeeBps) external onlyOwner nonReentrant {
         if (newFeeBps > maxWithdrawFeeBps) {
             revert InvalidFeeBps();
         }
@@ -241,7 +244,7 @@ contract ProtocolRegistry {
         emit WithdrawFeeBpsUpdated(oldFeeBps, newFeeBps);
     }
 
-    function setTreasury(address newTreasury) external onlyOwner {
+    function setTreasury(address newTreasury) external onlyOwner nonReentrant {
         if (newTreasury == address(0)) {
             revert ZeroAddress();
         }
@@ -272,10 +275,106 @@ contract ProtocolRegistry {
         return rec.owner != address(0) && !rec.suspended && rec.expiry >= block.timestamp;
     }
 
-    function _collectAnnualFee(address from, uint16 yearsToAdd) internal {
+    function _collectAnnualFeeWithAuthorization(
+        address from,
+        uint16 yearsToAdd,
+        TransferAuthorization calldata authorization
+    ) internal {
         uint256 amount = annualFeeUsdc * uint256(yearsToAdd);
-        bool ok = IERC20TransferFrom(usdc).transferFrom(from, treasury, amount);
-        if (!ok) {
+
+        try IUSDCReceiveWithAuthorization(usdc).receiveWithAuthorization(
+            from,
+            address(this),
+            amount,
+            authorization.validAfter,
+            authorization.validBefore,
+            authorization.nonce,
+            authorization.v,
+            authorization.r,
+            authorization.s
+        ) {} catch {
+            revert UsdcReceiveWithAuthorizationFailed();
+        }
+
+        _safeTransfer(usdc, treasury, amount);
+        emit AnnualFeeCollected(from, amount);
+    }
+
+    function _registerCommercialInternal(address supplierOwner, string calldata supplierId, string calldata metadataURI)
+        internal
+        returns (bytes32 supplierIdHash, address vault)
+    {
+        _validateSupplierId(supplierId);
+
+        supplierIdHash = keccak256(bytes(supplierId));
+        if (suppliers[supplierIdHash].owner != address(0)) {
+            revert SupplierAlreadyExists();
+        }
+
+        SupplierVault supplierVault = new SupplierVault(address(this), supplierIdHash);
+        vault = address(supplierVault);
+
+        uint64 expiry = uint64(block.timestamp + ONE_YEAR);
+        suppliers[supplierIdHash] = SupplierRecord({
+            supplierId: supplierId,
+            owner: supplierOwner,
+            vault: vault,
+            metadataURI: metadataURI,
+            expiry: expiry,
+            suspended: false
+        });
+        supplierHashByVault[vault] = supplierIdHash;
+
+        emit SupplierRegistered(supplierIdHash, supplierId, supplierOwner, vault, metadataURI, expiry);
+    }
+
+    function _assertRenewableByOwner(bytes32 supplierIdHash, address caller, uint16 yearsToAdd) internal view {
+        if (yearsToAdd == 0) {
+            revert InvalidYears();
+        }
+
+        SupplierRecord storage rec = suppliers[supplierIdHash];
+        if (rec.owner == address(0)) {
+            revert SupplierNotFound();
+        }
+        if (rec.suspended) {
+            revert SupplierSuspended();
+        }
+        if (caller != rec.owner) {
+            revert NotOwner();
+        }
+    }
+
+    function _extendExpiry(bytes32 supplierIdHash, uint16 yearsToAdd) internal {
+        SupplierRecord storage rec = suppliers[supplierIdHash];
+        uint256 base = rec.expiry > block.timestamp ? rec.expiry : block.timestamp;
+        rec.expiry = uint64(base + (uint256(yearsToAdd) * ONE_YEAR));
+
+        emit SupplierRenewed(supplierIdHash, rec.expiry, yearsToAdd);
+    }
+
+    function _assertUsdcCompatibility(address token) internal view {
+        (bool okBalance, bytes memory balanceRet) =
+            token.staticcall(abi.encodeWithSelector(IERC20Minimal.balanceOf.selector, address(this)));
+        if (!okBalance || balanceRet.length < 32) {
+            revert InvalidUsdcBalanceOf();
+        }
+
+        (bool okAuth, bytes memory authRet) = token.staticcall(
+            abi.encodeWithSelector(IUSDCReceiveWithAuthorization.authorizationState.selector, address(this), bytes32(0))
+        );
+        if (!okAuth || authRet.length < 32) {
+            revert InvalidUsdcAuthorizationState();
+        }
+    }
+
+    function _safeTransfer(address token, address to, uint256 amount) internal {
+        (bool success, bytes memory returndata) =
+            token.call(abi.encodeWithSelector(IERC20Minimal.transfer.selector, to, amount));
+        if (!success) {
+            revert UsdcTransferFailed();
+        }
+        if (returndata.length > 0 && !abi.decode(returndata, (bool))) {
             revert UsdcTransferFailed();
         }
     }

@@ -48,8 +48,8 @@
 
 ## 3.3 核心函数
 
-1. `registerCommercial(string supplierId, string metadataURI)`
-2. `renewCommercial(bytes32 supplierIdHash, uint16 yearsToAdd)`
+1. `registerCommercialWithAuthorization(string supplierId, string metadataURI, TransferAuthorization paymentAuthorization)`
+2. `renewCommercialWithAuthorization(bytes32 supplierIdHash, uint16 yearsToAdd, TransferAuthorization paymentAuthorization)`
 3. `updateMetadataURI(bytes32 supplierIdHash, string metadataURI)`
 4. `transferSupplierOwner(bytes32 supplierIdHash, address newOwner)`
 5. `suspendSupplier(bytes32 supplierIdHash)`
@@ -61,14 +61,21 @@
 11. `getSupplierOwner(bytes32 supplierIdHash)`（给 Vault 调用）
 12. `isSupplierActive(bytes32 supplierIdHash)`
 
-## 3.4 registerCommercial 执行逻辑
+## 3.4 registerCommercialWithAuthorization 执行逻辑
 
 1. 校验 `supplierId` 格式（小写、数字、点分隔、不能首尾点、不能连续点）。
 2. `supplierIdHash = keccak256(bytes(supplierId))`。
 3. 检查 `supplierId` 未注册。
-4. 收取 1 年年费：`annualFeeUsdc`（`transferFrom(msg.sender, treasury, annualFeeUsdc)`）。
+4. 收取 1 年年费：`annualFeeUsdc`（仅 `receiveWithAuthorization` 路径）。
 5. 创建 `SupplierVault` 实例，参数为：`registry`, `supplierIdHash`（供应商 owner 动态从 Registry 查询）。
 6. 保存供应商记录并发出 `SupplierRegistered` 事件。
+
+唯一支付路径：
+
+1. 供应商在链下签名 USDC `receiveWithAuthorization` 数据。
+2. 调用 `registerCommercialWithAuthorization(...)` 一次性完成“扣年费 + 注册 + 创建 Vault”。
+3. 该路径不需要额外的业务动作签名层，复杂度更低。
+4. `renewCommercialWithAuthorization(...)` 同理可用于续费。
 
 ## 3.5 事件（供 Cloudflare 缓存）
 
@@ -108,6 +115,8 @@
 3. 计算 `fee = amount * bps / 10000`，`net = amount - fee`。
 4. `fee` 转给 `treasury`，`net` 转给 `to`。
 5. 发出 `Withdrawn` 事件。
+6. `withdrawAll` 在 Vault 余额为 0 时返回 `(0,0)`，不抛错。
+7. Vault 会防御性校验 `treasury != 0` 且 `withdrawFeeBps <= 10000`。
 
 ## 5. 终端与供应商结算节点的小账本（链下双签）
 
@@ -155,11 +164,16 @@
 3. Vault 提现权限以 Registry 中的最新 supplier owner 为准。
 4. 所有 USDC 交互必须检查返回值（防静默失败）。
 5. 供应商是否展示给终端，由 `isSupplierActive` 决定（`!suspended && expiry >= now`）。
+6. `register/renew with authorization` 使用 USDC 原生 `receiveWithAuthorization`，避免授权被外部直接消费。
+7. `ProtocolRegistry` 与 `SupplierVault` 均启用 OpenZeppelin 风格 `ReentrancyGuard`（`nonReentrant`）。
+8. 部署阶段对 USDC 合约做能力探测：`balanceOf` 与 `authorizationState`（Registry）必须可用。
+9. 关键链上追踪事件：`AnnualFeeCollected`、`SupplierRegistered`、`Withdrawn`。
+10. 错误码已细分（如 `UsdcReceiveWithAuthorizationFailed`、`InvalidUsdcBalanceOf`），便于链上定位问题。
 
 ## 9. 实施顺序
 
 1. 部署 `ProtocolRegistry`。
-2. 商业供应商调用 `registerCommercial` 自动创建自己的 `SupplierVault`。
+2. 商业供应商调用 `registerCommercialWithAuthorization` 自动创建自己的 `SupplierVault`。
 3. Cloudflare 对接 Registry 事件索引。
 4. 终端接入支付与双签账本流程。
 5. 供应商在 Vault 执行提现，链上自动扣平台费。
@@ -175,14 +189,14 @@ solc --base-path . --include-path . --abi --bin contracts/ProtocolRegistry.sol c
 ```
 4. 部署 `ProtocolRegistry`，构造参数按顺序填入：`usdc_`、`treasury_`、`annualFeeUsdc_=300000000`、`withdrawFeeBps_=1000`、`maxWithdrawFeeBps_=2000`。
 5. 部署后读链确认：`usdc()`、`treasury()`、`annualFeeUsdc()`、`withdrawFeeBps()`、`maxWithdrawFeeBps()` 都等于预期。
-6. 商业供应商注册前先执行 USDC `approve(ProtocolRegistry, 300000000)`。
-7. 调用 `registerCommercial("com.meshi.app.v1", "<metadataURI>")`，记录 `SupplierRegistered` 事件中的 `supplierIdHash` 和 `vault`。
+6. 商业供应商注册建议使用“授权支付”路径：链下签署 USDC `receiveWithAuthorization` 参数，然后调用 `registerCommercialWithAuthorization(...)`。
+7. 注册成功后记录 `SupplierRegistered` 事件中的 `supplierIdHash` 和 `vault`。
 8. 调用 `getSupplierById("com.meshi.app.v1")`，核对 `owner`、`vault`、`expiry`、`suspended=false`。
 9. 用终端用户测试账户向 `vault` 直接转 `10000`（0.01 USDC），再检查 `USDC.balanceOf(vault)` 是否增加。
 10. 供应商 owner 调用 `previewWithdraw(10000)`，确认 `fee=1000`、`net=9000`。
 11. 供应商 owner 调用 `withdraw(10000, <supplierPayoutAddress>)`，确认 `treasury` 收到 `1000`、供应商收款地址收到 `9000`。
 12. 平台 owner 调用 `setWithdrawFeeBps(1200)`，重复充值和提现，确认 Vault 自动按 12% 新费率扣费。
-13. 供应商调用 `renewCommercial(supplierIdHash, 1)`，确认 `expiry` 增加约 365 天。
+13. 供应商续费走 `renewCommercialWithAuthorization(...)`（唯一路径）。
 14. 平台 owner 调用 `suspendSupplier(supplierIdHash)` 后，`isSupplierActive` 返回 `false`；调用 `reactivateSupplier` 后恢复为 `true`（未过期前提下）。
 
 ## 11. 主流程验收清单（建议逐条打勾）
@@ -195,13 +209,14 @@ solc --base-path . --include-path . --abi --bin contracts/ProtocolRegistry.sol c
 6. supplier owner 提现时，平台费与净额分账正确。
 7. 修改 `withdrawFeeBps` 后，已存在 Vault 自动应用新费率。
 8. `withdrawFeeBps` 不可超过 `maxWithdrawFeeBps`。
-9. `renewCommercial`、`suspendSupplier`、`reactivateSupplier` 行为符合预期。
+9. `renewCommercialWithAuthorization`、`suspendSupplier`、`reactivateSupplier` 行为符合预期。
 10. Cloudflare 能正确索引 `SupplierRegistered`、`SupplierMetadataUpdated`、`SupplierStatusChanged`。
 11. 终端检索可返回 `supplierId -> vault -> metadataURI -> activeStatus`。
 12. 个人供应商 API 不受商业合约收费链路影响。
+13. `registerCommercialWithAuthorization` 与 `renewCommercialWithAuthorization` 是唯一收费入口，并可成功扣费。
 
 ## 12. 常见问题排查（部署阶段）
 
-1. `registerCommercial` 失败时，先检查 USDC `approve` 是否足额，再检查 `supplierId` 格式和唯一性。
+1. `registerCommercialWithAuthorization` / `renewCommercialWithAuthorization` 失败时，检查 `receiveWithAuthorization` 的 `validBefore`、`nonce`、签名参数以及 USDC 合约地址是否正确。
 2. Vault 提现失败时，检查调用地址是否为 Registry 记录的当前 supplier owner、Vault USDC 余额是否充足、`treasury` 是否被误配置。
 3. 费率不符合预期时，先读 `ProtocolRegistry.withdrawFeeBps()`，再用 Vault `previewWithdraw` 验证实际执行费率。
