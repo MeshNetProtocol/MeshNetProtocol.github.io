@@ -221,16 +221,20 @@
 
     function setStatusText(element, message, level) {
         if (!element) return;
+        const normalizedLevel = level || "muted";
         element.textContent = message;
         element.classList.remove("muted", "success", "warning", "error", "pending");
-        element.classList.add(level || "muted");
+        element.classList.add(normalizedLevel);
+        element.setAttribute("data-level", normalizedLevel);
     }
 
     function setBadge(element, text, levelClass) {
         if (!element) return;
+        const normalizedLevelClass = levelClass || "status-muted";
         element.textContent = text;
         element.classList.remove("status-muted", "status-success", "status-warning", "status-error");
-        element.classList.add(levelClass || "status-muted");
+        element.classList.add(normalizedLevelClass);
+        element.setAttribute("data-level", normalizedLevelClass.replace("status-", ""));
     }
 
     function setNotice(level, message) {

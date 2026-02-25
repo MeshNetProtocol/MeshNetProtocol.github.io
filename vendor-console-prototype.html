@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MeshNetProtocol Vendor Console Prototype" />
+  <title>MeshNetProtocol Vendor Console Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="vendor-console-prototype.css" />
+</head>
+
+<body>
+  <div class="bg-layer" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand-wrap">
+      <img src="mesh_logo.png" alt="MeshNetProtocol" class="logo" />
+      <div>
+        <p class="brand-title">MeshNetProtocol</p>
+        <p class="brand-subtitle">Vendor Console / Prototype</p>
+      </div>
+    </div>
+
+    <div class="topbar-controls">
+      <div class="field-group top-network-select">
+        <label for="select-target-network">Target Network</label>
+        <select id="select-target-network">
+          <option value="base-mainnet">Base Mainnet</option>
+          <option value="base-sepolia">Base Sepolia</option>
+        </select>
+      </div>
+      <span id="top-ready-indicator" class="top-indicator muted">Base Not Ready</span>
+      <a class="ghost-link" href="index.html">Back</a>
+    </div>
+  </header>
+
+  <main class="console-shell">
+    <section class="cockpit card">
+      <div class="cockpit-primary">
+        <p class="section-kicker">Global Operations Dashboard</p>
+        <h1>供应商控制台</h1>
+        <p class="section-desc">先处理连接与网络，再执行商业动作。首屏只显示运营决策必需数据，复杂动作进入对应工作区。</p>
+
+        <div class="action-group command-actions">
+          <button id="btn-connect-signin" class="btn primary">Connect & Sign-In</button>
+          <button id="btn-disconnect" class="btn secondary">Disconnect</button>
+          <button id="btn-go-commercial-view" class="btn ghost">Open Commercial Workspace</button>
+        </div>
+
+        <div class="status-rail compact">
+          <p id="text-auth-status" class="status-strip muted">Wallet not connected.</p>
+          <p id="console-notice" class="status-strip muted">Prototype ready. Actions are simulated.</p>
+        </div>
+
+        <div class="readiness-lane">
+          <span id="step-wallet" class="readiness-step">Wallet Connected</span>
+          <span id="step-base" class="readiness-step">Base Ready</span>
+          <span id="step-auth" class="readiness-step">Authenticated</span>
+          <span id="step-commercial" class="readiness-step">Commercial Data</span>
+        </div>
+
+        <div class="balance-lane">
+          <article class="balance-card">
+            <p class="tile-label">Wallet Liquidity</p>
+            <div class="balance-pair">
+              <div>
+                <span>ETH</span>
+                <b id="text-balance-eth" class="mono">0.0000</b>
+              </div>
+              <div>
+                <span>USDC</span>
+                <b id="text-balance-usdc" class="mono">0.00</b>
+              </div>
+            </div>
+          </article>
+
+          <article class="balance-card">
+            <p class="tile-label">Selected Supplier Balance</p>
+            <p id="text-selected-balance-usdc" class="tile-value mono">-</p>
+            <p id="tile-supplier-sub" class="tile-sub">Select supplier in Commercial workspace</p>
+          </article>
+
+          <article class="balance-card emphasis">
+            <p class="tile-label">Operational Focus</p>
+            <p class="tile-sub">Base readiness, wallet liquidity, selected supplier context, and chain-critical actions first.</p>
+          </article>
+        </div>
+      </div>
+
+      <aside class="cockpit-side">
+        <article class="status-chip card-subtle">
+          <p class="chip-label">Wallet</p>
+          <p id="badge-wallet" class="chip-value muted mono">Disconnected</p>
+          <p id="tile-wallet-sub" class="chip-sub">Sign-in required</p>
+        </article>
+
+        <article class="status-chip card-subtle">
+          <p class="chip-label">Network</p>
+          <p id="badge-chain" class="chip-value muted">Not Ready</p>
+          <p id="tile-network-sub" class="chip-sub">Target: Base Mainnet</p>
+        </article>
+
+        <article class="status-chip card-subtle">
+          <p class="chip-label">State Machine</p>
+          <p id="badge-machine" class="chip-value muted mono">INIT</p>
+          <p class="chip-sub">Lifecycle status</p>
+        </article>
+      </aside>
+    </section>
+
+    <section class="workspace-tabs card">
+      <button class="nav-item active" data-view="overview">Overview</button>
+      <button class="nav-item" data-view="commercial">Commercial</button>
+      <button class="nav-item" data-view="private">Private</button>
+    </section>
+
+    <section class="workspace-main">
+      <div class="view active" data-panel="overview">
+        <div class="overview-grid">
+          <article class="card overview-metrics">
+            <div class="card-title-row">
+              <h3>Commercial Snapshot</h3>
+              <span class="title-badge">Registry</span>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-item">
+                <p class="metric-label">Commercial Suppliers</p>
+                <p id="text-commercial-count" class="metric-value">0</p>
+              </div>
+              <div class="metric-item">
+                <p class="metric-label">Annual Fee (USDC)</p>
+                <p id="text-annual-fee" class="metric-value mono">-</p>
+              </div>
+              <div class="metric-item">
+                <p class="metric-label">Withdraw Fee</p>
+                <p id="text-withdraw-fee" class="metric-value mono">-</p>
+              </div>
+              <div class="metric-item">
+                <p class="metric-label">Treasury</p>
+                <div class="inline-copy">
+                  <p id="text-treasury" class="metric-value mono small">-</p>
+                  <button class="btn tiny ghost" data-copy="text-treasury">Copy</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="card selected-overview">
+            <div class="card-title-row">
+              <h3>Selected Commercial Supplier</h3>
+              <span class="title-badge">Context</span>
+            </div>
+            <div class="detail-list">
+              <div class="detail-row">
+                <span>Supplier ID</span>
+                <div class="detail-value"><b id="text-selected-supplier-id">-</b></div>
+              </div>
+              <div class="detail-row">
+                <span>Owner</span>
+                <div class="detail-value">
+                  <b id="text-selected-owner" class="mono">-</b>
+                  <button class="btn tiny ghost" data-copy="text-selected-owner">Copy</button>
+                </div>
+              </div>
+              <div class="detail-row">
+                <span>Profile</span>
+                <div class="detail-value">
+                  <b id="text-selected-profile-address" class="mono">-</b>
+                  <button class="btn tiny ghost" data-copy="text-selected-profile-address">Copy</button>
+                </div>
+              </div>
+              <div class="detail-row">
+                <span>Expiry</span>
+                <div class="detail-value"><b id="text-selected-expiry">-</b></div>
+              </div>
+              <div class="detail-row">
+                <span>Active</span>
+                <div class="detail-value"><b id="text-selected-active-status">-</b></div>
+              </div>
+              <div class="detail-row">
+                <span>Balance</span>
+                <div class="detail-value"><b id="text-selected-profile-balance" class="mono">-</b></div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <article class="card mode-card">
+          <div class="card-title-row">
+            <h3>Business Modes</h3>
+            <span class="title-badge">Base + USDC</span>
+          </div>
+          <div class="mode-grid">
+            <div class="mode-box private">
+              <h4>Private Supplier</h4>
+              <p>本地导入、免费、非公开、不上链。</p>
+            </div>
+            <div class="mode-box commercial">
+              <h4>Commercial Supplier</h4>
+              <p>注册费、公开可检索、链上管理、可提现。</p>
+            </div>
+          </div>
+          <p class="helper-text">仅支持 Base Mainnet / Base Sepolia，结算语义采用 USDC。</p>
+          <div class="image-placeholder">[Image Placeholder: supplier-modes-overview.png]</div>
+        </article>
+      </div>
+
+      <div class="view" data-panel="commercial">
+        <article class="card">
+          <div class="panel-head">
+            <div>
+              <h3>Commercial Workspace</h3>
+              <p class="helper-text">处理注册、续费、Profile 维护与提现。所有动作目前为模拟执行。</p>
+            </div>
+            <div class="action-group">
+              <button id="btn-refresh-commercial" class="btn secondary">Refresh</button>
+              <button id="btn-open-register-form" class="btn primary">Register Supplier</button>
+            </div>
+          </div>
+
+          <div class="commercial-grid">
+            <section class="list-zone">
+              <div class="list-zone-head">
+                <h4>Supplier List</h4>
+                <span class="mono">Owner Scope</span>
+              </div>
+              <div id="empty-commercial-state" class="empty-box">No commercial suppliers.</div>
+              <div id="list-commercial-suppliers" class="supplier-list"></div>
+            </section>
+
+            <section class="ops-zone">
+              <article class="op-card">
+                <h4>Renewal</h4>
+                <div class="action-group">
+                  <button id="btn-renew-one-year" class="btn primary">Renew 1 Year</button>
+                </div>
+                <p id="text-renew-status" class="status-text muted">No renewal submitted.</p>
+              </article>
+
+              <article class="op-card">
+                <h4>Profile Management</h4>
+                <div class="stack">
+                  <label for="input-metadata-uri">Metadata URI</label>
+                  <input id="input-metadata-uri" type="text" placeholder="ipfs://..." />
+                </div>
+                <div class="action-group">
+                  <button id="btn-save-metadata" class="btn secondary">Save Metadata</button>
+                </div>
+                <p id="text-metadata-status" class="status-text muted">No metadata update.</p>
+
+                <div class="stack">
+                  <label for="input-new-owner">New Owner</label>
+                  <input id="input-new-owner" type="text" placeholder="0x..." />
+                </div>
+                <div class="action-group">
+                  <button id="btn-transfer-owner" class="btn danger">Transfer Owner</button>
+                </div>
+                <p id="text-transfer-owner-status" class="status-text muted">No owner transfer.</p>
+              </article>
+
+              <article class="op-card">
+                <h4>Withdraw</h4>
+                <div class="split-two">
+                  <div class="stack">
+                    <label for="input-withdraw-amount">Amount (USDC)</label>
+                    <input id="input-withdraw-amount" type="number" min="0" step="0.000001" placeholder="100" />
+                  </div>
+                  <div class="stack">
+                    <label for="input-withdraw-to">Recipient</label>
+                    <input id="input-withdraw-to" type="text" placeholder="0x..." />
+                  </div>
+                </div>
+                <div class="action-group">
+                  <button id="btn-preview-withdraw" class="btn secondary">Preview</button>
+                  <button id="btn-withdraw" class="btn primary">Withdraw</button>
+                  <button id="btn-withdraw-all" class="btn danger">Withdraw All</button>
+                </div>
+                <div class="split-two preview-box">
+                  <div>
+                    <label>Estimated Fee</label>
+                    <p id="text-withdraw-preview-fee" class="mono">-</p>
+                  </div>
+                  <div>
+                    <label>Estimated Net</label>
+                    <p id="text-withdraw-preview-net" class="mono">-</p>
+                  </div>
+                </div>
+                <p id="text-withdraw-status" class="status-text muted">No withdraw action.</p>
+              </article>
+            </section>
+          </div>
+        </article>
+      </div>
+
+      <div class="view" data-panel="private">
+        <article class="card">
+          <h3>Private Workspace</h3>
+          <p class="helper-text">仅本地导入与维护，不上链，不进入公开商业市场。</p>
+
+          <div class="private-grid">
+            <section class="op-card">
+              <div class="stack">
+                <label for="file-private-profile">Import from File</label>
+                <input id="file-private-profile" type="file" accept="application/json" />
+              </div>
+              <div class="action-group">
+                <button id="btn-import-private-file" class="btn secondary">Import File</button>
+              </div>
+
+              <div class="stack">
+                <label for="input-private-profile-url">Import from URL</label>
+                <input id="input-private-profile-url" type="text" placeholder="https://example.com/profile.json" />
+              </div>
+              <div class="action-group">
+                <button id="btn-import-private-url" class="btn secondary">Import URL</button>
+              </div>
+            </section>
+
+            <section class="op-card">
+              <div class="stack">
+                <label for="textarea-private-local">Local Profile JSON</label>
+                <textarea id="textarea-private-local" rows="14" spellcheck="false"></textarea>
+              </div>
+              <div class="action-group">
+                <button id="btn-update-private-local" class="btn primary">Update Local Profile</button>
+              </div>
+            </section>
+          </div>
+
+          <p id="text-private-status" class="status-text muted">No private profile imported.</p>
+        </article>
+      </div>
+    </section>
+
+    <div id="commercial-lock-overlay" class="lock-banner hidden">
+      Commercial actions are locked. Connect wallet, match Base network, and sign in.
+    </div>
+  </main>
+
+  <div id="register-modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal="true"></div>
+    <div class="modal-panel card">
+      <div class="modal-head">
+        <h3>Register Commercial Supplier</h3>
+        <button id="btn-close-register-modal" class="btn tiny ghost">Close</button>
+      </div>
+
+      <form id="form-commercial-register" class="stack form-stack">
+        <label for="input-register-supplier-id">Supplier ID</label>
+        <input id="input-register-supplier-id" type="text" placeholder="mesh.vendor.alpha" />
+
+        <label for="input-register-metadata-uri">Metadata URI</label>
+        <input id="input-register-metadata-uri" type="text" placeholder="ipfs://..." />
+
+        <button id="btn-register-sign-submit" class="btn primary" type="submit">Sign & Register</button>
+      </form>
+
+      <p id="text-register-status" class="status-text muted">No register transaction submitted.</p>
+    </div>
+  </div>
+
+  <script src="vendor-console-prototype.js"></script>
+</body>
+
+</html>

@@ -2,296 +2,580 @@
 <html lang="zh-CN">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MeshNetProtocol Supplier Console">
-    <title>MeshNetProtocol Supplier Console</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MeshNetProtocol Vendor Console" />
+  <title>MeshNetProtocol Vendor Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="vendor-console-prototype.css" />
+  <style>
+    :root {
+      --panel-max: 1120px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      padding: 0.74rem 1.15rem;
+    }
+
+    .brand-wrap {
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      gap: 0.72rem;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 1.72rem;
+      line-height: 1.08;
+      letter-spacing: -0.022em;
+      font-weight: 700;
+    }
+
+    .brand-subtitle {
+      margin: 0.22rem 0 0;
+      color: #97b4dc;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    .brand-slogan {
+      margin: 0.16rem 0 0;
+      color: #b8cbeb;
+      font-size: 0.76rem;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .topbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.58rem;
+    }
+
+    .network-compact {
+      width: 224px;
+    }
+
+    .network-compact select {
+      min-height: 42px;
+      font-weight: 600;
+      font-size: 0.86rem;
+      padding-right: 2rem;
+    }
+
+    .network-ready-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.03);
+      flex: 0 0 auto;
+    }
+
+    .network-ready-dot.ready {
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.22), 0 0 16px rgba(34, 197, 94, 0.52);
+    }
+
+    .network-ready-dot.not-ready {
+      background: #ef4444;
+      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2), 0 0 16px rgba(239, 68, 68, 0.44);
+    }
+
+    .console-shell {
+      max-width: var(--panel-max);
+      margin: 0 auto;
+      min-height: calc(100vh - 80px);
+      display: grid;
+      align-items: center;
+      padding: 2.2rem 1.15rem 3.4rem;
+    }
+
+    .login-stage {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1rem;
+    }
+
+    .login-info,
+    .login-card {
+      min-height: 370px;
+      border: 1px solid rgba(86, 133, 205, 0.52);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(12, 25, 47, 0.96), rgba(9, 18, 33, 0.96));
+      box-shadow: 0 18px 44px rgba(2, 8, 20, 0.42);
+    }
+
+    .login-info {
+      padding: 1.34rem;
+      display: grid;
+      align-content: space-between;
+      background:
+        radial-gradient(circle at 85% 8%, rgba(37, 99, 235, 0.26), transparent 42%),
+        linear-gradient(180deg, rgba(12, 25, 47, 0.98), rgba(9, 18, 33, 0.98));
+    }
+
+    .info-kicker {
+      margin: 0;
+      color: #8ebdff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .info-title {
+      margin: 0.42rem 0 0;
+      font-size: clamp(2.02rem, 3.2vw, 2.84rem);
+      line-height: 1.06;
+      letter-spacing: -0.028em;
+    }
+
+    .info-sub {
+      margin: 0.84rem 0 0;
+      color: #a8c2e8;
+      font-size: 1rem;
+      line-height: 1.66;
+      max-width: 38ch;
+    }
+
+    .focus-list {
+      margin: 1.05rem 0 0;
+      display: grid;
+      gap: 0.42rem;
+    }
+
+    .focus-item {
+      border: 1px solid rgba(87, 129, 191, 0.5);
+      border-radius: 11px;
+      padding: 0.56rem 0.72rem;
+      background: rgba(14, 28, 49, 0.74);
+      color: #d8e8ff;
+      font-size: 0.83rem;
+      font-weight: 600;
+    }
+
+    .login-card {
+      padding: 1.2rem;
+      display: grid;
+      align-content: space-between;
+      gap: 1.1rem;
+    }
+
+    .login-card h2 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: -0.01em;
+    }
+
+    .login-card p {
+      margin: 0.46rem 0 0;
+      color: #9fb8dd;
+      font-size: 0.88rem;
+      line-height: 1.58;
+    }
+
+    .wallet-action {
+      width: 100%;
+      min-height: 48px;
+      font-size: 0.96rem;
+      border-radius: 12px;
+    }
+
+    #btn-install-metamask {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+
+    .status-block {
+      margin: 0;
+      border: 1px solid rgba(92, 137, 202, 0.6);
+      border-radius: 11px;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      padding: 0.66rem 0.8rem 0.66rem 1.62rem;
+      position: relative;
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.45;
+      background: rgba(17, 33, 57, 0.72);
+      color: #b7cae6;
+    }
+
+    .status-block::before {
+      content: "";
+      position: absolute;
+      left: 0.68rem;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #8ea8cd;
+    }
+
+    .status-block.success {
+      color: #85f0ac;
+      border-color: rgba(34, 197, 94, 0.5);
+      background: rgba(20, 83, 45, 0.34);
+    }
+
+    .status-block.success::before {
+      background: #22c55e;
+    }
+
+    .status-block.warning {
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.56);
+      background: rgba(120, 53, 15, 0.34);
+    }
+
+    .status-block.warning::before {
+      background: #f59e0b;
+    }
+
+    .status-block.error {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.56);
+      background: rgba(127, 29, 29, 0.36);
+    }
+
+    .status-block.error::before {
+      background: #ef4444;
+    }
+
+    .status-block.pending {
+      color: #bfdbfe;
+      border-color: rgba(96, 165, 250, 0.6);
+      background: rgba(30, 64, 175, 0.34);
+    }
+
+    .status-block.pending::before {
+      background: #60a5fa;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1080px) {
+      .login-stage {
+        grid-template-columns: 1fr;
+      }
+
+      .login-info,
+      .login-card {
+        min-height: 0;
+      }
+    }
+
+    @media (max-width: 780px) {
+      .topbar {
+        padding: 0.62rem 0.78rem;
+      }
+
+      .topbar-controls {
+        gap: 0.46rem;
+      }
+
+      .network-compact {
+        width: 188px;
+      }
+
+      .brand-title {
+        font-size: 1.08rem;
+      }
+
+      .brand-subtitle,
+      .brand-slogan {
+        font-size: 0.68rem;
+      }
+
+      .console-shell {
+        padding: 1.2rem 0.78rem 2rem;
+      }
+
+      .login-info,
+      .login-card {
+        padding: 1rem;
+      }
+
+      .info-title {
+        font-size: 1.72rem;
+      }
+
+      .info-sub {
+        font-size: 0.9rem;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .topbar-controls {
+        justify-content: space-between;
+      }
+
+      .network-compact {
+        flex: 1;
+        width: auto;
+      }
+    }
+  </style>
 </head>
 
 <body>
-    <nav class="navbar">
-        <div class="container">
-            <div class="logo">
-                <img src="mesh_logo.png" alt="MeshNetProtocol Logo" class="logo-img">
-                <h1>MeshNetProtocol</h1>
-            </div>
-            <ul class="nav-links">
-                <li><a href="index.html" data-i18n="vendorPage.backHome">返回宣传页</a></li>
-            </ul>
+  <div class="bg-layer" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <a class="brand-wrap" href="index.html" aria-label="Go to homepage">
+      <img src="mesh_logo.png" alt="MeshNetProtocol" class="logo" />
+      <div>
+        <p class="brand-title">MeshNetProtocol</p>
+        <p class="brand-subtitle">Vendor Console</p>
+        <p class="brand-slogan">Trustless Supply Infrastructure on Base</p>
+      </div>
+    </a>
+
+    <div class="topbar-controls">
+      <div class="network-compact">
+        <select id="select-target-network" aria-label="Select network">
+          <option value="base-mainnet">Base Mainnet</option>
+          <option value="base-sepolia">Base Sepolia</option>
+        </select>
+      </div>
+      <span id="network-dot" class="network-ready-dot not-ready" aria-label="Network readiness"></span>
+    </div>
+  </header>
+
+  <main class="console-shell">
+    <section class="login-stage">
+      <article class="login-info">
+        <div>
+          <p class="info-kicker">Web3 Supplier Operations</p>
+          <h1 class="info-title">供应商控制台</h1>
+          <p class="info-sub">连接钱包后，你将管理商业供应商注册、续费、Profile 维护与提现，同时在私有模式下进行本地供应商导入与编辑。</p>
         </div>
-    </nav>
 
-    <section id="vendor-console" class="vendor-console vendor-console-v3">
-        <div class="container">
-            <header class="console-hero">
-                <div>
-                    <h2 data-i18n="vendorPage.title">供应商控制台</h2>
-                    <p data-i18n="vendorPage.consoleHeroSubtitle">面向 Web3 供应商的链上运营控制台：连接钱包、校验 Base 网络、管理商业供应商与私人 profile。</p>
-                </div>
-                <p class="console-priority-note" data-i18n="vendorPage.consolePriorityNote">优先展示：网络就绪状态、商业供应商资产、关键链上操作。次要能力放在独立工作区。</p>
-            </header>
-
-            <article class="vendor-card console-command-bar">
-                <div class="command-bar-main">
-                    <div class="command-network-control">
-                        <label class="vendor-label" for="select-target-network" data-i18n="vendorPage.targetNetworkLabel">目标网络</label>
-                        <select id="select-target-network" class="vendor-input">
-                            <option value="base-mainnet">Base Mainnet</option>
-                            <option value="base-sepolia">Base Sepolia</option>
-                        </select>
-                    </div>
-                    <div class="command-status-pill-group">
-                        <div class="status-pill-wrap">
-                            <span class="status-pill-label" data-i18n="vendorPage.walletBadgeLabel">钱包</span>
-                            <span id="badge-wallet" class="status-badge status-muted">-</span>
-                        </div>
-                        <div class="status-pill-wrap">
-                            <span class="status-pill-label" data-i18n="vendorPage.chainBadgeLabel">网络</span>
-                            <span id="badge-chain" class="status-badge status-muted">-</span>
-                        </div>
-                    </div>
-                    <div class="command-actions">
-                        <button id="btn-connect-signin" class="btn btn-primary" type="button" data-i18n="vendorPage.connectSignInButton">连接钱包并签名登录</button>
-                        <button id="btn-switch-base" class="btn btn-secondary" type="button" data-i18n="vendorPage.switchNetworkButton">切换到目标网络</button>
-                        <button id="btn-disconnect" class="btn btn-danger" type="button" data-i18n="vendorPage.logoutButton">退出登录</button>
-                    </div>
-                </div>
-                <div class="command-status-row">
-                    <p id="text-auth-status" class="vendor-text muted">-</p>
-                    <p id="console-notice" class="vendor-text muted">-</p>
-                </div>
-            </article>
-
-            <section class="console-shell">
-                <aside class="vendor-card console-sidebar">
-                    <button class="console-nav-btn active" type="button" data-view-target="overview" data-i18n="vendorPage.navOverview">总览</button>
-                    <button class="console-nav-btn" type="button" data-view-target="commercial" data-i18n="vendorPage.navCommercial">商业供应商</button>
-                    <button class="console-nav-btn" type="button" data-view-target="private" data-i18n="vendorPage.navPrivate">私人供应商</button>
-                </aside>
-
-                <main class="console-main">
-                    <section class="console-view active" data-view-panel="overview">
-                        <div class="overview-grid">
-                            <article class="vendor-card metric-card">
-                                <p class="metric-label" data-i18n="vendorPage.metricCommercialCount">商业供应商数量</p>
-                                <p id="text-commercial-count" class="metric-value">0</p>
-                            </article>
-                            <article class="vendor-card metric-card">
-                                <p class="metric-label" data-i18n="vendorPage.metricAnnualFee">年费 (USDC)</p>
-                                <p id="text-annual-fee" class="metric-value mono">-</p>
-                            </article>
-                            <article class="vendor-card metric-card">
-                                <p class="metric-label" data-i18n="vendorPage.metricWithdrawFee">提现费率</p>
-                                <p id="text-withdraw-fee" class="metric-value mono">-</p>
-                            </article>
-                            <article class="vendor-card metric-card">
-                                <p class="metric-label" data-i18n="vendorPage.metricTreasury">Treasury</p>
-                                <div class="metric-inline">
-                                    <p id="text-treasury" class="metric-value mono">-</p>
-                                    <button class="btn btn-secondary btn-copy-mini" type="button" data-copy-source="text-treasury" data-i18n="vendorPage.copyButton">复制</button>
-                                </div>
-                            </article>
-                        </div>
-
-                        <div class="overview-secondary-grid">
-                            <article class="vendor-card business-model-card">
-                                <h3 data-i18n="vendorPage.businessModelTitle">供应商业务模式</h3>
-                                <div class="vendor-mode-section">
-                                    <div class="mode-panel mode-private">
-                                        <h4 data-i18n="vendorPage.privateModeTitle">私人供应商</h4>
-                                        <p class="vendor-help" data-i18n="vendorPage.businessModelPrivate">私人供应商：本地导入、免费、非公开、不上链。</p>
-                                    </div>
-                                    <div class="mode-panel mode-commercial">
-                                        <h4 data-i18n="vendorPage.commercialModeTitle">商业供应商</h4>
-                                        <p class="vendor-help" data-i18n="vendorPage.businessModelCommercial">商业供应商：注册费、公开可检索、链上管理、可提现。</p>
-                                    </div>
-                                </div>
-                                <p class="vendor-help" data-i18n="vendorPage.businessModelBaseUsdc">仅支持 Base Mainnet / Base Sepolia，费用按 USDC 结算。</p>
-                                <div class="image-placeholder">[Image Placeholder: supplier-modes-overview.png]</div>
-                            </article>
-                            <article class="vendor-card selected-overview-card">
-                                <h3 data-i18n="vendorPage.selectedSupplierOverviewTitle">当前选中商业供应商</h3>
-                                <div class="detail-grid compact">
-                                    <div class="detail-item">
-                                        <span class="detail-label" data-i18n="vendorPage.selectedSupplierIdLabel">Supplier ID</span>
-                                        <span id="text-selected-supplier-id" class="detail-value mono">-</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label" data-i18n="vendorPage.selectedOwnerLabel">Owner</span>
-                                        <span id="text-selected-owner" class="detail-value mono">-</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label" data-i18n="vendorPage.selectedProfileAddressLabel">Profile Contract</span>
-                                        <span id="text-selected-profile-address" class="detail-value mono">-</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label" data-i18n="vendorPage.selectedExpiryLabel">Expiry</span>
-                                        <span id="text-selected-expiry" class="detail-value">-</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <span class="detail-label" data-i18n="vendorPage.selectedActiveStatusLabel">Active</span>
-                                        <span id="text-selected-active-status" class="detail-value">-</span>
-                                    </div>
-                                </div>
-                                <button id="btn-go-commercial-view" class="btn btn-secondary" type="button" data-i18n="vendorPage.goCommercialWorkspaceButton">进入商业管理工作区</button>
-                            </article>
-                        </div>
-                    </section>
-
-                    <section class="console-view" data-view-panel="commercial">
-                        <article class="vendor-card">
-                            <div class="vendor-card-header">
-                                <div>
-                                    <h3 data-i18n="vendorPage.commercialWorkspaceTitle">商业供应商工作区</h3>
-                                    <p class="vendor-help" data-i18n="vendorPage.commercialWorkspaceHelp">高频操作：刷新列表、注册新供应商、选择供应商后执行续费/profile/提现。</p>
-                                </div>
-                                <div class="vendor-actions compact-actions">
-                                    <button id="btn-refresh-commercial" class="btn btn-secondary" type="button" data-requires-auth="true" data-i18n="vendorPage.refreshCommercialButton">刷新列表</button>
-                                    <button id="btn-open-register-form" class="btn btn-primary" type="button" data-requires-auth="true" data-i18n="vendorPage.openRegisterFormButton">注册新供应商</button>
-                                </div>
-                            </div>
-                            <div class="commercial-workspace-grid">
-                                <section class="commercial-list-panel">
-                                    <div id="empty-commercial-state" class="vendor-empty" data-i18n="vendorPage.emptyCommercialState">暂无商业供应商</div>
-                                    <div id="list-commercial-suppliers" class="supplier-list"></div>
-                                </section>
-                                <section class="commercial-detail-panel">
-                                    <article class="subpanel-block">
-                                        <h4 data-i18n="vendorPage.renewPanelTitle">续费</h4>
-                                        <div class="vendor-actions">
-                                            <button id="btn-renew-one-year" class="btn btn-primary" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.renewOneYearButton">续费 1 年</button>
-                                        </div>
-                                        <p id="text-renew-status" class="vendor-text muted" data-i18n="vendorPage.renewStatusIdle">尚未提交续费交易。</p>
-                                    </article>
-
-                                    <article class="subpanel-block">
-                                        <h4 data-i18n="vendorPage.profileManageTitle">Profile 管理</h4>
-                                        <div class="vendor-form-stack">
-                                            <div>
-                                                <label class="vendor-label" for="input-metadata-uri" data-i18n="vendorPage.metadataUriLabel">Metadata URI</label>
-                                                <input id="input-metadata-uri" class="vendor-input" type="url" placeholder="ipfs://..." data-i18n-placeholder="vendorPage.registerMetadataUriPlaceholder">
-                                            </div>
-                                            <div class="vendor-actions">
-                                                <button id="btn-save-metadata" class="btn btn-secondary" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.saveMetadataButton">保存 Metadata URI</button>
-                                            </div>
-                                            <p id="text-metadata-status" class="vendor-text muted" data-i18n="vendorPage.metadataStatusIdle">尚未提交 metadata 更新。</p>
-
-                                            <div>
-                                                <label class="vendor-label" for="input-new-owner" data-i18n="vendorPage.newOwnerLabel">新 Owner 地址</label>
-                                                <input id="input-new-owner" class="vendor-input" type="text" placeholder="0x...">
-                                            </div>
-                                            <div class="vendor-actions">
-                                                <button id="btn-transfer-owner" class="btn btn-danger" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.transferOwnerButton">转移 Owner</button>
-                                            </div>
-                                            <p id="text-transfer-owner-status" class="vendor-text muted" data-i18n="vendorPage.transferOwnerStatusIdle">尚未提交 owner 转移。</p>
-                                        </div>
-                                    </article>
-
-                                    <article class="subpanel-block">
-                                        <h4 data-i18n="vendorPage.withdrawTitle">提现</h4>
-                                        <div class="vendor-form-stack">
-                                            <div class="vendor-form-grid">
-                                                <div>
-                                                    <label class="vendor-label" for="input-withdraw-amount" data-i18n="vendorPage.withdrawAmountLabel">提现金额 (USDC)</label>
-                                                    <input id="input-withdraw-amount" class="vendor-input" type="number" min="0" step="0.000001" placeholder="10">
-                                                </div>
-                                                <div>
-                                                    <label class="vendor-label" for="input-withdraw-to" data-i18n="vendorPage.withdrawToLabel">提现到地址</label>
-                                                    <input id="input-withdraw-to" class="vendor-input" type="text" placeholder="0x...">
-                                                </div>
-                                            </div>
-                                            <div class="vendor-actions">
-                                                <button id="btn-preview-withdraw" class="btn btn-secondary" type="button" data-i18n="vendorPage.previewWithdrawButton">预览手续费</button>
-                                                <button id="btn-withdraw" class="btn btn-primary" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.withdrawButton">提现</button>
-                                                <button id="btn-withdraw-all" class="btn btn-danger" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.withdrawAllButton">全部提现</button>
-                                            </div>
-                                            <div class="vendor-form-grid stats-grid">
-                                                <div>
-                                                    <label class="vendor-label" data-i18n="vendorPage.withdrawPreviewFeeLabel">预计手续费</label>
-                                                    <p id="text-withdraw-preview-fee" class="vendor-text mono">-</p>
-                                                </div>
-                                                <div>
-                                                    <label class="vendor-label" data-i18n="vendorPage.withdrawPreviewNetLabel">预计到账</label>
-                                                    <p id="text-withdraw-preview-net" class="vendor-text mono">-</p>
-                                                </div>
-                                            </div>
-                                            <p id="text-withdraw-status" class="vendor-text muted" data-i18n="vendorPage.withdrawStatusIdle">尚未提交提现交易。</p>
-                                        </div>
-                                    </article>
-                                </section>
-                            </div>
-                        </article>
-                    </section>
-
-                    <section class="console-view" data-view-panel="private">
-                        <article class="vendor-card">
-                            <h3 data-i18n="vendorPage.privateWorkspaceTitle">私人供应商工作区</h3>
-                            <p class="vendor-help" data-i18n="vendorPage.privateWorkspaceHelp">仅本地导入与维护，不上链，不进入公开商业市场。</p>
-                            <div class="vendor-form-stack">
-                                <div>
-                                    <label class="vendor-label" for="file-private-profile" data-i18n="vendorPage.privateFileLabel">从文件导入 Profile</label>
-                                    <input id="file-private-profile" class="vendor-input" type="file" accept="application/json">
-                                </div>
-                                <div class="vendor-actions">
-                                    <button id="btn-import-private-file" class="btn btn-secondary" type="button" data-i18n="vendorPage.importPrivateFileButton">导入文件</button>
-                                </div>
-
-                                <div>
-                                    <label class="vendor-label" for="input-private-profile-url" data-i18n="vendorPage.privateUrlLabel">从 URL 导入 Profile</label>
-                                    <input id="input-private-profile-url" class="vendor-input" type="url" placeholder="https://example.com/profile.json">
-                                </div>
-                                <div class="vendor-actions">
-                                    <button id="btn-import-private-url" class="btn btn-secondary" type="button" data-i18n="vendorPage.importPrivateUrlButton">导入 URL</button>
-                                </div>
-
-                                <div>
-                                    <label class="vendor-label" for="textarea-private-local" data-i18n="vendorPage.privateLocalEditorLabel">本地 Profile JSON</label>
-                                    <textarea id="textarea-private-local" class="vendor-textarea code" rows="12" spellcheck="false"></textarea>
-                                </div>
-                                <div class="vendor-actions">
-                                    <button id="btn-update-private-local" class="btn btn-primary" type="button" data-i18n="vendorPage.updatePrivateLocalButton">更新本地 Profile</button>
-                                </div>
-                            </div>
-                            <p id="text-private-status" class="vendor-text muted" data-i18n="vendorPage.privateStatusIdle">尚未导入私人供应商 profile。</p>
-                        </article>
-                    </section>
-                </main>
-            </section>
-
-            <div id="commercial-lock-overlay" class="console-lock-overlay hidden">
-                <p data-i18n="vendorPage.commercialLockedHint">请先完成钱包连接、Base 网络校验与签名登录后再管理商业供应商。</p>
-            </div>
-
-            <div id="register-modal" class="console-modal hidden" aria-hidden="true">
-                <div class="console-modal-overlay" data-close-register-modal="true"></div>
-                <div class="console-modal-content">
-                    <div class="console-modal-header">
-                        <h3 data-i18n="vendorPage.commercialRegisterTitle">商业供应商注册</h3>
-                        <button id="btn-close-register-modal" class="btn btn-secondary btn-copy-mini" type="button" data-i18n="vendorPage.closeButton">关闭</button>
-                    </div>
-                    <form id="form-commercial-register" class="vendor-form-stack">
-                        <div>
-                            <label class="vendor-label" for="input-register-supplier-id" data-i18n="vendorPage.registerSupplierIdLabel">Supplier ID</label>
-                            <input id="input-register-supplier-id" class="vendor-input" type="text" placeholder="mesh.vendor.alpha" data-i18n-placeholder="vendorPage.registerSupplierIdPlaceholder">
-                        </div>
-                        <div>
-                            <label class="vendor-label" for="input-register-metadata-uri" data-i18n="vendorPage.registerMetadataUriLabel">Metadata URI</label>
-                            <input id="input-register-metadata-uri" class="vendor-input" type="url" placeholder="ipfs://..." data-i18n-placeholder="vendorPage.registerMetadataUriPlaceholder">
-                        </div>
-                        <button id="btn-register-sign-submit" class="btn btn-primary" data-chain-write="true" data-requires-auth="true" type="submit" data-i18n="vendorPage.registerSubmitButton">签名并注册商业供应商</button>
-                    </form>
-                    <p id="text-register-status" class="vendor-text muted" data-i18n="vendorPage.registerStatusIdle">尚未提交注册交易。</p>
-                </div>
-            </div>
+        <div class="focus-list" aria-hidden="true">
+          <div class="focus-item">Private Supplier: 本地导入，不上链，不公开。</div>
+          <div class="focus-item">Commercial Supplier: 链上注册、可检索、可提现。</div>
+          <div class="focus-item">仅支持 Base Mainnet / Base Sepolia，资金语义采用 USDC。</div>
         </div>
+      </article>
+
+      <article class="login-card" aria-live="polite">
+        <div>
+          <h2>Connect Wallet</h2>
+          <p id="gate-desc">请先使用 MetaMask 完成连接与签名登录。</p>
+        </div>
+
+        <div>
+          <button id="btn-connect-signin" class="btn primary wallet-action hidden" type="button">Sign In By MetaMask</button>
+          <a id="btn-install-metamask" class="btn secondary wallet-action hidden" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">Install MetaMask</a>
+        </div>
+
+        <p id="text-auth-status" class="status-block">Checking wallet environment...</p>
+      </article>
     </section>
+  </main>
 
-    <script src="i18n.js"></script>
-    <script src="site-interactions.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.14.0/dist/ethers.umd.min.js"></script>
-    <script src="vendor-console.js"></script>
-    <script src="vendor-page.js"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      const NETWORKS = {
+        "base-mainnet": { name: "Base Mainnet", chainIdHex: "0x2105" },
+        "base-sepolia": { name: "Base Sepolia", chainIdHex: "0x14a34" }
+      };
+
+      const dom = {
+        selectTargetNetwork: document.getElementById("select-target-network"),
+        networkDot: document.getElementById("network-dot"),
+        btnConnectSignin: document.getElementById("btn-connect-signin"),
+        btnInstallMetaMask: document.getElementById("btn-install-metamask"),
+        gateDesc: document.getElementById("gate-desc"),
+        textAuthStatus: document.getElementById("text-auth-status")
+      };
+
+      const state = {
+        targetNetwork: "base-mainnet",
+        chainIdHex: "",
+        connected: false,
+        signedIn: false,
+        address: ""
+      };
+
+      function hasMetaMask() {
+        return Boolean(window.ethereum && window.ethereum.isMetaMask);
+      }
+
+      function shortAddress(value) {
+        if (!value) return "";
+        return value.length > 10 ? value.slice(0, 6) + "..." + value.slice(-4) : value;
+      }
+
+      function setStatus(level, text) {
+        dom.textAuthStatus.textContent = text;
+        dom.textAuthStatus.classList.remove("success", "warning", "error", "pending");
+        if (level) dom.textAuthStatus.classList.add(level);
+      }
+
+      function isBaseReady() {
+        return Boolean(state.chainIdHex)
+          && state.chainIdHex.toLowerCase() === NETWORKS[state.targetNetwork].chainIdHex;
+      }
+
+      function renderNetworkStatusDot() {
+        const ready = isBaseReady();
+        dom.networkDot.classList.remove("ready", "not-ready");
+        dom.networkDot.classList.add(ready ? "ready" : "not-ready");
+      }
+
+      function renderAuthGate() {
+        const installed = hasMetaMask();
+        dom.btnConnectSignin.classList.toggle("hidden", !installed);
+        dom.btnInstallMetaMask.classList.toggle("hidden", installed);
+
+        if (!installed) {
+          setStatus("warning", "MetaMask not found. Install MetaMask, then refresh.");
+          dom.gateDesc.textContent = "当前浏览器未检测到 MetaMask。请先安装钱包扩展后重试。";
+          return;
+        }
+
+        if (!state.connected) {
+          setStatus("", "MetaMask detected. Continue with wallet sign-in.");
+          dom.gateDesc.textContent = "请连接 MetaMask 并签名，完成控制台登录。";
+          return;
+        }
+
+        if (!state.signedIn) {
+          setStatus("warning", "Wallet connected. Signature required.");
+          return;
+        }
+
+        setStatus("success", "Signed in: " + shortAddress(state.address));
+        dom.gateDesc.textContent = "登录成功，下一步进入供应商操作工作区。";
+      }
+
+      async function syncChain() {
+        if (!hasMetaMask()) return;
+        try {
+          const chainId = await window.ethereum.request({ method: "eth_chainId" });
+          state.chainIdHex = String(chainId || "");
+        } catch {
+          state.chainIdHex = "";
+        }
+        renderNetworkStatusDot();
+      }
+
+      async function switchToSelectedNetwork() {
+        if (!hasMetaMask()) return;
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: NETWORKS[state.targetNetwork].chainIdHex }]
+          });
+          await syncChain();
+        } catch (error) {
+          setStatus("error", "Network switch rejected. Please approve in MetaMask.");
+          console.error("switch network error", error);
+        }
+      }
+
+      async function connectAndSignIn() {
+        if (!hasMetaMask()) {
+          renderAuthGate();
+          return;
+        }
+
+        try {
+          setStatus("pending", "Requesting wallet connection...");
+          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+          const account = Array.isArray(accounts) && accounts[0] ? accounts[0] : "";
+
+          if (!account) {
+            setStatus("error", "No unlocked account found in MetaMask.");
+            return;
+          }
+
+          state.connected = true;
+          state.address = account;
+
+          await switchToSelectedNetwork();
+
+          setStatus("pending", "Awaiting signature...");
+          await window.ethereum.request({
+            method: "personal_sign",
+            params: ["MeshNetProtocol Vendor Console Sign-In", account]
+          });
+
+          state.signedIn = true;
+          renderAuthGate();
+        } catch (error) {
+          state.signedIn = false;
+          setStatus("error", "Sign-in failed. Reopen MetaMask and approve requests.");
+          console.error("sign in error", error);
+        }
+      }
+
+      function bindEvents() {
+        dom.selectTargetNetwork.addEventListener("change", async function () {
+          state.targetNetwork = dom.selectTargetNetwork.value;
+          await switchToSelectedNetwork();
+          renderNetworkStatusDot();
+        });
+
+        dom.btnConnectSignin.addEventListener("click", connectAndSignIn);
+
+        if (hasMetaMask()) {
+          window.ethereum.on("chainChanged", function (chainId) {
+            state.chainIdHex = String(chainId || "");
+            renderNetworkStatusDot();
+          });
+
+          window.ethereum.on("accountsChanged", function (accounts) {
+            const account = Array.isArray(accounts) && accounts[0] ? accounts[0] : "";
+            state.connected = Boolean(account);
+            state.signedIn = false;
+            state.address = account;
+            renderAuthGate();
+          });
+        }
+      }
+
+      function bootstrap() {
+        dom.selectTargetNetwork.value = state.targetNetwork;
+        renderNetworkStatusDot();
+        renderAuthGate();
+        bindEvents();
+        syncChain();
+      }
+
+      document.addEventListener("DOMContentLoaded", bootstrap);
+    })();
+  </script>
 </body>
 
 </html>
