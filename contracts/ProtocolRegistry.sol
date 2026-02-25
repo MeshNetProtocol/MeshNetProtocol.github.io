@@ -108,6 +108,9 @@ contract ProtocolRegistry is ReentrancyGuard {
         _;
     }
 
+    // Base USDC defaults:
+    // - Base Mainnet (chainId=8453): 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+    // - Base Sepolia (chainId=84532): 0x036CbD53842c5426634e7929541eC2318f3dCf7
     constructor(address usdc_) {
         if (usdc_ == address(0)) {
             revert ZeroAddress();
