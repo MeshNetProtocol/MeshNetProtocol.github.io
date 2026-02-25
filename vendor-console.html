@@ -12,14 +12,18 @@
   <link rel="stylesheet" href="vendor-console-prototype.css" />
   <style>
     :root {
-      --panel-max: 1120px;
+      --panel-max: 1180px;
     }
 
     .topbar {
       position: sticky;
       top: 0;
       z-index: 40;
-      padding: 0.74rem 1.15rem;
+      padding: 0.72rem 1.15rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 0.8rem;
     }
 
     .brand-wrap {
@@ -27,61 +31,237 @@
       color: inherit;
       display: flex;
       align-items: center;
-      gap: 0.72rem;
+      gap: 0.65rem;
+      min-width: 0;
     }
 
     .logo {
-      width: 36px;
-      height: 36px;
+      width: 56px;
+      height: 56px;
+      flex: 0 0 auto;
+    }
+
+    .brand-text {
+      display: grid;
+      align-content: center;
+      min-width: 0;
     }
 
     .brand-title {
       margin: 0;
-      font-size: 1.72rem;
-      line-height: 1.08;
-      letter-spacing: -0.022em;
+      font-size: clamp(1.24rem, 2.25vw, 1.56rem);
+      line-height: 1.02;
+      letter-spacing: -0.015em;
       font-weight: 700;
     }
 
     .brand-subtitle {
-      margin: 0.22rem 0 0;
-      color: #97b4dc;
-      font-size: 0.82rem;
-      font-weight: 500;
-      letter-spacing: 0.01em;
+      margin: 0.14rem 0 0;
+      color: #9cb9df;
+      font-size: 0.84rem;
+      font-weight: 600;
+      letter-spacing: 0.005em;
     }
 
     .brand-slogan {
-      margin: 0.16rem 0 0;
-      color: #b8cbeb;
-      font-size: 0.76rem;
-      letter-spacing: 0.09em;
+      margin: 0.1rem 0 0;
+      color: #9db4d5;
+      font-size: 0.67rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topbar-aside {
+      justify-self: end;
+      border: 1px solid rgba(94, 137, 204, 0.4);
+      border-radius: 999px;
+      background: rgba(10, 23, 43, 0.72);
+      padding: 0.34rem 0.72rem;
+      color: #a9c2e4;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
       font-weight: 700;
+      white-space: nowrap;
     }
 
-    .topbar-controls {
-      display: flex;
+    .console-shell {
+      max-width: var(--panel-max);
+      margin: 0 auto;
+      min-height: calc(100vh - 86px);
+      display: grid;
       align-items: center;
-      gap: 0.58rem;
+      padding: 2.2rem 1.15rem 3rem;
     }
 
-    .network-compact {
-      width: 224px;
+    .entry-stage {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      perspective: 1200px;
     }
 
-    .network-compact select {
-      min-height: 42px;
+    .entry-card {
+      position: relative;
+      min-height: 430px;
+      border: 1px solid rgba(86, 133, 205, 0.52);
+      border-radius: 18px;
+      box-shadow: 0 20px 52px rgba(2, 8, 20, 0.46);
+      padding: 1.28rem;
+      display: grid;
+      gap: 1rem;
+      align-content: space-between;
+      transform-style: preserve-3d;
+      transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+      will-change: transform;
+      overflow: hidden;
+    }
+
+    .entry-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(134, 196, 255, 0.14), transparent 38%);
+      opacity: 0;
+      transition: opacity 200ms ease;
+      pointer-events: none;
+    }
+
+    .entry-card:hover::after {
+      opacity: 1;
+    }
+
+    .entry-card.private {
+      border-color: rgba(41, 176, 160, 0.5);
+      background:
+        radial-gradient(circle at 88% 12%, rgba(20, 184, 166, 0.18), transparent 42%),
+        linear-gradient(180deg, rgba(10, 35, 52, 0.96), rgba(8, 23, 37, 0.96));
+    }
+
+    .entry-card.private:hover {
+      border-color: rgba(45, 212, 191, 0.62);
+      box-shadow: 0 24px 60px rgba(2, 16, 20, 0.52);
+    }
+
+    .entry-card.commercial {
+      border-color: rgba(89, 140, 215, 0.56);
+      background:
+        radial-gradient(circle at 84% 8%, rgba(37, 99, 235, 0.24), transparent 44%),
+        linear-gradient(180deg, rgba(12, 25, 47, 0.97), rgba(9, 18, 33, 0.97));
+    }
+
+    .entry-card.commercial:hover {
+      border-color: rgba(96, 165, 250, 0.74);
+      box-shadow: 0 24px 62px rgba(5, 14, 34, 0.56);
+    }
+
+    .card-kicker {
+      margin: 0;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .private .card-kicker {
+      color: #6ee7d2;
+    }
+
+    .commercial .card-kicker {
+      color: #8fc1ff;
+    }
+
+    .card-title {
+      margin: 0.36rem 0 0;
+      font-size: clamp(1.76rem, 2.8vw, 2.36rem);
+      line-height: 1.07;
+      letter-spacing: -0.02em;
+    }
+
+    .card-desc {
+      margin: 0.82rem 0 0;
+      font-size: 0.95rem;
+      line-height: 1.64;
+      color: #aac3e7;
+      max-width: 40ch;
+    }
+
+    .benefit-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .benefit-list li {
+      border: 1px solid rgba(92, 137, 202, 0.42);
+      border-radius: 10px;
+      padding: 0.52rem 0.66rem;
+      background: rgba(15, 30, 52, 0.74);
+      font-size: 0.82rem;
+      color: #d6e6ff;
+      line-height: 1.48;
+      font-weight: 600;
+    }
+
+    .private .benefit-list li {
+      border-color: rgba(45, 212, 191, 0.36);
+      background: rgba(8, 54, 61, 0.34);
+    }
+
+    .commercial .benefit-list li {
+      border-color: rgba(96, 165, 250, 0.34);
+      background: rgba(20, 40, 72, 0.42);
+    }
+
+    .btn-hero {
+      width: 100%;
+      min-height: 50px;
+      border-radius: 12px;
+      font-size: 0.94rem;
+    }
+
+    .private-entry {
+      border: 1px solid rgba(45, 212, 191, 0.5);
+      background: linear-gradient(135deg, rgba(13, 148, 136, 0.82), rgba(15, 118, 110, 0.86));
+      color: #e8fffb;
+      box-shadow: 0 12px 24px rgba(15, 118, 110, 0.28);
+    }
+
+    .private-entry:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(15, 118, 110, 0.34);
+    }
+
+    .commercial-meta {
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .network-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .network-row select {
+      min-height: 44px;
+      border-radius: 10px;
       font-weight: 600;
       font-size: 0.86rem;
-      padding-right: 2rem;
     }
 
     .network-ready-dot {
       width: 12px;
       height: 12px;
       border-radius: 999px;
-      display: inline-block;
       border: 1px solid rgba(255, 255, 255, 0.24);
       box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.03);
       flex: 0 0 auto;
@@ -97,125 +277,16 @@
       box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2), 0 0 16px rgba(239, 68, 68, 0.44);
     }
 
-    .console-shell {
-      max-width: var(--panel-max);
-      margin: 0 auto;
-      min-height: calc(100vh - 80px);
-      display: grid;
-      align-items: center;
-      padding: 2.2rem 1.15rem 3.4rem;
-    }
-
-    .login-stage {
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 1rem;
-    }
-
-    .login-info,
-    .login-card {
-      min-height: 370px;
-      border: 1px solid rgba(86, 133, 205, 0.52);
-      border-radius: 18px;
-      background:
-        linear-gradient(180deg, rgba(12, 25, 47, 0.96), rgba(9, 18, 33, 0.96));
-      box-shadow: 0 18px 44px rgba(2, 8, 20, 0.42);
-    }
-
-    .login-info {
-      padding: 1.34rem;
-      display: grid;
-      align-content: space-between;
-      background:
-        radial-gradient(circle at 85% 8%, rgba(37, 99, 235, 0.26), transparent 42%),
-        linear-gradient(180deg, rgba(12, 25, 47, 0.98), rgba(9, 18, 33, 0.98));
-    }
-
-    .info-kicker {
-      margin: 0;
-      color: #8ebdff;
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
-    .info-title {
-      margin: 0.42rem 0 0;
-      font-size: clamp(2.02rem, 3.2vw, 2.84rem);
-      line-height: 1.06;
-      letter-spacing: -0.028em;
-    }
-
-    .info-sub {
-      margin: 0.84rem 0 0;
-      color: #a8c2e8;
-      font-size: 1rem;
-      line-height: 1.66;
-      max-width: 38ch;
-    }
-
-    .focus-list {
-      margin: 1.05rem 0 0;
-      display: grid;
-      gap: 0.42rem;
-    }
-
-    .focus-item {
-      border: 1px solid rgba(87, 129, 191, 0.5);
-      border-radius: 11px;
-      padding: 0.56rem 0.72rem;
-      background: rgba(14, 28, 49, 0.74);
-      color: #d8e8ff;
-      font-size: 0.83rem;
-      font-weight: 600;
-    }
-
-    .login-card {
-      padding: 1.2rem;
-      display: grid;
-      align-content: space-between;
-      gap: 1.1rem;
-    }
-
-    .login-card h2 {
-      margin: 0;
-      font-size: 1.4rem;
-      letter-spacing: -0.01em;
-    }
-
-    .login-card p {
-      margin: 0.46rem 0 0;
-      color: #9fb8dd;
-      font-size: 0.88rem;
-      line-height: 1.58;
-    }
-
-    .wallet-action {
-      width: 100%;
-      min-height: 48px;
-      font-size: 0.96rem;
-      border-radius: 12px;
-    }
-
-    #btn-install-metamask {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-    }
-
     .status-block {
       margin: 0;
-      border: 1px solid rgba(92, 137, 202, 0.6);
+      border: 1px solid rgba(92, 137, 202, 0.56);
       border-radius: 11px;
-      min-height: 52px;
+      min-height: 48px;
       display: flex;
       align-items: center;
-      padding: 0.66rem 0.8rem 0.66rem 1.62rem;
+      padding: 0.6rem 0.76rem 0.6rem 1.56rem;
       position: relative;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 600;
       line-height: 1.45;
       background: rgba(17, 33, 57, 0.72);
@@ -225,7 +296,7 @@
     .status-block::before {
       content: "";
       position: absolute;
-      left: 0.68rem;
+      left: 0.66rem;
       width: 8px;
       height: 8px;
       border-radius: 999px;
@@ -272,17 +343,23 @@
       background: #60a5fa;
     }
 
+    #btn-install-metamask {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+
     .hidden {
       display: none !important;
     }
 
-    @media (max-width: 1080px) {
-      .login-stage {
+    @media (max-width: 1060px) {
+      .entry-stage {
         grid-template-columns: 1fr;
       }
 
-      .login-info,
-      .login-card {
+      .entry-card {
         min-height: 0;
       }
     }
@@ -290,56 +367,34 @@
     @media (max-width: 780px) {
       .topbar {
         padding: 0.62rem 0.78rem;
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
       }
 
-      .topbar-controls {
-        gap: 0.46rem;
+      .topbar-aside {
+        justify-self: start;
       }
 
-      .network-compact {
-        width: 188px;
+      .logo {
+        width: 46px;
+        height: 46px;
       }
 
       .brand-title {
-        font-size: 1.08rem;
+        font-size: 1.02rem;
       }
 
       .brand-subtitle,
       .brand-slogan {
-        font-size: 0.68rem;
+        font-size: 0.64rem;
       }
 
       .console-shell {
         padding: 1.2rem 0.78rem 2rem;
       }
 
-      .login-info,
-      .login-card {
+      .entry-card {
         padding: 1rem;
-      }
-
-      .info-title {
-        font-size: 1.72rem;
-      }
-
-      .info-sub {
-        font-size: 0.9rem;
-      }
-    }
-
-    @media (max-width: 560px) {
-      .topbar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .topbar-controls {
-        justify-content: space-between;
-      }
-
-      .network-compact {
-        flex: 1;
-        width: auto;
       }
     }
   </style>
@@ -351,52 +406,55 @@
   <header class="topbar">
     <a class="brand-wrap" href="index.html" aria-label="Go to homepage">
       <img src="mesh_logo.png" alt="MeshNetProtocol" class="logo" />
-      <div>
+      <div class="brand-text">
         <p class="brand-title">MeshNetProtocol</p>
         <p class="brand-subtitle">Vendor Console</p>
         <p class="brand-slogan">Trustless Supply Infrastructure on Base</p>
       </div>
     </a>
 
-    <div class="topbar-controls">
-      <div class="network-compact">
-        <select id="select-target-network" aria-label="Select network">
-          <option value="base-mainnet">Base Mainnet</option>
-          <option value="base-sepolia">Base Sepolia</option>
-        </select>
-      </div>
-      <span id="network-dot" class="network-ready-dot not-ready" aria-label="Network readiness"></span>
-    </div>
+    <p class="topbar-aside">Private Is Free · Commercial Is Onchain</p>
   </header>
 
   <main class="console-shell">
-    <section class="login-stage">
-      <article class="login-info">
+    <section class="entry-stage">
+      <article class="entry-card private card-hover">
         <div>
-          <p class="info-kicker">Web3 Supplier Operations</p>
-          <h1 class="info-title">供应商控制台</h1>
-          <p class="info-sub">连接钱包后，你将管理商业供应商注册、续费、Profile 维护与提现，同时在私有模式下进行本地供应商导入与编辑。</p>
+          <p class="card-kicker">Private Supplier</p>
+          <h1 class="card-title">免费工具入口</h1>
+          <p class="card-desc">无需钱包登录，直接进入私有供应商工具。用于本地创建与维护服务器连接配置，不上链、不公开、不托管任何数据。</p>
         </div>
 
-        <div class="focus-list" aria-hidden="true">
-          <div class="focus-item">Private Supplier: 本地导入，不上链，不公开。</div>
-          <div class="focus-item">Commercial Supplier: 链上注册、可检索、可提现。</div>
-          <div class="focus-item">仅支持 Base Mainnet / Base Sepolia，资金语义采用 USDC。</div>
-        </div>
+        <ul class="benefit-list">
+          <li>Quick Start 教程：从 0 到 1 配置私有供应商。</li>
+          <li>本地生成连接配置：所有数据仅在本地浏览器处理。</li>
+          <li>免费使用，无手续费，无链上写入。</li>
+        </ul>
+
+        <button id="btn-enter-private" class="btn btn-hero private-entry" type="button">Enter Private Workspace</button>
       </article>
 
-      <article class="login-card" aria-live="polite">
+      <article class="entry-card commercial card-hover" aria-live="polite">
         <div>
-          <h2>Connect Wallet</h2>
-          <p id="gate-desc">请先使用 MetaMask 完成连接与签名登录。</p>
+          <p class="card-kicker">Commercial Supplier</p>
+          <h2 class="card-title">链上商业入口</h2>
+          <p id="gate-desc" class="card-desc">连接 MetaMask 并签名登录。商业供应商需要选择正确 Base 网络后，才能执行注册、续费与提现操作。</p>
         </div>
 
-        <div>
-          <button id="btn-connect-signin" class="btn primary wallet-action hidden" type="button">Sign In By MetaMask</button>
-          <a id="btn-install-metamask" class="btn secondary wallet-action hidden" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">Install MetaMask</a>
-        </div>
+        <div class="commercial-meta">
+          <div class="network-row">
+            <select id="select-target-network" aria-label="Select network">
+              <option value="base-mainnet">Base Mainnet</option>
+              <option value="base-sepolia">Base Sepolia</option>
+            </select>
+            <span id="network-dot" class="network-ready-dot not-ready" aria-label="Network readiness"></span>
+          </div>
 
-        <p id="text-auth-status" class="status-block">Checking wallet environment...</p>
+          <button id="btn-connect-signin" class="btn primary btn-hero hidden" type="button">Sign In By MetaMask</button>
+          <a id="btn-install-metamask" class="btn secondary btn-hero hidden" href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">Install MetaMask</a>
+
+          <p id="text-auth-status" class="status-block">Checking wallet environment...</p>
+        </div>
       </article>
     </section>
   </main>
@@ -416,7 +474,8 @@
         btnConnectSignin: document.getElementById("btn-connect-signin"),
         btnInstallMetaMask: document.getElementById("btn-install-metamask"),
         gateDesc: document.getElementById("gate-desc"),
-        textAuthStatus: document.getElementById("text-auth-status")
+        textAuthStatus: document.getElementById("text-auth-status"),
+        btnEnterPrivate: document.getElementById("btn-enter-private")
       };
 
       const state = {
@@ -460,13 +519,13 @@
 
         if (!installed) {
           setStatus("warning", "MetaMask not found. Install MetaMask, then refresh.");
-          dom.gateDesc.textContent = "当前浏览器未检测到 MetaMask。请先安装钱包扩展后重试。";
+          dom.gateDesc.textContent = "浏览器未检测到 MetaMask。商业供应商请先安装钱包扩展后继续。";
           return;
         }
 
         if (!state.connected) {
           setStatus("", "MetaMask detected. Continue with wallet sign-in.");
-          dom.gateDesc.textContent = "请连接 MetaMask 并签名，完成控制台登录。";
+          dom.gateDesc.textContent = "请选择 Base 网络后，连接 MetaMask 并签名登录。";
           return;
         }
 
@@ -475,8 +534,13 @@
           return;
         }
 
-        setStatus("success", "Signed in: " + shortAddress(state.address));
-        dom.gateDesc.textContent = "登录成功，下一步进入供应商操作工作区。";
+        if (!isBaseReady()) {
+          setStatus("warning", "Signed in, but current network is not the selected Base network.");
+          return;
+        }
+
+        setStatus("success", "Commercial session ready: " + shortAddress(state.address));
+        dom.gateDesc.textContent = "商业供应商会话已就绪，可进入注册、续费与提现工作区。";
       }
 
       async function syncChain() {
@@ -498,6 +562,7 @@
             params: [{ chainId: NETWORKS[state.targetNetwork].chainIdHex }]
           });
           await syncChain();
+          renderAuthGate();
         } catch (error) {
           setStatus("error", "Network switch rejected. Please approve in MetaMask.");
           console.error("switch network error", error);
@@ -540,6 +605,28 @@
         }
       }
 
+      function bindCardMotion() {
+        document.querySelectorAll(".card-hover").forEach((card) => {
+          card.addEventListener("pointermove", function (event) {
+            const rect = card.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const px = x / rect.width;
+            const py = y / rect.height;
+            const ry = (px - 0.5) * 5;
+            const rx = (0.5 - py) * 5;
+
+            card.style.setProperty("--mx", (px * 100).toFixed(2) + "%");
+            card.style.setProperty("--my", (py * 100).toFixed(2) + "%");
+            card.style.transform = "rotateX(" + rx.toFixed(2) + "deg) rotateY(" + ry.toFixed(2) + "deg) translateY(-2px)";
+          });
+
+          card.addEventListener("pointerleave", function () {
+            card.style.transform = "rotateX(0deg) rotateY(0deg) translateY(0px)";
+          });
+        });
+      }
+
       function bindEvents() {
         dom.selectTargetNetwork.addEventListener("change", async function () {
           state.targetNetwork = dom.selectTargetNetwork.value;
@@ -548,11 +635,15 @@
         });
 
         dom.btnConnectSignin.addEventListener("click", connectAndSignIn);
+        dom.btnEnterPrivate.addEventListener("click", function () {
+          window.location.href = "index.html#private-supplier";
+        });
 
         if (hasMetaMask()) {
           window.ethereum.on("chainChanged", function (chainId) {
             state.chainIdHex = String(chainId || "");
             renderNetworkStatusDot();
+            renderAuthGate();
           });
 
           window.ethereum.on("accountsChanged", function (accounts) {
@@ -567,6 +658,7 @@
 
       function bootstrap() {
         dom.selectTargetNetwork.value = state.targetNetwork;
+        bindCardMotion();
         renderNetworkStatusDot();
         renderAuthGate();
         bindEvents();
