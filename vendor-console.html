@@ -46,9 +46,25 @@
                 <article class="vendor-card">
                     <h3 data-i18n="vendorPage.sectionAuthTitle">2) 钱包与鉴权</h3>
                     <p class="vendor-help" data-i18n="vendorPage.sectionAuthHelp">使用一个按钮完成连接钱包与 SIWE 签名登录。</p>
+                    <div class="vendor-form-grid">
+                        <div>
+                            <label class="vendor-label" for="target-network-select" data-i18n="vendorPage.targetNetworkLabel">目标网络</label>
+                            <select id="target-network-select" class="vendor-input">
+                                <option value="base-mainnet">Base Mainnet</option>
+                                <option value="base-sepolia">Base Sepolia</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="vendor-label" data-i18n="vendorPage.networkStatusLabel">网络状态</label>
+                            <p id="network-status" class="vendor-text muted">Network not checked</p>
+                        </div>
+                    </div>
+                    <p id="contract-status" class="vendor-text muted">Registry: - | USDC: -</p>
                     <div class="vendor-actions">
                         <button id="connect-signin-btn" class="btn btn-primary" type="button"
                             data-i18n="vendorPage.connectSignInButton">连接钱包并签名登录</button>
+                        <button id="switch-network-btn" class="btn btn-secondary" type="button"
+                            data-i18n="vendorPage.switchNetworkButton">切换到目标网络</button>
                         <button id="logout-btn" class="btn btn-secondary" type="button"
                             data-i18n="vendorPage.logoutButton">退出登录</button>
                     </div>

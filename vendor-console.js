@@ -5,12 +5,42 @@
     const STORAGE_KEYS = {
         apiBaseUrl: "market_api_base_url",
         accessToken: "market_api_access_token",
+        targetNetworkKey: "vendor_target_network_key",
+    };
+
+    const DEFAULT_TARGET_NETWORK_KEY = "base-mainnet";
+    const NETWORK_CONFIGS = {
+        "base-mainnet": {
+            key: "base-mainnet",
+            name: "Base Mainnet",
+            chainId: 8453,
+            chainIdHex: "0x2105",
+            rpcUrls: ["https://mainnet.base.org"],
+            blockExplorerUrls: ["https://basescan.org"],
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            // TODO: replace with your final mainnet registry address when available.
+            registryAddress: "0x068277480caa9d395ac130a4c5ea7b0f314251d8",
+            usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        },
+        "base-sepolia": {
+            key: "base-sepolia",
+            name: "Base Sepolia",
+            chainId: 84532,
+            chainIdHex: "0x14a34",
+            rpcUrls: ["https://sepolia.base.org"],
+            blockExplorerUrls: ["https://sepolia.basescan.org"],
+            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+            // Current default follows your request: same as mainnet until split deployment.
+            registryAddress: "0x068277480caa9d395ac130a4c5ea7b0f314251d8",
+            usdcAddress: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        },
     };
 
     const state = {
         apiBaseUrl: "",
         walletAddress: "",
         chainId: null,
+        targetNetworkKey: localStorage.getItem(STORAGE_KEYS.targetNetworkKey) || DEFAULT_TARGET_NETWORK_KEY,
         accessToken: sessionStorage.getItem(STORAGE_KEYS.accessToken) || "",
         supplier: null,
         supplierRole: null,
@@ -54,9 +84,8 @@
     }
 
     function getDefaultApiBaseUrl() {
-        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-            return "http://127.0.0.1:8787";
-        }
+        // Default to production API even in local static preview.
+        // Use the API input box when explicit local API testing is needed.
         return PRODUCTION_API_BASE_URL;
     }
 
@@ -65,6 +94,17 @@
         try {
             const parsed = new URL(url);
             return LEGACY_API_HOSTS.includes(parsed.hostname.toLowerCase());
+        } catch {
+            return false;
+        }
+    }
+
+    function isLocalDevApiBaseUrl(url) {
+        if (!url) return false;
+        try {
+            const parsed = new URL(url);
+            const host = parsed.hostname.toLowerCase();
+            return host === "127.0.0.1" || host === "localhost";
         } catch {
             return false;
         }
@@ -113,6 +153,93 @@
 
     function toHexChainId(chainId) {
         return `0x${Number(chainId).toString(16)}`;
+    }
+
+    function getTargetNetworkConfig() {
+        return NETWORK_CONFIGS[state.targetNetworkKey] || NETWORK_CONFIGS[DEFAULT_TARGET_NETWORK_KEY];
+    }
+
+    function applyTargetNetworkSelection(key, save) {
+        if (!NETWORK_CONFIGS[key]) {
+            state.targetNetworkKey = DEFAULT_TARGET_NETWORK_KEY;
+        } else {
+            state.targetNetworkKey = key;
+        }
+        if (save) localStorage.setItem(STORAGE_KEYS.targetNetworkKey, state.targetNetworkKey);
+        if (dom.targetNetworkSelect) dom.targetNetworkSelect.value = state.targetNetworkKey;
+        renderContractStatus();
+        renderNetworkState();
+    }
+
+    function renderContractStatus() {
+        const cfg = getTargetNetworkConfig();
+        setTextStatus(
+            dom.contractStatus,
+            tr("contractConfigLine", {
+                network: cfg.name,
+                registry: shortAddress(cfg.registryAddress),
+                usdc: shortAddress(cfg.usdcAddress),
+            }, `Target=${cfg.name} | Registry=${shortAddress(cfg.registryAddress)} | USDC=${shortAddress(cfg.usdcAddress)}`),
+            "muted"
+        );
+    }
+
+    function renderNetworkState() {
+        const cfg = getTargetNetworkConfig();
+        if (!state.walletAddress || !state.chainId) {
+            setTextStatus(dom.networkStatus, tr("networkNeedWallet", { target: cfg.name }, `Wallet not connected. Target network: ${cfg.name}`), "muted");
+            if (dom.switchNetworkBtn) dom.switchNetworkBtn.disabled = true;
+            return;
+        }
+
+        if (state.chainId === cfg.chainId) {
+            setTextStatus(dom.networkStatus, tr("networkReady", { current: cfg.name }, `Network ready: ${cfg.name}`), "network-ok");
+            if (dom.switchNetworkBtn) dom.switchNetworkBtn.disabled = true;
+            return;
+        }
+
+        setTextStatus(
+            dom.networkStatus,
+            tr("networkMismatch", {
+                currentChainId: state.chainId,
+                target: cfg.name,
+                targetChainId: cfg.chainId,
+            }, `Wrong network: chainId=${state.chainId}, target=${cfg.name}(${cfg.chainId})`),
+            "network-warn"
+        );
+        if (dom.switchNetworkBtn) dom.switchNetworkBtn.disabled = false;
+    }
+
+    async function switchToTargetNetwork() {
+        const provider = await getEthereumProvider();
+        const cfg = getTargetNetworkConfig();
+        try {
+            await provider.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: cfg.chainIdHex }],
+            });
+        } catch (error) {
+            if (Number(error && error.code) !== 4902) {
+                throw error;
+            }
+            await provider.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                    chainId: cfg.chainIdHex,
+                    chainName: cfg.name,
+                    nativeCurrency: cfg.nativeCurrency,
+                    rpcUrls: cfg.rpcUrls,
+                    blockExplorerUrls: cfg.blockExplorerUrls,
+                }],
+            });
+            await provider.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: cfg.chainIdHex }],
+            });
+        }
+        await updateWalletState();
+        renderWalletState();
+        renderNetworkState();
     }
 
     function getApiBaseUrl() {
@@ -317,6 +444,7 @@
     function renderWalletState() {
         if (!state.walletAddress) {
             setTextStatus(dom.walletStatus, tr("walletDisconnected", null, "Wallet not connected"), "muted");
+            renderNetworkState();
             return;
         }
         setTextStatus(
@@ -324,6 +452,7 @@
             tr("walletConnected", { address: shortAddress(state.walletAddress), chainId: state.chainId || "-" }, `Wallet connected: ${shortAddress(state.walletAddress)} | chainId=${state.chainId || "-"}`),
             "success"
         );
+        renderNetworkState();
     }
 
     async function connectWallet() {
@@ -362,22 +491,17 @@ Expiration Time: ${args.expirationTime}`;
         }
     }
 
-    async function ensureAllowedChain(provider, allowedChainIds) {
-        if (!allowedChainIds || allowedChainIds.length === 0) return;
-        if (allowedChainIds.includes(state.chainId)) return;
-        const target = Number(allowedChainIds[0]);
-        await provider.request({
-            method: "wallet_switchEthereumChain",
-            params: [{ chainId: toHexChainId(target) }],
-        });
-        const chainHex = await provider.request({ method: "eth_chainId" });
-        state.chainId = hexChainIdToNumber(chainHex);
-        if (!allowedChainIds.includes(state.chainId)) {
-            throw new Error(tr("chainNotAllowed", {
-                chainId: state.chainId,
-                allowed: allowedChainIds.join(","),
-            }, `Current chain ${state.chainId} is not in allowed list: ${allowedChainIds.join(",")}.`));
+    async function ensureTargetChain(provider, allowedChainIds) {
+        const cfg = getTargetNetworkConfig();
+        if (Array.isArray(allowedChainIds) && allowedChainIds.length > 0 && !allowedChainIds.includes(cfg.chainId)) {
+            throw new Error(tr(
+                "chainTargetNotAllowed",
+                { targetChainId: cfg.chainId, allowed: allowedChainIds.join(",") },
+                `Target chain ${cfg.chainId} is not in allowed list: ${allowedChainIds.join(",")}.`
+            ));
         }
+        if (state.chainId === cfg.chainId) return;
+        await switchToTargetNetwork();
     }
 
     async function signIn() {
@@ -387,7 +511,7 @@ Expiration Time: ${args.expirationTime}`;
         }
 
         const noncePayload = await apiRequest("/api/v1/auth/nonce", { auth: false });
-        await ensureAllowedChain(provider, noncePayload.chain_ids || []);
+        await ensureTargetChain(provider, noncePayload.chain_ids || []);
 
         const issuedAt = new Date();
         const expirationTime = new Date(issuedAt.getTime() + 5 * 60 * 1000);
@@ -569,6 +693,33 @@ Expiration Time: ${args.expirationTime}`;
             });
         }
 
+        if (dom.switchNetworkBtn) {
+            dom.switchNetworkBtn.addEventListener("click", async function () {
+                try {
+                    await switchToTargetNetwork();
+                    clearAuthState();
+                    setTextStatus(dom.authStatus, tr("networkSwitchedNeedSignIn", null, "Network switched. Please sign in again."), "muted");
+                } catch (error) {
+                    setTextStatus(dom.networkStatus, getErrorMessage(error, tr("networkSwitchFailed", null, "Failed to switch network.")), "error");
+                }
+            });
+        }
+
+        if (dom.targetNetworkSelect) {
+            dom.targetNetworkSelect.addEventListener("change", async function () {
+                applyTargetNetworkSelection(dom.targetNetworkSelect.value, true);
+                clearAuthState();
+                setTextStatus(dom.authStatus, tr("networkTargetChanged", null, "Target network changed. Please switch network and sign in again."), "muted");
+                if (state.walletAddress) {
+                    try {
+                        await switchToTargetNetwork();
+                    } catch {
+                        // Manual switch fallback stays available via button.
+                    }
+                }
+            });
+        }
+
         if (dom.logoutBtn) {
             dom.logoutBtn.addEventListener("click", function () {
                 clearAuthState();
@@ -613,6 +764,10 @@ Expiration Time: ${args.expirationTime}`;
         dom.saveApiBaseBtn = document.getElementById("save-api-base-btn");
         dom.apiBaseStatus = document.getElementById("api-base-status");
         dom.connectSigninBtn = document.getElementById("connect-signin-btn");
+        dom.targetNetworkSelect = document.getElementById("target-network-select");
+        dom.switchNetworkBtn = document.getElementById("switch-network-btn");
+        dom.networkStatus = document.getElementById("network-status");
+        dom.contractStatus = document.getElementById("contract-status");
         dom.logoutBtn = document.getElementById("logout-btn");
         dom.walletStatus = document.getElementById("wallet-status");
         dom.authStatus = document.getElementById("auth-status");
@@ -647,8 +802,13 @@ Expiration Time: ${args.expirationTime}`;
             initialApiBase = getDefaultApiBaseUrl();
             localStorage.setItem(STORAGE_KEYS.apiBaseUrl, initialApiBase);
             setTextStatus(dom.apiBaseStatus, tr("legacyApiMigrated", { url: initialApiBase }, `Legacy API URL detected. Auto-switched to: ${initialApiBase}`), "success");
+        } else if (isLocalDevApiBaseUrl(initialApiBase)) {
+            initialApiBase = getDefaultApiBaseUrl();
+            localStorage.setItem(STORAGE_KEYS.apiBaseUrl, initialApiBase);
+            setTextStatus(dom.apiBaseStatus, tr("localApiMigrated", { url: initialApiBase }, `Local API URL detected. Auto-switched to: ${initialApiBase}`), "success");
         }
         setApiBaseUrl(initialApiBase, false);
+        applyTargetNetworkSelection(state.targetNetworkKey, false);
 
         clearSupplierUi();
         bindVendorActions();

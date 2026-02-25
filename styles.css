@@ -699,6 +699,14 @@ body {
     color: #b91c1c;
 }
 
+.vendor-text.network-ok {
+    color: #047857;
+}
+
+.vendor-text.network-warn {
+    color: #b45309;
+}
+
 .manager-list {
     margin-top: 0.75rem;
     display: grid;

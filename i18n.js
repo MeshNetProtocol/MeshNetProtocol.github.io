@@ -142,7 +142,10 @@ const i18n = {
             apiStatusIdle: "Not connected yet",
             sectionAuthTitle: "2) Wallet and Auth",
             sectionAuthHelp: "Use one button to connect wallet and finish SIWE sign-in.",
+            targetNetworkLabel: "Target Network",
+            networkStatusLabel: "Network Status",
             connectSignInButton: "Connect Wallet & Sign In",
+            switchNetworkButton: "Switch to Target Network",
             logoutButton: "Sign Out",
             walletStatusIdle: "Wallet not connected",
             authStatusIdle: "Not signed in",
@@ -177,6 +180,14 @@ const i18n = {
             walletConnected: "Wallet connected: {address} | chainId={chainId}",
             walletDisconnected: "Wallet not connected",
             chainNotAllowed: "Current chain {chainId} is not in allowed list: {allowed}.",
+            chainTargetNotAllowed: "Target chain {targetChainId} is not in backend allowed list: {allowed}.",
+            networkNeedWallet: "Wallet not connected. Target network: {target}",
+            networkReady: "Network ready: {current}",
+            networkMismatch: "Wrong network: current chainId={currentChainId}, target={target} ({targetChainId})",
+            networkSwitchFailed: "Failed to switch network.",
+            networkTargetChanged: "Target network changed. Please switch network and sign in again.",
+            networkSwitchedNeedSignIn: "Network switched. Please sign in again.",
+            contractConfigLine: "Target={network} | Registry={registry} | USDC={usdc}",
             authNeedSign: "Wallet connected, click sign-in button to continue.",
             authSignInFailed: "Sign-in failed.",
             authSignedOut: "Signed out.",
@@ -207,7 +218,8 @@ const i18n = {
             managerAddFailed: "Failed to add manager.",
             managerRemoveSuccess: "Manager removed.",
             managerRemoveFailed: "Failed to remove manager.",
-            legacyApiMigrated: "Legacy API URL detected. Auto-switched to: {url}"
+            legacyApiMigrated: "Legacy API URL detected. Auto-switched to: {url}",
+            localApiMigrated: "Local API URL detected. Auto-switched to: {url}"
         }
     },
     zh: {
@@ -352,7 +364,10 @@ const i18n = {
             apiStatusIdle: "尚未连接",
             sectionAuthTitle: "2) 钱包与鉴权",
             sectionAuthHelp: "使用一个按钮完成连接钱包与 SIWE 签名登录。",
+            targetNetworkLabel: "目标网络",
+            networkStatusLabel: "网络状态",
             connectSignInButton: "连接钱包并签名登录",
+            switchNetworkButton: "切换到目标网络",
             logoutButton: "退出登录",
             walletStatusIdle: "钱包未连接",
             authStatusIdle: "未登录",
@@ -387,6 +402,14 @@ const i18n = {
             walletConnected: "已连接钱包：{address} | chainId={chainId}",
             walletDisconnected: "钱包未连接",
             chainNotAllowed: "当前链 {chainId} 不在允许列表 {allowed} 中。",
+            chainTargetNotAllowed: "目标链 {targetChainId} 不在后端允许列表 {allowed} 中。",
+            networkNeedWallet: "钱包未连接。目标网络：{target}",
+            networkReady: "网络已就绪：{current}",
+            networkMismatch: "网络不匹配：当前 chainId={currentChainId}，目标={target}（{targetChainId}）",
+            networkSwitchFailed: "切换网络失败。",
+            networkTargetChanged: "目标网络已变更，请切换网络后重新登录。",
+            networkSwitchedNeedSignIn: "网络已切换，请重新登录。",
+            contractConfigLine: "目标={network} | Registry={registry} | USDC={usdc}",
             authNeedSign: "钱包已连接，请点击登录按钮。",
             authSignInFailed: "签名登录失败。",
             authSignedOut: "已退出登录。",
@@ -417,7 +440,8 @@ const i18n = {
             managerAddFailed: "添加 manager 失败。",
             managerRemoveSuccess: "Manager 已移除。",
             managerRemoveFailed: "移除 manager 失败。",
-            legacyApiMigrated: "检测到旧地址，已自动切换到：{url}"
+            legacyApiMigrated: "检测到旧地址，已自动切换到：{url}",
+            localApiMigrated: "检测到本地 API 地址，已自动切换到：{url}"
         }
     }
 };
