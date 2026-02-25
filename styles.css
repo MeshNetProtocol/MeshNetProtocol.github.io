@@ -624,6 +624,25 @@ body {
     color: var(--primary-color);
 }
 
+.vendor-mode-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.mode-card {
+    margin-bottom: 0;
+}
+
+.mode-private {
+    border-left: 4px solid #0f766e;
+}
+
+.mode-commercial {
+    border-left: 4px solid #1d4ed8;
+}
+
 .vendor-help {
     color: var(--text-light);
     margin-bottom: 1rem;
@@ -705,6 +724,51 @@ body {
 
 .vendor-text.network-warn {
     color: #b45309;
+}
+
+.vendor-observability-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.vendor-log-list {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+}
+
+.vendor-log-item {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    background: #fcfcff;
+}
+
+.vendor-log-meta {
+    font-size: 0.82rem;
+    color: var(--text-light);
+}
+
+.vendor-log-message {
+    font-size: 0.92rem;
+    color: var(--text-dark);
+    margin-top: 0.15rem;
+    word-break: break-word;
+}
+
+.vendor-log-item.success {
+    border-left: 3px solid #10b981;
+}
+
+.vendor-log-item.error {
+    border-left: 3px solid #ef4444;
+}
+
+.vendor-log-item.pending {
+    border-left: 3px solid #f59e0b;
 }
 
 .manager-list {
@@ -822,6 +886,10 @@ body {
     }
 
     .vendor-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .vendor-mode-section {
         grid-template-columns: 1fr;
     }
 

@@ -31,16 +31,21 @@
 
             <div class="vendor-grid">
                 <article class="vendor-card">
-                    <h3 data-i18n="vendorPage.sectionApiTitle">1) API 连接</h3>
-                    <p class="vendor-help" data-i18n="vendorPage.sectionApiHelp">填写 market-api 根地址（不带末尾斜杠）。</p>
-                    <label class="vendor-label" for="api-base-url" data-i18n="vendorPage.sectionApiLabel">Market API Base URL</label>
-                    <div class="vendor-inline">
-                        <input id="api-base-url" class="vendor-input" type="text"
-                            placeholder="https://openmesh-api.ribencong.workers.dev">
-                        <button id="save-api-base-btn" class="btn btn-secondary" type="button"
-                            data-i18n="vendorPage.saveApiButton">保存地址</button>
+                    <h3>1) On-chain Overview</h3>
+                    <p class="vendor-help">当前版本为纯链上模式：界面直接读取 Registry，不依赖 market-api。</p>
+                    <div class="vendor-form-grid">
+                        <div>
+                            <label class="vendor-label">Annual Fee (USDC)</label>
+                            <p id="onchain-annual-fee" class="vendor-text muted">-</p>
+                        </div>
+                        <div>
+                            <label class="vendor-label">Withdraw Fee</label>
+                            <p id="onchain-withdraw-fee" class="vendor-text muted">-</p>
+                        </div>
                     </div>
-                    <p id="api-base-status" class="vendor-text muted" data-i18n="vendorPage.apiStatusIdle">尚未连接</p>
+                    <p id="onchain-treasury" class="vendor-text muted">Treasury: -</p>
+                    <p id="onchain-supplier-count" class="vendor-text muted">My suppliers: -</p>
+                    <button id="refresh-onchain-btn" class="btn btn-secondary" type="button">Refresh On-chain Data</button>
                 </article>
 
                 <article class="vendor-card">
@@ -73,6 +78,17 @@
                 </article>
             </div>
 
+            <section class="vendor-mode-section">
+                <article class="vendor-card mode-card mode-private">
+                    <h3 data-i18n="vendorPage.privateModeTitle">Private Supplier（私人供应商）</h3>
+                    <p class="vendor-help" data-i18n="vendorPage.privateModeDesc">仅本地导入/更新 profile，不上链，不进入公开市场。</p>
+                </article>
+                <article class="vendor-card mode-card mode-commercial">
+                    <h3 data-i18n="vendorPage.commercialModeTitle">Commercial Supplier（商业供应商）</h3>
+                    <p class="vendor-help" data-i18n="vendorPage.commercialModeDesc">链上注册与续费，对外可检索，按协议费率提现分账。</p>
+                </article>
+            </section>
+
             <article id="supplier-create-card" class="vendor-card">
                 <h3 data-i18n="vendorPage.sectionCreateTitle">3) 创建供应商</h3>
                 <p class="vendor-help" data-i18n="vendorPage.sectionCreateHelp">仅钱包首次绑定时可创建，成功后该钱包成为 owner。</p>
@@ -90,7 +106,7 @@
                             data-i18n-placeholder="vendorPage.supplierDescLabel" placeholder="Description">
                     </div>
                 </div>
-                <button id="create-supplier-btn" class="btn btn-primary" type="button"
+                <button id="create-supplier-btn" class="btn btn-primary guard-auth guard-base-ready" type="button"
                     data-i18n="vendorPage.createSupplierButton">创建供应商</button>
                 <p id="create-supplier-status" class="vendor-text muted"></p>
             </article>
@@ -98,6 +114,7 @@
             <article id="supplier-manage-card" class="vendor-card hidden">
                 <h3 data-i18n="vendorPage.sectionManageTitle">4) 供应商管理</h3>
                 <p id="supplier-summary" class="vendor-text muted" data-i18n="vendorPage.supplierSummaryIdle">尚未加载供应商信息</p>
+                <div id="onchain-supplier-list" class="manager-list"></div>
                 <div class="vendor-form-grid">
                     <div>
                         <label class="vendor-label" for="supplier-name" data-i18n="vendorPage.supplierNameLabel">供应商名称</label>
@@ -119,7 +136,7 @@
                 <div class="vendor-actions">
                     <button id="refresh-supplier-btn" class="btn btn-secondary" type="button"
                         data-i18n="vendorPage.refreshSupplierButton">刷新供应商信息</button>
-                    <button id="save-supplier-profile-btn" class="btn btn-primary" type="button"
+                    <button id="save-supplier-profile-btn" class="btn btn-primary guard-auth guard-base-ready" type="button"
                         data-i18n="vendorPage.saveSupplierButton">保存资料</button>
                 </div>
                 <p id="supplier-profile-status" class="vendor-text muted"></p>
@@ -133,7 +150,7 @@
                 <div class="vendor-actions">
                     <button id="refresh-config-btn" class="btn btn-secondary" type="button"
                         data-i18n="vendorPage.refreshConfigButton">刷新配置</button>
-                    <button id="save-config-btn" class="btn btn-primary" type="button"
+                    <button id="save-config-btn" class="btn btn-primary guard-auth guard-base-ready" type="button"
                         data-i18n="vendorPage.saveConfigButton">保存配置</button>
                 </div>
                 <p id="supplier-config-status" class="vendor-text muted"></p>
@@ -154,16 +171,29 @@
                         <input id="manager-role-input" class="vendor-input" type="text" value="manager">
                     </div>
                 </div>
-                <button id="add-manager-btn" class="btn btn-primary" type="button"
+                <button id="add-manager-btn" class="btn btn-primary guard-auth guard-base-ready" type="button"
                     data-i18n="vendorPage.addManagerButton">添加 Manager</button>
                 <p id="supplier-manager-status" class="vendor-text muted"></p>
                 <div id="manager-list" class="manager-list"></div>
+            </article>
+
+            <article id="vendor-observability-card" class="vendor-card">
+                <div class="vendor-observability-header">
+                    <h3 data-i18n="vendorPage.observabilityTitle">7) 系统状态与操作日志</h3>
+                    <div class="vendor-actions">
+                        <button id="clear-log-btn" class="btn btn-secondary" type="button" data-i18n="vendorPage.clearLogButton">清空日志</button>
+                        <button id="copy-error-btn" class="btn btn-secondary" type="button" data-i18n="vendorPage.copyErrorButton">复制最近错误</button>
+                    </div>
+                </div>
+                <p class="vendor-help" data-i18n="vendorPage.observabilityHelp">显示最近 20 条钱包、签名、API、交易事件。</p>
+                <div id="vendor-log-list" class="vendor-log-list"></div>
             </article>
         </div>
     </section>
 
     <script src="i18n.js"></script>
     <script src="site-interactions.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.14.0/dist/ethers.umd.min.js"></script>
     <script src="vendor-console.js"></script>
     <script src="vendor-page.js"></script>
 </body>
