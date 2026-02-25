@@ -22,172 +22,268 @@
         </div>
     </nav>
 
-    <section id="vendor-console" class="vendor-console">
+    <section id="vendor-console" class="vendor-console vendor-console-v3">
         <div class="container">
-            <div class="vendor-header">
-                <h2 data-i18n="vendorPage.title">供应商控制台</h2>
-                <p data-i18n="vendorPage.subtitle">通过 MetaMask 鉴权后管理供应商资料、配置与 manager 钱包。</p>
-            </div>
-
-            <div class="vendor-grid">
-                <article class="vendor-card">
-                    <h3>1) On-chain Overview</h3>
-                    <p class="vendor-help">当前版本为纯链上模式：界面直接读取 Registry，不依赖 market-api。</p>
-                    <div class="vendor-form-grid">
-                        <div>
-                            <label class="vendor-label">Annual Fee (USDC)</label>
-                            <p id="onchain-annual-fee" class="vendor-text muted">-</p>
-                        </div>
-                        <div>
-                            <label class="vendor-label">Withdraw Fee</label>
-                            <p id="onchain-withdraw-fee" class="vendor-text muted">-</p>
-                        </div>
-                    </div>
-                    <p id="onchain-treasury" class="vendor-text muted">Treasury: -</p>
-                    <p id="onchain-supplier-count" class="vendor-text muted">My suppliers: -</p>
-                    <button id="refresh-onchain-btn" class="btn btn-secondary" type="button">Refresh On-chain Data</button>
-                </article>
-
-                <article class="vendor-card">
-                    <h3 data-i18n="vendorPage.sectionAuthTitle">2) 钱包与鉴权</h3>
-                    <p class="vendor-help" data-i18n="vendorPage.sectionAuthHelp">使用一个按钮完成连接钱包与 SIWE 签名登录。</p>
-                    <div class="vendor-form-grid">
-                        <div>
-                            <label class="vendor-label" for="target-network-select" data-i18n="vendorPage.targetNetworkLabel">目标网络</label>
-                            <select id="target-network-select" class="vendor-input">
-                                <option value="base-mainnet">Base Mainnet</option>
-                                <option value="base-sepolia">Base Sepolia</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="vendor-label" data-i18n="vendorPage.networkStatusLabel">网络状态</label>
-                            <p id="network-status" class="vendor-text muted">Network not checked</p>
-                        </div>
-                    </div>
-                    <p id="contract-status" class="vendor-text muted">Registry: - | USDC: -</p>
-                    <div class="vendor-actions">
-                        <button id="connect-signin-btn" class="btn btn-primary" type="button"
-                            data-i18n="vendorPage.connectSignInButton">连接钱包并签名登录</button>
-                        <button id="switch-network-btn" class="btn btn-secondary" type="button"
-                            data-i18n="vendorPage.switchNetworkButton">切换到目标网络</button>
-                        <button id="logout-btn" class="btn btn-secondary" type="button"
-                            data-i18n="vendorPage.logoutButton">退出登录</button>
-                    </div>
-                    <p id="wallet-status" class="vendor-text muted" data-i18n="vendorPage.walletStatusIdle">钱包未连接</p>
-                    <p id="auth-status" class="vendor-text muted" data-i18n="vendorPage.authStatusIdle">未登录</p>
-                </article>
-            </div>
-
-            <section class="vendor-mode-section">
-                <article class="vendor-card mode-card mode-private">
-                    <h3 data-i18n="vendorPage.privateModeTitle">Private Supplier（私人供应商）</h3>
-                    <p class="vendor-help" data-i18n="vendorPage.privateModeDesc">仅本地导入/更新 profile，不上链，不进入公开市场。</p>
-                </article>
-                <article class="vendor-card mode-card mode-commercial">
-                    <h3 data-i18n="vendorPage.commercialModeTitle">Commercial Supplier（商业供应商）</h3>
-                    <p class="vendor-help" data-i18n="vendorPage.commercialModeDesc">链上注册与续费，对外可检索，按协议费率提现分账。</p>
-                </article>
-            </section>
-
-            <article id="supplier-create-card" class="vendor-card">
-                <h3 data-i18n="vendorPage.sectionCreateTitle">3) 创建供应商</h3>
-                <p class="vendor-help" data-i18n="vendorPage.sectionCreateHelp">仅钱包首次绑定时可创建，成功后该钱包成为 owner。</p>
-                <div class="vendor-form-grid">
-                    <div>
-                        <label class="vendor-label" for="create-supplier-name"
-                            data-i18n="vendorPage.supplierNameLabel">供应商名称</label>
-                        <input id="create-supplier-name" class="vendor-input" type="text"
-                            data-i18n-placeholder="vendorPage.supplierNameLabel" placeholder="Supplier Name">
-                    </div>
-                    <div>
-                        <label class="vendor-label" for="create-supplier-description"
-                            data-i18n="vendorPage.supplierDescLabel">简介</label>
-                        <input id="create-supplier-description" class="vendor-input" type="text"
-                            data-i18n-placeholder="vendorPage.supplierDescLabel" placeholder="Description">
-                    </div>
+            <header class="console-hero">
+                <div>
+                    <h2 data-i18n="vendorPage.title">供应商控制台</h2>
+                    <p data-i18n="vendorPage.consoleHeroSubtitle">面向 Web3 供应商的链上运营控制台：连接钱包、校验 Base 网络、管理商业供应商与私人 profile。</p>
                 </div>
-                <button id="create-supplier-btn" class="btn btn-primary guard-auth guard-base-ready" type="button"
-                    data-i18n="vendorPage.createSupplierButton">创建供应商</button>
-                <p id="create-supplier-status" class="vendor-text muted"></p>
-            </article>
+                <p class="console-priority-note" data-i18n="vendorPage.consolePriorityNote">优先展示：网络就绪状态、商业供应商资产、关键链上操作。次要能力放在独立工作区。</p>
+            </header>
 
-            <article id="supplier-manage-card" class="vendor-card hidden">
-                <h3 data-i18n="vendorPage.sectionManageTitle">4) 供应商管理</h3>
-                <p id="supplier-summary" class="vendor-text muted" data-i18n="vendorPage.supplierSummaryIdle">尚未加载供应商信息</p>
-                <div id="onchain-supplier-list" class="manager-list"></div>
-                <div class="vendor-form-grid">
-                    <div>
-                        <label class="vendor-label" for="supplier-name" data-i18n="vendorPage.supplierNameLabel">供应商名称</label>
-                        <input id="supplier-name" class="vendor-input" type="text"
-                            data-i18n-placeholder="vendorPage.supplierNameLabel" placeholder="Supplier Name">
-                    </div>
-                    <div>
-                        <label class="vendor-label" for="supplier-status" data-i18n="vendorPage.supplierStatusLabel">状态</label>
-                        <select id="supplier-status" class="vendor-input">
-                            <option value="active">active</option>
-                            <option value="disabled">disabled</option>
+            <article class="vendor-card console-command-bar">
+                <div class="command-bar-main">
+                    <div class="command-network-control">
+                        <label class="vendor-label" for="select-target-network" data-i18n="vendorPage.targetNetworkLabel">目标网络</label>
+                        <select id="select-target-network" class="vendor-input">
+                            <option value="base-mainnet">Base Mainnet</option>
+                            <option value="base-sepolia">Base Sepolia</option>
                         </select>
                     </div>
-                </div>
-                <label class="vendor-label" for="supplier-description"
-                    data-i18n="vendorPage.supplierDescTextareaLabel">供应商简介</label>
-                <textarea id="supplier-description" class="vendor-textarea" rows="3"
-                    data-i18n-placeholder="vendorPage.supplierDescTextareaLabel" placeholder="Description"></textarea>
-                <div class="vendor-actions">
-                    <button id="refresh-supplier-btn" class="btn btn-secondary" type="button"
-                        data-i18n="vendorPage.refreshSupplierButton">刷新供应商信息</button>
-                    <button id="save-supplier-profile-btn" class="btn btn-primary guard-auth guard-base-ready" type="button"
-                        data-i18n="vendorPage.saveSupplierButton">保存资料</button>
-                </div>
-                <p id="supplier-profile-status" class="vendor-text muted"></p>
-            </article>
-
-            <article id="supplier-config-card" class="vendor-card hidden">
-                <h3 data-i18n="vendorPage.sectionConfigTitle">5) 配置管理</h3>
-                <p class="vendor-help" data-i18n="vendorPage.sectionConfigHelp">仅支持 JSON 对象，示例：{"webhook_url":"https://example.com/hook"}</p>
-                <textarea id="supplier-config-json" class="vendor-textarea code" rows="10" spellcheck="false"
-                    placeholder="{\n  &quot;webhook_url&quot;: &quot;https://example.com/hook&quot;\n}"></textarea>
-                <div class="vendor-actions">
-                    <button id="refresh-config-btn" class="btn btn-secondary" type="button"
-                        data-i18n="vendorPage.refreshConfigButton">刷新配置</button>
-                    <button id="save-config-btn" class="btn btn-primary guard-auth guard-base-ready" type="button"
-                        data-i18n="vendorPage.saveConfigButton">保存配置</button>
-                </div>
-                <p id="supplier-config-status" class="vendor-text muted"></p>
-            </article>
-
-            <article id="supplier-manager-card" class="vendor-card hidden">
-                <h3 data-i18n="vendorPage.sectionManagerTitle">6) Manager 管理（Owner）</h3>
-                <p class="vendor-help" data-i18n="vendorPage.sectionManagerHelp">owner 可增加或移除 manager 钱包。</p>
-                <div class="vendor-form-grid">
-                    <div>
-                        <label class="vendor-label" for="manager-wallet-input"
-                            data-i18n="vendorPage.managerWalletLabel">Manager 钱包地址</label>
-                        <input id="manager-wallet-input" class="vendor-input" type="text" placeholder="0x1234...">
+                    <div class="command-status-pill-group">
+                        <div class="status-pill-wrap">
+                            <span class="status-pill-label" data-i18n="vendorPage.walletBadgeLabel">钱包</span>
+                            <span id="badge-wallet" class="status-badge status-muted">-</span>
+                        </div>
+                        <div class="status-pill-wrap">
+                            <span class="status-pill-label" data-i18n="vendorPage.chainBadgeLabel">网络</span>
+                            <span id="badge-chain" class="status-badge status-muted">-</span>
+                        </div>
                     </div>
-                    <div>
-                        <label class="vendor-label" for="manager-role-input"
-                            data-i18n="vendorPage.managerRoleLabel">角色</label>
-                        <input id="manager-role-input" class="vendor-input" type="text" value="manager">
+                    <div class="command-actions">
+                        <button id="btn-connect-signin" class="btn btn-primary" type="button" data-i18n="vendorPage.connectSignInButton">连接钱包并签名登录</button>
+                        <button id="btn-switch-base" class="btn btn-secondary" type="button" data-i18n="vendorPage.switchNetworkButton">切换到目标网络</button>
+                        <button id="btn-disconnect" class="btn btn-danger" type="button" data-i18n="vendorPage.logoutButton">退出登录</button>
                     </div>
                 </div>
-                <button id="add-manager-btn" class="btn btn-primary guard-auth guard-base-ready" type="button"
-                    data-i18n="vendorPage.addManagerButton">添加 Manager</button>
-                <p id="supplier-manager-status" class="vendor-text muted"></p>
-                <div id="manager-list" class="manager-list"></div>
+                <div class="command-status-row">
+                    <p id="text-auth-status" class="vendor-text muted">-</p>
+                    <p id="console-notice" class="vendor-text muted">-</p>
+                </div>
             </article>
 
-            <article id="vendor-observability-card" class="vendor-card">
-                <div class="vendor-observability-header">
-                    <h3 data-i18n="vendorPage.observabilityTitle">7) 系统状态与操作日志</h3>
-                    <div class="vendor-actions">
-                        <button id="clear-log-btn" class="btn btn-secondary" type="button" data-i18n="vendorPage.clearLogButton">清空日志</button>
-                        <button id="copy-error-btn" class="btn btn-secondary" type="button" data-i18n="vendorPage.copyErrorButton">复制最近错误</button>
+            <section class="console-shell">
+                <aside class="vendor-card console-sidebar">
+                    <button class="console-nav-btn active" type="button" data-view-target="overview" data-i18n="vendorPage.navOverview">总览</button>
+                    <button class="console-nav-btn" type="button" data-view-target="commercial" data-i18n="vendorPage.navCommercial">商业供应商</button>
+                    <button class="console-nav-btn" type="button" data-view-target="private" data-i18n="vendorPage.navPrivate">私人供应商</button>
+                </aside>
+
+                <main class="console-main">
+                    <section class="console-view active" data-view-panel="overview">
+                        <div class="overview-grid">
+                            <article class="vendor-card metric-card">
+                                <p class="metric-label" data-i18n="vendorPage.metricCommercialCount">商业供应商数量</p>
+                                <p id="text-commercial-count" class="metric-value">0</p>
+                            </article>
+                            <article class="vendor-card metric-card">
+                                <p class="metric-label" data-i18n="vendorPage.metricAnnualFee">年费 (USDC)</p>
+                                <p id="text-annual-fee" class="metric-value mono">-</p>
+                            </article>
+                            <article class="vendor-card metric-card">
+                                <p class="metric-label" data-i18n="vendorPage.metricWithdrawFee">提现费率</p>
+                                <p id="text-withdraw-fee" class="metric-value mono">-</p>
+                            </article>
+                            <article class="vendor-card metric-card">
+                                <p class="metric-label" data-i18n="vendorPage.metricTreasury">Treasury</p>
+                                <div class="metric-inline">
+                                    <p id="text-treasury" class="metric-value mono">-</p>
+                                    <button class="btn btn-secondary btn-copy-mini" type="button" data-copy-source="text-treasury" data-i18n="vendorPage.copyButton">复制</button>
+                                </div>
+                            </article>
+                        </div>
+
+                        <div class="overview-secondary-grid">
+                            <article class="vendor-card business-model-card">
+                                <h3 data-i18n="vendorPage.businessModelTitle">供应商业务模式</h3>
+                                <div class="vendor-mode-section">
+                                    <div class="mode-panel mode-private">
+                                        <h4 data-i18n="vendorPage.privateModeTitle">私人供应商</h4>
+                                        <p class="vendor-help" data-i18n="vendorPage.businessModelPrivate">私人供应商：本地导入、免费、非公开、不上链。</p>
+                                    </div>
+                                    <div class="mode-panel mode-commercial">
+                                        <h4 data-i18n="vendorPage.commercialModeTitle">商业供应商</h4>
+                                        <p class="vendor-help" data-i18n="vendorPage.businessModelCommercial">商业供应商：注册费、公开可检索、链上管理、可提现。</p>
+                                    </div>
+                                </div>
+                                <p class="vendor-help" data-i18n="vendorPage.businessModelBaseUsdc">仅支持 Base Mainnet / Base Sepolia，费用按 USDC 结算。</p>
+                                <div class="image-placeholder">[Image Placeholder: supplier-modes-overview.png]</div>
+                            </article>
+                            <article class="vendor-card selected-overview-card">
+                                <h3 data-i18n="vendorPage.selectedSupplierOverviewTitle">当前选中商业供应商</h3>
+                                <div class="detail-grid compact">
+                                    <div class="detail-item">
+                                        <span class="detail-label" data-i18n="vendorPage.selectedSupplierIdLabel">Supplier ID</span>
+                                        <span id="text-selected-supplier-id" class="detail-value mono">-</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label" data-i18n="vendorPage.selectedOwnerLabel">Owner</span>
+                                        <span id="text-selected-owner" class="detail-value mono">-</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label" data-i18n="vendorPage.selectedProfileAddressLabel">Profile Contract</span>
+                                        <span id="text-selected-profile-address" class="detail-value mono">-</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label" data-i18n="vendorPage.selectedExpiryLabel">Expiry</span>
+                                        <span id="text-selected-expiry" class="detail-value">-</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label" data-i18n="vendorPage.selectedActiveStatusLabel">Active</span>
+                                        <span id="text-selected-active-status" class="detail-value">-</span>
+                                    </div>
+                                </div>
+                                <button id="btn-go-commercial-view" class="btn btn-secondary" type="button" data-i18n="vendorPage.goCommercialWorkspaceButton">进入商业管理工作区</button>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section class="console-view" data-view-panel="commercial">
+                        <article class="vendor-card">
+                            <div class="vendor-card-header">
+                                <div>
+                                    <h3 data-i18n="vendorPage.commercialWorkspaceTitle">商业供应商工作区</h3>
+                                    <p class="vendor-help" data-i18n="vendorPage.commercialWorkspaceHelp">高频操作：刷新列表、注册新供应商、选择供应商后执行续费/profile/提现。</p>
+                                </div>
+                                <div class="vendor-actions compact-actions">
+                                    <button id="btn-refresh-commercial" class="btn btn-secondary" type="button" data-requires-auth="true" data-i18n="vendorPage.refreshCommercialButton">刷新列表</button>
+                                    <button id="btn-open-register-form" class="btn btn-primary" type="button" data-requires-auth="true" data-i18n="vendorPage.openRegisterFormButton">注册新供应商</button>
+                                </div>
+                            </div>
+                            <div class="commercial-workspace-grid">
+                                <section class="commercial-list-panel">
+                                    <div id="empty-commercial-state" class="vendor-empty" data-i18n="vendorPage.emptyCommercialState">暂无商业供应商</div>
+                                    <div id="list-commercial-suppliers" class="supplier-list"></div>
+                                </section>
+                                <section class="commercial-detail-panel">
+                                    <article class="subpanel-block">
+                                        <h4 data-i18n="vendorPage.renewPanelTitle">续费</h4>
+                                        <div class="vendor-actions">
+                                            <button id="btn-renew-one-year" class="btn btn-primary" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.renewOneYearButton">续费 1 年</button>
+                                        </div>
+                                        <p id="text-renew-status" class="vendor-text muted" data-i18n="vendorPage.renewStatusIdle">尚未提交续费交易。</p>
+                                    </article>
+
+                                    <article class="subpanel-block">
+                                        <h4 data-i18n="vendorPage.profileManageTitle">Profile 管理</h4>
+                                        <div class="vendor-form-stack">
+                                            <div>
+                                                <label class="vendor-label" for="input-metadata-uri" data-i18n="vendorPage.metadataUriLabel">Metadata URI</label>
+                                                <input id="input-metadata-uri" class="vendor-input" type="url" placeholder="ipfs://..." data-i18n-placeholder="vendorPage.registerMetadataUriPlaceholder">
+                                            </div>
+                                            <div class="vendor-actions">
+                                                <button id="btn-save-metadata" class="btn btn-secondary" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.saveMetadataButton">保存 Metadata URI</button>
+                                            </div>
+                                            <p id="text-metadata-status" class="vendor-text muted" data-i18n="vendorPage.metadataStatusIdle">尚未提交 metadata 更新。</p>
+
+                                            <div>
+                                                <label class="vendor-label" for="input-new-owner" data-i18n="vendorPage.newOwnerLabel">新 Owner 地址</label>
+                                                <input id="input-new-owner" class="vendor-input" type="text" placeholder="0x...">
+                                            </div>
+                                            <div class="vendor-actions">
+                                                <button id="btn-transfer-owner" class="btn btn-danger" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.transferOwnerButton">转移 Owner</button>
+                                            </div>
+                                            <p id="text-transfer-owner-status" class="vendor-text muted" data-i18n="vendorPage.transferOwnerStatusIdle">尚未提交 owner 转移。</p>
+                                        </div>
+                                    </article>
+
+                                    <article class="subpanel-block">
+                                        <h4 data-i18n="vendorPage.withdrawTitle">提现</h4>
+                                        <div class="vendor-form-stack">
+                                            <div class="vendor-form-grid">
+                                                <div>
+                                                    <label class="vendor-label" for="input-withdraw-amount" data-i18n="vendorPage.withdrawAmountLabel">提现金额 (USDC)</label>
+                                                    <input id="input-withdraw-amount" class="vendor-input" type="number" min="0" step="0.000001" placeholder="10">
+                                                </div>
+                                                <div>
+                                                    <label class="vendor-label" for="input-withdraw-to" data-i18n="vendorPage.withdrawToLabel">提现到地址</label>
+                                                    <input id="input-withdraw-to" class="vendor-input" type="text" placeholder="0x...">
+                                                </div>
+                                            </div>
+                                            <div class="vendor-actions">
+                                                <button id="btn-preview-withdraw" class="btn btn-secondary" type="button" data-i18n="vendorPage.previewWithdrawButton">预览手续费</button>
+                                                <button id="btn-withdraw" class="btn btn-primary" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.withdrawButton">提现</button>
+                                                <button id="btn-withdraw-all" class="btn btn-danger" type="button" data-chain-write="true" data-requires-auth="true" data-i18n="vendorPage.withdrawAllButton">全部提现</button>
+                                            </div>
+                                            <div class="vendor-form-grid stats-grid">
+                                                <div>
+                                                    <label class="vendor-label" data-i18n="vendorPage.withdrawPreviewFeeLabel">预计手续费</label>
+                                                    <p id="text-withdraw-preview-fee" class="vendor-text mono">-</p>
+                                                </div>
+                                                <div>
+                                                    <label class="vendor-label" data-i18n="vendorPage.withdrawPreviewNetLabel">预计到账</label>
+                                                    <p id="text-withdraw-preview-net" class="vendor-text mono">-</p>
+                                                </div>
+                                            </div>
+                                            <p id="text-withdraw-status" class="vendor-text muted" data-i18n="vendorPage.withdrawStatusIdle">尚未提交提现交易。</p>
+                                        </div>
+                                    </article>
+                                </section>
+                            </div>
+                        </article>
+                    </section>
+
+                    <section class="console-view" data-view-panel="private">
+                        <article class="vendor-card">
+                            <h3 data-i18n="vendorPage.privateWorkspaceTitle">私人供应商工作区</h3>
+                            <p class="vendor-help" data-i18n="vendorPage.privateWorkspaceHelp">仅本地导入与维护，不上链，不进入公开商业市场。</p>
+                            <div class="vendor-form-stack">
+                                <div>
+                                    <label class="vendor-label" for="file-private-profile" data-i18n="vendorPage.privateFileLabel">从文件导入 Profile</label>
+                                    <input id="file-private-profile" class="vendor-input" type="file" accept="application/json">
+                                </div>
+                                <div class="vendor-actions">
+                                    <button id="btn-import-private-file" class="btn btn-secondary" type="button" data-i18n="vendorPage.importPrivateFileButton">导入文件</button>
+                                </div>
+
+                                <div>
+                                    <label class="vendor-label" for="input-private-profile-url" data-i18n="vendorPage.privateUrlLabel">从 URL 导入 Profile</label>
+                                    <input id="input-private-profile-url" class="vendor-input" type="url" placeholder="https://example.com/profile.json">
+                                </div>
+                                <div class="vendor-actions">
+                                    <button id="btn-import-private-url" class="btn btn-secondary" type="button" data-i18n="vendorPage.importPrivateUrlButton">导入 URL</button>
+                                </div>
+
+                                <div>
+                                    <label class="vendor-label" for="textarea-private-local" data-i18n="vendorPage.privateLocalEditorLabel">本地 Profile JSON</label>
+                                    <textarea id="textarea-private-local" class="vendor-textarea code" rows="12" spellcheck="false"></textarea>
+                                </div>
+                                <div class="vendor-actions">
+                                    <button id="btn-update-private-local" class="btn btn-primary" type="button" data-i18n="vendorPage.updatePrivateLocalButton">更新本地 Profile</button>
+                                </div>
+                            </div>
+                            <p id="text-private-status" class="vendor-text muted" data-i18n="vendorPage.privateStatusIdle">尚未导入私人供应商 profile。</p>
+                        </article>
+                    </section>
+                </main>
+            </section>
+
+            <div id="commercial-lock-overlay" class="console-lock-overlay hidden">
+                <p data-i18n="vendorPage.commercialLockedHint">请先完成钱包连接、Base 网络校验与签名登录后再管理商业供应商。</p>
+            </div>
+
+            <div id="register-modal" class="console-modal hidden" aria-hidden="true">
+                <div class="console-modal-overlay" data-close-register-modal="true"></div>
+                <div class="console-modal-content">
+                    <div class="console-modal-header">
+                        <h3 data-i18n="vendorPage.commercialRegisterTitle">商业供应商注册</h3>
+                        <button id="btn-close-register-modal" class="btn btn-secondary btn-copy-mini" type="button" data-i18n="vendorPage.closeButton">关闭</button>
                     </div>
+                    <form id="form-commercial-register" class="vendor-form-stack">
+                        <div>
+                            <label class="vendor-label" for="input-register-supplier-id" data-i18n="vendorPage.registerSupplierIdLabel">Supplier ID</label>
+                            <input id="input-register-supplier-id" class="vendor-input" type="text" placeholder="mesh.vendor.alpha" data-i18n-placeholder="vendorPage.registerSupplierIdPlaceholder">
+                        </div>
+                        <div>
+                            <label class="vendor-label" for="input-register-metadata-uri" data-i18n="vendorPage.registerMetadataUriLabel">Metadata URI</label>
+                            <input id="input-register-metadata-uri" class="vendor-input" type="url" placeholder="ipfs://..." data-i18n-placeholder="vendorPage.registerMetadataUriPlaceholder">
+                        </div>
+                        <button id="btn-register-sign-submit" class="btn btn-primary" data-chain-write="true" data-requires-auth="true" type="submit" data-i18n="vendorPage.registerSubmitButton">签名并注册商业供应商</button>
+                    </form>
+                    <p id="text-register-status" class="vendor-text muted" data-i18n="vendorPage.registerStatusIdle">尚未提交注册交易。</p>
                 </div>
-                <p class="vendor-help" data-i18n="vendorPage.observabilityHelp">显示最近 20 条钱包、签名、API、交易事件。</p>
-                <div id="vendor-log-list" class="vendor-log-list"></div>
-            </article>
+            </div>
         </div>
     </section>
 
