@@ -1,6 +1,6 @@
 /**
  * MeshNetProtocol Vendor Console
- * Main Logic Module (v9 Fix - Flat Routing Rules)
+ * Main Logic Module (v10 Fix - Media AI Added)
  */
 
 (function () {
@@ -232,7 +232,8 @@
                 "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "anthropic.com", "claude.ai",
                 "perplexity.ai", "deepseek.com", "mistral.ai", "groq.com", "cohere.com",
                 "gemini.google.com", "ai.google.dev", "aistudio.google.com", "accounts.google.com", "gstatic.com", "googleusercontent.com",
-                "github.com", "api.github.com", "githubassets.com", "cursor.com", "cursor.sh", "huggingface.co", "discord.com"
+                "github.com", "api.github.com", "githubassets.com", "cursor.com", "cursor.sh", "huggingface.co", "discord.com", "midjourney.com",
+                "suno.com", "suno.ai", "udio.com", "elevenlabs.io", "runwayml.com", "lumalabs.ai", "pika.art", "klingai.com", "heygen.com", "viggle.ai", "sora.com"
             ],
             shop: ["amazon.com", "ebay.com", "shopify.com", "temu.com", "shein.com", "aliexpress.com", "paypal.com", "etsy.com"]
         };
@@ -599,7 +600,7 @@
             if (state.connected && session.hasValid(state.address)) state.signedIn = true;
         }
         renderAuthGate();
-        window.MESH_CONSOLE_V = 9;
+        window.MESH_CONSOLE_V = 10;
         console.log("%c MeshNet Console Loaded: v" + window.MESH_CONSOLE_V + " %c", "background:#2dd4bf; color:#0c111d; font-weight:bold; border-radius:4px; padding:2px 6px;", "");
     }
 
