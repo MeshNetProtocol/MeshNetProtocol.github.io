@@ -718,25 +718,55 @@
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(12px);
       z-index: 1000;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 2rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-backdrop.shown {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .modal-content {
       background: #0f172a;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      padding: 2rem;
+      border-radius: 24px;
+      padding: 2.5rem;
       width: 100%;
-      max-width: 600px;
+      max-width: 520px;
       display: grid;
       gap: 1.5rem;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+      transform: scale(0.9) translateY(20px);
+      transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-backdrop.shown .modal-content {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+    }
+
+    .modal-message {
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #94a3b8;
     }
 
     .config-lock-mask {
@@ -1021,7 +1051,7 @@
                 <input id="config-desc" type="text" class="form-control" placeholder="这个节点的简短描述 (可选)">
               </div>
 
-              <div class="form-group">
+              <div class="form-group" style="margin-top:1.5rem;">
                 <label>服务器列表 (至少需要一个服务器)</label>
                 <div id="server-list-container" style="display:grid; gap:0.8rem;">
                   <!-- dynamic server items -->
@@ -1030,6 +1060,19 @@
                   <button id="btn-add-server" class="btn btn-secondary">+ 增加服务器</button>
                   <button id="btn-goto-vps-direct" class="btn ghost">☁️ 去购买 VPS</button>
                 </div>
+              </div>
+
+              <div class="form-group" style="margin-top:1.5rem;">
+                <label>代理域名后缀 (Proxy Domain Suffixes)</label>
+                <div id="domain-list-container" style="display:grid; gap:0.8rem;">
+                  <!-- dynamic domain items -->
+                </div>
+                <div style="display:flex; gap:1rem; margin-top:1rem;">
+                  <button id="btn-add-domain" class="btn btn-secondary">+ 增加域名后缀</button>
+                </div>
+                <p style="font-size:0.75rem; color:#64748b; margin-top:0.5rem;">
+                  粘贴完整 URL 或域名，系统将自动提取根后缀。官方域名 (githubusercontent.com, workers.dev) 将被强制包含。
+                </p>
               </div>
 
               <div
@@ -1043,7 +1086,7 @@
         </div>
 
         <!-- JSON Parser Modal (sub-view) -->
-        <div id="subview-private-parse" class="modal-backdrop hidden">
+        <div id="subview-private-parse" class="modal-backdrop">
           <div class="modal-content">
             <h3 style="margin-top:0;">解析 JSON 配置</h3>
             <p style="font-size:0.9rem; color:#94a3b8;">粘贴您已有的 JSON 文本，系统将尝试自动回填關鍵字段。</p>
@@ -1103,6 +1146,16 @@
           <button class="btn-cancel btn ghost" style="margin-top:1rem;">返回</button>
         </div>
 
+        <!-- Global Prompt Modal -->
+        <div id="global-prompt-modal" class="modal-backdrop">
+          <div class="modal-content">
+            <h3 id="prompt-title" class="modal-title">Notification</h3>
+            <p id="prompt-message" class="modal-message">Content goes here...</p>
+            <div id="prompt-actions" style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1rem;">
+              <!-- buttons injected via JS -->
+            </div>
+          </div>
+        </div>
         <!-- Advanced Editor sub-view -->
         <div id="subview-private-advanced" class="sub-view hidden">
           <div class="json-editor-wrap">
@@ -1117,6 +1170,7 @@
             </div>
           </div>
         </div>
+      </div>
       </div>
     </section>
   </main>
@@ -1150,8 +1204,14 @@
           advanced: document.getElementById("subview-private-advanced")
         },
         viewTitle: document.getElementById("private-view-title"),
+        parserModal: document.getElementById("subview-private-parse"),
         serverList: document.getElementById("server-list-container"),
-        jsonEditor: document.getElementById("advanced-json-editor")
+        domainList: document.getElementById("domain-list-container"),
+        jsonEditor: document.getElementById("advanced-json-editor"),
+        promptModal: document.getElementById("global-prompt-modal"),
+        promptTitle: document.getElementById("prompt-title"),
+        promptMsg: document.getElementById("prompt-message"),
+        promptActions: document.getElementById("prompt-actions")
       };
 
       const state = {
@@ -1239,8 +1299,7 @@
           return;
         }
 
-        setStatus("success", "Commercial session ready: " + shortAddress(state.address));
-        dom.gateDesc.textContent = "商业供应商会话已就绪，可进入注册、续费与提现工作区。";
+        if (isBaseReady()) setStatus("success", "Commercial session ready");
         dom.btnConnectSignin.textContent = "Enter Workspace";
       }
 
@@ -1436,6 +1495,49 @@
         }
       };
 
+      function addDomainSuffixItem(suffix = "") {
+        const div = document.createElement("div");
+        div.className = "server-item"; // Reuse same styling
+        div.style.gridTemplateColumns = "1fr auto";
+        div.innerHTML = `
+          <input type="text" class="form-control" placeholder="例如: google.com 或 https://www.google.com" value="${suffix}">
+          <div class="btn-remove-server" onclick="this.parentElement.remove()" style="padding: 0 0.5rem;">✕</div>
+        `;
+        dom.domainList.appendChild(div);
+      }
+
+      function notify(msg, title = "提示") {
+        return showPrompt(title, msg, [{ label: "确定", primary: true }]);
+      }
+
+      function confirmAction(msg, title = "操作确认") {
+        return showPrompt(title, msg, [
+          { label: "取消", primary: false },
+          { label: "确定", primary: true }
+        ]);
+      }
+
+      function showPrompt(title, message, buttons = []) {
+        return new Promise((resolve) => {
+          dom.promptTitle.textContent = title;
+          dom.promptMsg.textContent = message;
+          dom.promptActions.innerHTML = "";
+
+          buttons.forEach(btn => {
+            const b = document.createElement("button");
+            b.className = btn.primary ? "btn btn-primary" : "btn ghost";
+            b.textContent = btn.label;
+            b.onclick = () => {
+              dom.promptModal.classList.remove("shown");
+              resolve(btn.label === "确定");
+            };
+            dom.promptActions.appendChild(b);
+          });
+
+          dom.promptModal.classList.add("shown");
+        });
+      }
+
       function switchSubView(viewKey, title) {
         Object.values(dom.subviews).forEach(v => v.classList.add("hidden"));
         dom.subviews[viewKey].classList.remove("hidden");
@@ -1492,6 +1594,7 @@
           document.getElementById("config-name").value = "";
           document.getElementById("config-desc").value = "";
           dom.serverList.innerHTML = "";
+          dom.domainList.innerHTML = "";
           document.getElementById("wizard-main-fields").classList.remove("config-unlocked");
         });
         document.getElementById("btn-goto-vps").addEventListener("click", () => switchSubView("vps", "购买与部署指引"));
@@ -1511,11 +1614,11 @@
         });
 
         document.getElementById("btn-open-parser").addEventListener("click", () => {
-          document.getElementById("subview-private-parse").classList.remove("hidden");
+          dom.parserModal.classList.add("shown");
         });
 
         document.getElementById("btn-close-parser").addEventListener("click", () => {
-          document.getElementById("subview-private-parse").classList.add("hidden");
+          dom.parserModal.classList.remove("shown");
         });
 
         document.getElementById("btn-do-parse").addEventListener("click", () => {
@@ -1551,11 +1654,21 @@
               });
             }
 
+            // 3. Resolve Domain Suffixes
+            dom.domainList.innerHTML = "";
+            const mandatory = ["githubusercontent.com", "workers.dev"];
+            if (data.routing_rules && data.routing_rules.proxy && Array.isArray(data.routing_rules.proxy.domain_suffix)) {
+              data.routing_rules.proxy.domain_suffix.forEach(ds => {
+                if (!mandatory.includes(ds)) addDomainSuffixItem(ds);
+              });
+            }
+
             document.getElementById("wizard-main-fields").classList.add("config-unlocked");
-            document.getElementById("subview-private-parse").classList.add("hidden");
+            dom.parserModal.classList.remove("shown");
             area.value = "";
+            notify("配置文件已成功回填！", "解析成功");
           } catch (e) {
-            alert("解析失败: " + e.message);
+            notify("解析失败: " + e.message, "格式错误");
           }
         });
 
@@ -1564,6 +1677,7 @@
         });
 
         document.getElementById("btn-add-server").addEventListener("click", () => addServerItem());
+        document.getElementById("btn-add-domain").addEventListener("click", () => addDomainSuffixItem());
 
         document.getElementById("btn-generate-json").addEventListener("click", () => {
           const nameInput = document.getElementById("config-name").value.trim();
@@ -1571,7 +1685,7 @@
           const idInput = document.getElementById("config-id").value.trim();
 
           if (!nameInput) {
-            alert("错误: 请输入供应商名称");
+            notify("请输入供应商名称，这是必需字段。", "校验未通过");
             return;
           }
 
@@ -1585,9 +1699,9 @@
           }).filter(s => s.ip && s.port);
 
           if (userServers.length === 0) {
-            if (confirm("尚未配置服务器。是否前往查看 VPS 购买指引？")) {
-              switchSubView("vps", "购买与部署指引");
-            }
+            confirmAction("尚未配置任何服务器节点。是否前往查看 VPS 购买与部署指引？", "缺失配置").then(ok => {
+              if (ok) switchSubView("vps", "购买与部署指引");
+            });
             return;
           }
 
@@ -1624,7 +1738,33 @@
             proxySelector.default = newNodes[0].tag;
           }
 
-          // Merge back: user nodes first, then logic nodes (selector/direct)
+          // 4. Resolve Domain Suffixes surgically
+          const mandatoryDomains = ["githubusercontent.com", "workers.dev"];
+          const userSuffixes = Array.from(dom.domainList.children).map(item => {
+            let val = item.querySelector("input").value.trim().toLowerCase();
+            if (!val) return null;
+
+            // Extract root domain (last 2 segments)
+            // Handle URL vs plain domain
+            try {
+              if (val.includes("://")) val = new URL(val).hostname;
+            } catch (e) { }
+
+            const parts = val.split(".");
+            if (parts.length >= 2) {
+              return parts.slice(-2).join(".");
+            }
+            return val;
+          }).filter(v => v && !mandatoryDomains.includes(v));
+
+          // Unique set
+          const finalSuffixes = [...new Set([...mandatoryDomains, ...userSuffixes])];
+
+          if (!finalJson.routing_rules) finalJson.routing_rules = { version: 0, proxy: {} };
+          if (!finalJson.routing_rules.proxy) finalJson.routing_rules.proxy = {};
+          finalJson.routing_rules.proxy.domain_suffix = finalSuffixes;
+
+          // 5. Merge back: user nodes first, then logic nodes (selector/direct)
           finalJson.config.outbounds = [...newNodes, ...otherOutbounds];
 
           switchSubView("advanced", "JSON 预览与导出");
@@ -1633,7 +1773,7 @@
 
         // VPS Logic
         document.getElementById("btn-goto-server-help").addEventListener("click", () => {
-          alert("即将转跳至服务器自动化安装文档：\n1. 下载 install.sh\n2. 运行 sudo bash install.sh\n3. 填入刚才生成的 JSON 配置即可。");
+          notify("即将展示自动化部署流程：\n1. 环境要求：Ubuntu 22.04+\n2. 核心操作：sudo bash <(curl -sL install.sh)\n3. 部署成功后填入生成的 JSON 即可转为运行状态。", "部署脚本说明");
         });
 
         // Tabs Logic
@@ -1654,12 +1794,17 @@
 
         // Advanced Logic
         document.getElementById("btn-check-json").addEventListener("click", () => {
-          try { JSON.parse(dom.jsonEditor.value); alert("JSON 格式正确！"); }
-          catch (e) { alert("JSON 格式错误: " + e.message); }
+          try {
+            JSON.parse(dom.jsonEditor.value);
+            notify("JSON 语法校验通过，格式正确。", "校验成功");
+          }
+          catch (e) {
+            notify("JSON 格式错误: " + e.message, "校验失败");
+          }
         });
         document.getElementById("btn-copy-json").addEventListener("click", () => {
           navigator.clipboard.writeText(dom.jsonEditor.value);
-          alert("已复制到剪贴板");
+          notify("配置内容已成功复制到剪贴板。", "操作成功");
         });
         document.getElementById("btn-save-file").addEventListener("click", () => {
           const blob = new Blob([dom.jsonEditor.value], { type: "application/json" });
@@ -1675,6 +1820,7 @@
             state.chainIdHex = String(chainId || "");
             renderNetworkStatusDot();
             renderAuthGate();
+            notify("当前区块链网络已变动。已自动同步状态。", "网络切换");
           });
 
           window.ethereum.on("accountsChanged", function (accounts) {
@@ -1683,6 +1829,7 @@
             state.signedIn = false;
             state.address = account;
             renderAuthGate();
+            notify("检测到钱包账户变更。系统已重置会话状态。", "账户变动");
           });
         }
       }
