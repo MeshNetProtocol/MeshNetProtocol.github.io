@@ -1205,7 +1205,7 @@
                       <div class="preset-icon">🧠</div>
                       <div style="text-align:left;">
                         <div style="font-weight:600; font-size:0.9rem;">AI 实验室增强</div>
-                        <div style="font-size:0.75rem; color:#64748b;">支持 OpenAI, Claude...</div>
+                        <div style="font-size:0.75rem; color:#64748b;">支持 OpenAI, Claude, 谷歌/GitHub 登录</div>
                       </div>
                     </div>
                     <div class="preset-card shop" onclick="injectDomainPreset('shop')">
@@ -1686,7 +1686,16 @@
 
       window.injectDomainPreset = (type) => {
         const presets = {
-          ai: ["openai.com", "chatgpt.com", "anthropic.com", "claude.ai", "perplexity.ai", "deepseek.com", "huggingface.co", "midjourney.com", "discord.com"],
+          ai: [
+            // Core AI
+            "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com",
+            "anthropic.com", "claude.ai",
+            "perplexity.ai", "deepseek.com", "mistral.ai", "groq.com", "cohere.com",
+            // Google AI & Auth
+            "gemini.google.com", "ai.google.dev", "aistudio.google.com", "accounts.google.com", "gstatic.com", "googleusercontent.com",
+            // Dev & Agents
+            "github.com", "api.github.com", "githubassets.com", "cursor.com", "cursor.sh", "huggingface.co", "discord.com"
+          ],
           shop: ["amazon.com", "ebay.com", "shopify.com", "temu.com", "shein.com", "aliexpress.com", "paypal.com", "etsy.com"]
         };
         const list = presets[type] || [];
