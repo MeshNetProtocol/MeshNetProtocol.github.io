@@ -1,1415 +1,610 @@
+/**
+ * MeshNetProtocol Vendor Console
+ * Main Logic Module (v8 Compat)
+ */
+
 (function () {
     "use strict";
 
-    const STORAGE_KEYS = {
-        targetNetwork: "vendor_console_target_network_v3",
-        privateProfiles: "vendor_console_private_profiles_v3",
+    // --- Constants & Configuration ---
+    const NETWORKS = {
+        "base-mainnet": { name: "Base Mainnet", chainIdHex: "0x2105" },
+        "base-sepolia": { name: "Base Sepolia", chainIdHex: "0x14a34" }
     };
 
-    const DEFAULT_TARGET_NETWORK_KEY = "base-mainnet";
-
-    const MACHINE_STATES = {
-        INIT: "INIT",
-        WALLET_CONNECTED: "WALLET_CONNECTED",
-        BASE_READY: "BASE_READY",
-        AUTHENTICATED: "AUTHENTICATED",
-        COMMERCIAL_DATA_READY: "COMMERCIAL_DATA_READY",
-        TX_PENDING: "TX_PENDING",
-        TX_CONFIRMED: "TX_CONFIRMED",
-        TX_FAILED: "TX_FAILED",
-    };
-
-    const NETWORK_CONFIGS = {
-        "base-mainnet": {
-            key: "base-mainnet",
-            name: "Base Mainnet",
-            chainId: 8453,
-            chainIdHex: "0x2105",
-            rpcUrls: ["https://mainnet.base.org"],
-            blockExplorerUrls: ["https://basescan.org"],
-            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-            registryAddress: "0x068277480caa9d395ac130a4c5ea7b0f314251d8",
-            usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    const SINGBOX_TEMPLATE = {
+        "provider_id": "com.meshnetprotocol.profile",
+        "name": "启动种子",
+        "description": "官方引导配置文件",
+        "tags": ["Official", "Online", "Bootstrap"],
+        "author": "OpenMesh Team",
+        "visibility": "public",
+        "status": "active",
+        "updated_at": "1970-01-01T00:00:00Z",
+        "package_hash": "seed-0",
+        "source_updated_at": "2026-02-08T00:00:00Z",
+        "config": {
+            "dns": {
+                "final": "google-dns",
+                "reverse_mapping": true,
+                "rules": [
+                    { "action": "route", "rule_set": "geosite-geolocation-cn", "server": "local-dns", "strategy": "ipv4_only" }
+                ],
+                "servers": [
+                    { "detour": "proxy", "server": "dns.google", "tag": "google-dns", "type": "https" },
+                    { "detour": "direct", "server": "223.5.5.5", "tag": "local-dns", "type": "udp" }
+                ],
+                "strategy": "ipv4_only"
+            },
+            "inbounds": [
+                {
+                    "address": ["172.18.0.1/30", "fdfe:dcba:9876::1/126"],
+                    "auto_route": true,
+                    "route_exclude_address": [
+                        "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16",
+                        "223.5.5.5/32", "::1/128", "fc00::/7", "fe80::/10"
+                    ],
+                    "route_exclude_address_set": ["geoip-cn"],
+                    "strict_route": false,
+                    "tag": "tun-in",
+                    "type": "tun",
+                    "sniff": true,
+                    "sniff_override_destination": true
+                }
+            ],
+            "experimental": { "cache_file": { "enabled": true } },
+            "log": { "level": "debug" },
+            "outbounds": [
+                { "type": "shadowsocks", "tag": "meshflux168", "server": "45.32.115.168", "server_port": 10086, "method": "aes-256-gcm", "password": "yourpassword123" },
+                { "type": "shadowsocks", "tag": "meshflux252", "server": "45.76.45.252", "server_port": 10086, "method": "aes-256-gcm", "password": "yourpassword123" },
+                { "type": "selector", "tag": "proxy", "outbounds": ["meshflux168", "meshflux252"], "default": "meshflux168" },
+                { "domain_strategy": "ipv4_only", "fallback_delay": "300ms", "tag": "direct", "type": "direct" }
+            ],
+            "route": {
+                "auto_detect_interface": true,
+                "default_domain_resolver": "google-dns",
+                "final": "proxy",
+                "rule_set": [
+                    { "type": "remote", "tag": "geoip-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "proxy", "update_interval": "1d" },
+                    { "type": "remote", "tag": "geosite-geolocation-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs", "download_detour": "proxy", "update_interval": "1d" }
+                ],
+                "rules": [
+                    { "action": "hijack-dns", "protocol": "dns" },
+                    { "action": "sniff" },
+                    { "rule_set": "geosite-geolocation-cn", "outbound": "direct" },
+                    { "rule_set": "geoip-cn", "outbound": "direct" }
+                ]
+            }
         },
-        "base-sepolia": {
-            key: "base-sepolia",
-            name: "Base Sepolia",
-            chainId: 84532,
-            chainIdHex: "0x14a34",
-            rpcUrls: ["https://sepolia.base.org"],
-            blockExplorerUrls: ["https://sepolia.basescan.org"],
-            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-            registryAddress: "0x068277480caa9d395ac130a4c5ea7b0f314251d8",
-            usdcAddress: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        },
+        "routing_rules": {
+            "version": 8,
+            "domain": ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
+            "domain_suffix": ["githubusercontent.com", "workers.dev"]
+        }
     };
 
-    // Registry read mapping: getSupplierCountByOwner/getSupplierHashesByOwner/getSupplier/isSupplierActive/getFeeConfig
-    const REGISTRY_READ_ABI = [
-        "function annualFeeUsdc() view returns (uint256)",
-        "function getFeeConfig() view returns (address feeTreasury, uint16 feePercent)",
-        "function getSupplierCountByOwner(address supplierOwner) view returns (uint256)",
-        "function getSupplierHashesByOwner(address supplierOwner, uint256 offset, uint256 limit) view returns (bytes32[])",
-        "function getSupplier(bytes32 supplierIdHash) view returns (string supplierId, address profile, uint64 expiry, bool suspended)",
-        "function isSupplierActive(bytes32 supplierIdHash) view returns (bool)",
-    ];
-
-    // Registry write mapping: registerCommercialWithAuthorization/renewCommercialWithAuthorization
-    const REGISTRY_WRITE_ABI = [
-        "function registerCommercialWithAuthorization(string supplierId, string metadataURI, bytes authorization)",
-        "function renewCommercialWithAuthorization(bytes32 supplierHash, bytes authorization)",
-    ];
-
-    const PROFILE_READ_ABI = [
-        "function owner() view returns (address)",
-        "function metadataURI() view returns (string)",
-    ];
-
-    // SupplierProfile write mapping: setMetadataURI/transferOwner/withdraw/withdrawAll
-    const PROFILE_WRITE_ABI = [
-        "function setMetadataURI(string newMetadataURI)",
-        "function transferOwner(address newOwner)",
-        "function withdraw(address to, uint256 amount)",
-        "function withdrawAll()",
-    ];
-
-    const dom = {};
-
+    // --- State ---
     const state = {
-        machine: MACHINE_STATES.INIT,
-        targetNetworkKey: localStorage.getItem(STORAGE_KEYS.targetNetwork) || DEFAULT_TARGET_NETWORK_KEY,
-        walletAddress: "",
-        chainId: null,
-        baseReady: false,
-        authenticated: false,
-        commercialDataReady: false,
-        txPending: false,
-        selectedView: "overview",
-        commercialSuppliers: [],
-        selectedSupplierHash: "",
-        selectedSupplier: null,
-        annualFeeUsdc: null,
-        feePercentRaw: null,
-        treasury: "",
-        signature: "",
-        authNonce: "",
-        lastTxHash: "",
-        privateProfiles: loadPrivateProfilesFromStorage(),
-        selectedPrivateId: "",
+        targetNetwork: "base-mainnet",
+        chainIdHex: "",
+        connected: false,
+        signedIn: false,
+        address: "",
+        userDomains: []
     };
 
-    function getLanguageBucket(bucketName) {
-        const lang = window.i18n && typeof window.i18n.getCurrentLanguage === "function"
-            ? window.i18n.getCurrentLanguage()
-            : "en";
-        const translations = window.i18n && window.i18n.translations ? window.i18n.translations : {};
-        return translations[lang] && translations[lang][bucketName] ? translations[lang][bucketName] : {};
-    }
-
-    function formatText(template, vars) {
-        if (typeof template !== "string") return "";
-        if (!vars) return template;
-        return template.replace(/\{(\w+)\}/g, function (_, key) {
-            return Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : `{${key}}`;
-        });
-    }
-
-    function tPage(key, vars, fallback) {
-        const page = getLanguageBucket("vendorPage");
-        const template = page[key];
-        if (typeof template === "string") return formatText(template, vars);
-        return fallback || key;
-    }
-
-    function tRuntime(key, vars, fallback) {
-        const runtime = getLanguageBucket("vendorRuntime");
-        const template = runtime[key];
-        if (typeof template === "string") return formatText(template, vars);
-        return fallback || key;
-    }
-
-    function ensureEthers() {
-        if (!window.ethers) {
-            throw new Error(tRuntime("errorEthersMissing", null, "ethers library is missing. Reload this page and try again."));
-        }
-        return window.ethers;
-    }
-
-    async function getEthereumProvider() {
-        if (!window.ethereum) {
-            throw new Error(tRuntime("walletMissingProvider", null, "MetaMask not detected. Install MetaMask and refresh."));
-        }
-        return window.ethereum;
-    }
-
-    function parseError(error) {
-        if (error && Number(error.code) === 4001) {
-            return tRuntime("errorUserRejected", null, "Request rejected in wallet. Approve and retry.");
-        }
-        if (typeof error?.shortMessage === "string" && error.shortMessage.trim()) return error.shortMessage.trim();
-        if (typeof error?.reason === "string" && error.reason.trim()) return error.reason.trim();
-        if (typeof error?.message === "string" && error.message.trim()) return error.message.trim();
-        return tRuntime("errorUnknown", null, "Unknown error. Check wallet popup and network settings, then retry.");
-    }
-
-    function parseChainHex(chainHex) {
-        if (!chainHex || typeof chainHex !== "string") return null;
-        const parsed = Number.parseInt(chainHex, 16);
-        return Number.isFinite(parsed) ? parsed : null;
-    }
-
-    function getTargetNetworkConfig() {
-        return NETWORK_CONFIGS[state.targetNetworkKey] || NETWORK_CONFIGS[DEFAULT_TARGET_NETWORK_KEY];
-    }
-
-    function getCurrentNetworkName(chainId) {
-        if (chainId === NETWORK_CONFIGS["base-mainnet"].chainId) return NETWORK_CONFIGS["base-mainnet"].name;
-        if (chainId === NETWORK_CONFIGS["base-sepolia"].chainId) return NETWORK_CONFIGS["base-sepolia"].name;
-        return tRuntime("networkUnknown", null, "Unknown network");
-    }
-
-    function shortAddress(address) {
-        const text = String(address || "").trim();
-        if (text.length < 12) return text || "-";
-        return `${text.slice(0, 6)}...${text.slice(-4)}`;
-    }
-
-    function shortHash(hash) {
-        const text = String(hash || "").trim();
-        if (text.length < 16) return text || "-";
-        return `${text.slice(0, 10)}...${text.slice(-8)}`;
-    }
-
-    function escapeHtml(input) {
-        return String(input || "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-    }
-
-    function formatExpiry(unixSeconds) {
-        const ts = Number(unixSeconds);
-        if (!Number.isFinite(ts) || ts <= 0) return "-";
-        return new Date(ts * 1000).toLocaleString();
-    }
-
-    function formatUsdc(bigintValue) {
-        if (bigintValue === null || bigintValue === undefined) return "-";
-        try {
-            const ethersLib = ensureEthers();
-            return `${ethersLib.formatUnits(bigintValue, 6)} USDC`;
-        } catch {
-            return "-";
-        }
-    }
-
-    function formatFeePercent(raw) {
-        const value = Number(raw);
-        if (!Number.isFinite(value)) return "-";
-        if (value > 100) return `${(value / 100).toFixed(2)}%`;
-        return `${value.toFixed(2)}%`;
-    }
-
-    function feeRateDecimal(raw) {
-        const value = Number(raw);
-        if (!Number.isFinite(value)) return 0;
-        if (value > 100) return value / 10000;
-        return value / 100;
-    }
-
-    function setStatusText(element, message, level) {
-        if (!element) return;
-        const normalizedLevel = level || "muted";
-        element.textContent = message;
-        element.classList.remove("muted", "success", "warning", "error", "pending");
-        element.classList.add(normalizedLevel);
-        element.setAttribute("data-level", normalizedLevel);
-    }
-
-    function setBadge(element, text, levelClass) {
-        if (!element) return;
-        const normalizedLevelClass = levelClass || "status-muted";
-        element.textContent = text;
-        element.classList.remove("status-muted", "status-success", "status-warning", "status-error");
-        element.classList.add(normalizedLevelClass);
-        element.setAttribute("data-level", normalizedLevelClass.replace("status-", ""));
-    }
-
-    function setNotice(level, message) {
-        setStatusText(dom.consoleNotice, message, level || "muted");
-    }
-
-    function transitionState(nextState) {
-        if (!nextState || nextState === state.machine) return;
-        state.machine = nextState;
-        renderTopStatus();
-    }
-
-    function updateBaseReady() {
-        const cfg = getTargetNetworkConfig();
-        state.baseReady = Boolean(state.walletAddress) && state.chainId === cfg.chainId;
-    }
-
-    function renderTopStatus() {
-        const cfg = getTargetNetworkConfig();
-        const walletText = state.walletAddress ? shortAddress(state.walletAddress) : tRuntime("badgeDisconnected", null, "Disconnected");
-        setBadge(dom.badgeWallet, walletText, state.walletAddress ? "status-success" : "status-muted");
-
-        const currentNetwork = getCurrentNetworkName(state.chainId);
-        const readyText = state.baseReady ? tRuntime("readyYes", null, "Ready") : tRuntime("readyNo", null, "Not Ready");
-        const chainLine = `${currentNetwork} -> ${cfg.name} (${readyText})`;
-
-        if (!state.walletAddress) {
-            setBadge(dom.badgeChain, `${cfg.name} (${tRuntime("readyNo", null, "Not Ready")})`, "status-muted");
-        } else if (state.baseReady) {
-            setBadge(dom.badgeChain, chainLine, "status-success");
-        } else {
-            setBadge(dom.badgeChain, chainLine, "status-warning");
-        }
-
-        if (!state.walletAddress) {
-            setStatusText(dom.textAuthStatus, tRuntime("authStatusDisconnected", null, "Wallet not connected."), "muted");
-            return;
-        }
-
-        if (state.txPending) {
-            setStatusText(dom.textAuthStatus, tRuntime("authStatusTxPending", null, "Transaction pending. Confirm in wallet and wait for chain confirmation."), "pending");
-            return;
-        }
-
-        if (!state.baseReady) {
-            setStatusText(dom.textAuthStatus, tRuntime("authStatusNeedBase", { target: cfg.name }, `Wallet connected. Switch to ${cfg.name} and sign in again.`), "warning");
-            return;
-        }
-
-        if (!state.authenticated) {
-            setStatusText(dom.textAuthStatus, tRuntime("authStatusNeedSign", null, "Network ready. Click sign-in to authenticate this session."), "warning");
-            return;
-        }
-
-        setStatusText(dom.textAuthStatus, tRuntime("authStatusAuthenticated", {
-            address: shortAddress(state.walletAddress),
-            state: state.machine,
-        }, `Authenticated: ${shortAddress(state.walletAddress)} (${state.machine})`), "success");
-    }
-
-    function updateActionGuards() {
-        const chainWriteEnabled = state.authenticated && state.baseReady && !state.txPending;
-        const authEnabled = state.authenticated && !state.txPending;
-
-        document.querySelectorAll("[data-chain-write='true']").forEach(function (button) {
-            if (!(button instanceof HTMLButtonElement)) return;
-            button.disabled = !chainWriteEnabled;
-        });
-
-        document.querySelectorAll("[data-requires-auth='true']").forEach(function (button) {
-            if (!(button instanceof HTMLButtonElement)) return;
-            if (!button.hasAttribute("data-chain-write")) {
-                button.disabled = !authEnabled;
-            }
-        });
-
-        if (dom.commercialLockOverlay) {
-            dom.commercialLockOverlay.classList.toggle("hidden", state.authenticated);
-        }
-    }
-
-    function switchView(viewKey) {
-        const target = viewKey || "overview";
-        state.selectedView = target;
-
-        document.querySelectorAll(".console-nav-btn").forEach(function (button) {
-            button.classList.toggle("active", button.getAttribute("data-view-target") === target);
-        });
-
-        document.querySelectorAll(".console-view").forEach(function (panel) {
-            panel.classList.toggle("active", panel.getAttribute("data-view-panel") === target);
-        });
-    }
-
-    function toggleRegisterForm(forceOpen) {
-        if (!dom.registerModal) return;
-        const shouldOpen = typeof forceOpen === "boolean"
-            ? forceOpen
-            : dom.registerModal.classList.contains("hidden");
-
-        dom.registerModal.classList.toggle("hidden", !shouldOpen);
-        dom.registerModal.setAttribute("aria-hidden", shouldOpen ? "false" : "true");
-
-        if (dom.btnOpenRegisterForm) {
-            dom.btnOpenRegisterForm.textContent = shouldOpen
-                ? tPage("closeRegisterFormButton", null, "Close Register")
-                : tPage("openRegisterFormButton", null, "Register New Supplier");
-        }
-    }
-
-    function closeRegisterFormIfOpen() {
-        if (dom.registerModal && !dom.registerModal.classList.contains("hidden")) {
-            toggleRegisterForm(false);
-        }
-    }
-
-    function setTargetNetworkSelection(networkKey, persist) {
-        state.targetNetworkKey = NETWORK_CONFIGS[networkKey] ? networkKey : DEFAULT_TARGET_NETWORK_KEY;
-        if (persist) {
-            localStorage.setItem(STORAGE_KEYS.targetNetwork, state.targetNetworkKey);
-        }
-        if (dom.selectTargetNetwork) {
-            dom.selectTargetNetwork.value = state.targetNetworkKey;
-        }
-        updateBaseReady();
-        renderTopStatus();
-        updateActionGuards();
-    }
-
-    async function syncWalletStateFromProvider() {
-        const provider = await getEthereumProvider();
-        const accounts = await provider.request({ method: "eth_accounts" });
-        const chainHex = await provider.request({ method: "eth_chainId" });
-
-        const prevAddress = state.walletAddress;
-        state.walletAddress = Array.isArray(accounts) && accounts[0] ? String(accounts[0]).toLowerCase() : "";
-        state.chainId = parseChainHex(chainHex);
-
-        updateBaseReady();
-
-        if (!prevAddress && state.walletAddress) {
-            transitionState(MACHINE_STATES.WALLET_CONNECTED);
-        }
-
-        if (state.walletAddress && state.baseReady) {
-            transitionState(MACHINE_STATES.BASE_READY);
-        }
-
-        if (prevAddress && !state.walletAddress) {
-            state.authenticated = false;
-            state.commercialDataReady = false;
-            state.commercialSuppliers = [];
-            resetSelectedSupplier();
-            transitionState(MACHINE_STATES.INIT);
-            renderCommercialList();
-            renderSelectedSupplier();
-        }
-
-        if (!state.baseReady && state.authenticated) {
-            state.authenticated = false;
-            state.commercialDataReady = false;
-            transitionState(MACHINE_STATES.WALLET_CONNECTED);
-        }
-
-        renderTopStatus();
-        updateActionGuards();
-    }
-
-    async function handleSwitchBaseNetwork(skipNotice) {
-        const cfg = getTargetNetworkConfig();
-        try {
-            const provider = await getEthereumProvider();
-
-            if (!skipNotice) {
-                setNotice("pending", tRuntime("activitySwitchNetworkStart", { network: cfg.name }, `Switching network to ${cfg.name}.`));
-            }
-
-            try {
-                await provider.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: cfg.chainIdHex }],
-                });
-            } catch (switchError) {
-                if (Number(switchError?.code) !== 4902) {
-                    throw switchError;
-                }
-
-                await provider.request({
-                    method: "wallet_addEthereumChain",
-                    params: [{
-                        chainId: cfg.chainIdHex,
-                        chainName: cfg.name,
-                        nativeCurrency: cfg.nativeCurrency,
-                        rpcUrls: cfg.rpcUrls,
-                        blockExplorerUrls: cfg.blockExplorerUrls,
-                    }],
-                });
-
-                await provider.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: cfg.chainIdHex }],
-                });
-            }
-
-            await syncWalletStateFromProvider();
-            if (state.baseReady) {
-                transitionState(MACHINE_STATES.BASE_READY);
-            }
-            setNotice("success", tRuntime("activitySwitchNetworkSuccess", { network: cfg.name }, `Network switched to ${cfg.name}.`));
-        } catch (error) {
-            const message = parseError(error);
-            setNotice("error", tRuntime("activitySwitchNetworkFailed", { error: message }, `Network switch failed: ${message}`));
-            setStatusText(dom.textAuthStatus, tRuntime("networkSwitchFailed", null, "Failed to switch network. Open wallet and retry."), "error");
-        }
-    }
-
-    async function handleConnectAndSignIn() {
-        try {
-            const provider = await getEthereumProvider();
-            setNotice("pending", tRuntime("logWalletConnectStart", null, "Requesting wallet connection"));
-
-            await provider.request({ method: "eth_requestAccounts" });
-            await syncWalletStateFromProvider();
-
-            if (!state.walletAddress) {
-                throw new Error(tRuntime("errorWalletNotConnected", null, "Wallet not connected. Unlock MetaMask and retry."));
-            }
-
-            if (!state.baseReady) {
-                await handleSwitchBaseNetwork(true);
-                await syncWalletStateFromProvider();
-            }
-
-            if (!state.baseReady) {
-                throw new Error(tRuntime("errorNeedBaseReady", { target: getTargetNetworkConfig().name }, "Base target network is required. Switch and retry."));
-            }
-
-            transitionState(MACHINE_STATES.BASE_READY);
-
-            const ethersLib = ensureEthers();
-            const browserProvider = new ethersLib.BrowserProvider(provider);
-            const signer = await browserProvider.getSigner();
-            const cfg = getTargetNetworkConfig();
-
-            state.authNonce = String(Date.now());
-            const message = tRuntime("signInMessage", {
-                address: state.walletAddress,
-                network: cfg.name,
-                nonce: state.authNonce,
-                timestamp: new Date().toISOString(),
-            }, `MeshNetProtocol Supplier Console\nAddress: ${state.walletAddress}\nNetwork: ${cfg.name}\nNonce: ${state.authNonce}`);
-
-            setNotice("pending", tRuntime("activitySignStart", null, "Awaiting signature in wallet."));
-            state.signature = await signer.signMessage(message);
-
-            state.authenticated = true;
-            transitionState(MACHINE_STATES.AUTHENTICATED);
-            updateActionGuards();
-            renderTopStatus();
-
-            setNotice("success", tRuntime("activitySignSuccess", { address: shortAddress(state.walletAddress) }, "Sign-in completed."));
-            await loadCommercialSuppliers();
-        } catch (error) {
-            state.authenticated = false;
-            state.commercialDataReady = false;
-            updateActionGuards();
-            renderTopStatus();
-
-            const msg = parseError(error);
-            setNotice("error", tRuntime("authSignInFailedWithAction", { error: msg }, `Sign-in failed: ${msg}`));
-        }
-    }
-
-    function handleDisconnect() {
-        state.walletAddress = "";
-        state.chainId = null;
-        state.baseReady = false;
-        state.authenticated = false;
-        state.commercialDataReady = false;
-        state.txPending = false;
-        state.signature = "";
-        state.commercialSuppliers = [];
-        resetSelectedSupplier();
-
-        transitionState(MACHINE_STATES.INIT);
-        renderTopStatus();
-        renderCommercialList();
-        renderSelectedSupplier();
-        updateActionGuards();
-        closeRegisterFormIfOpen();
-
-        if (dom.textCommercialCount) dom.textCommercialCount.textContent = "0";
-        setNotice("muted", tRuntime("activityDisconnected", null, "Disconnected local session."));
-    }
-
-    function resetSelectedSupplier() {
-        state.selectedSupplierHash = "";
-        state.selectedSupplier = null;
-    }
-
-    function renderCommercialList() {
-        if (!dom.listCommercialSuppliers || !dom.emptyCommercialState) return;
-
-        if (!state.commercialSuppliers.length) {
-            dom.listCommercialSuppliers.innerHTML = "";
-            dom.emptyCommercialState.classList.remove("hidden");
-            return;
-        }
-
-        dom.emptyCommercialState.classList.add("hidden");
-
-        dom.listCommercialSuppliers.innerHTML = state.commercialSuppliers.map(function (item) {
-            const activeClass = item.hash === state.selectedSupplierHash ? "active" : "";
-            return `
-                <button class="supplier-item ${activeClass}" type="button" data-supplier-hash="${escapeHtml(item.hash)}">
-                    <span class="supplier-item-title mono">${escapeHtml(item.supplierId || "-")}</span>
-                    <span class="supplier-item-meta mono">${escapeHtml(shortHash(item.hash))}</span>
-                    <span class="supplier-item-meta">${escapeHtml(tRuntime("supplierExpiryLine", { expiry: formatExpiry(item.expiry) }, `Expiry: ${formatExpiry(item.expiry)}`))}</span>
-                    <span class="supplier-item-meta">${escapeHtml(tRuntime("supplierActiveLine", { active: item.active ? tRuntime("yes", null, "Yes") : tRuntime("no", null, "No") }, `Active: ${item.active ? "Yes" : "No"}`))}</span>
-                </button>
-            `;
-        }).join("");
-
-        dom.listCommercialSuppliers.querySelectorAll("[data-supplier-hash]").forEach(function (button) {
-            button.addEventListener("click", function () {
-                const hash = String(button.getAttribute("data-supplier-hash") || "");
-                state.selectedSupplierHash = hash;
-                state.selectedSupplier = state.commercialSuppliers.find(function (item) {
-                    return item.hash === hash;
-                }) || null;
-                renderCommercialList();
-                renderSelectedSupplier();
-            });
-        });
-    }
-
-    function renderSelectedSupplier() {
-        const selected = state.selectedSupplier;
-
-        if (!selected) {
-            if (dom.textSelectedSupplierId) dom.textSelectedSupplierId.textContent = "-";
-            if (dom.textSelectedOwner) dom.textSelectedOwner.textContent = "-";
-            if (dom.textSelectedProfileAddress) dom.textSelectedProfileAddress.textContent = "-";
-            if (dom.textSelectedExpiry) dom.textSelectedExpiry.textContent = "-";
-            if (dom.textSelectedActiveStatus) dom.textSelectedActiveStatus.textContent = "-";
-            if (dom.inputMetadataURI) dom.inputMetadataURI.value = "";
-            return;
-        }
-
-        if (dom.textSelectedSupplierId) dom.textSelectedSupplierId.textContent = selected.supplierId || "-";
-        if (dom.textSelectedOwner) dom.textSelectedOwner.textContent = selected.owner || "-";
-        if (dom.textSelectedProfileAddress) dom.textSelectedProfileAddress.textContent = selected.profileAddress || "-";
-        if (dom.textSelectedExpiry) dom.textSelectedExpiry.textContent = formatExpiry(selected.expiry);
-
-        if (dom.textSelectedActiveStatus) {
-            const activeText = selected.active ? tRuntime("yes", null, "Yes") : tRuntime("no", null, "No");
-            dom.textSelectedActiveStatus.textContent = activeText;
-            dom.textSelectedActiveStatus.classList.remove("success", "warning", "muted");
-            dom.textSelectedActiveStatus.classList.add(selected.active ? "success" : "warning");
-        }
-
-        if (dom.inputMetadataURI) dom.inputMetadataURI.value = selected.metadataURI || "";
-    }
-
-    async function getRegistryReadContract() {
-        const ethersLib = ensureEthers();
-        const cfg = getTargetNetworkConfig();
-        const provider = new ethersLib.JsonRpcProvider(cfg.rpcUrls[0], cfg.chainId);
-        return new ethersLib.Contract(cfg.registryAddress, REGISTRY_READ_ABI, provider);
-    }
-
-    async function getRegistryWriteContract() {
-        const ethersLib = ensureEthers();
-        const provider = await getEthereumProvider();
-        const browserProvider = new ethersLib.BrowserProvider(provider);
-        const signer = await browserProvider.getSigner();
-        const cfg = getTargetNetworkConfig();
-        return new ethersLib.Contract(cfg.registryAddress, REGISTRY_WRITE_ABI, signer);
-    }
-
-    async function getProfileReadContract(profileAddress) {
-        const ethersLib = ensureEthers();
-        const cfg = getTargetNetworkConfig();
-        const provider = new ethersLib.JsonRpcProvider(cfg.rpcUrls[0], cfg.chainId);
-        return new ethersLib.Contract(profileAddress, PROFILE_READ_ABI, provider);
-    }
-
-    async function getProfileWriteContract(profileAddress) {
-        const ethersLib = ensureEthers();
-        const provider = await getEthereumProvider();
-        const browserProvider = new ethersLib.BrowserProvider(provider);
-        const signer = await browserProvider.getSigner();
-        return new ethersLib.Contract(profileAddress, PROFILE_WRITE_ABI, signer);
-    }
-
-    async function refreshFeeConfig(registryRead) {
-        try {
-            const feeConfig = await registryRead.getFeeConfig();
-            state.treasury = feeConfig.feeTreasury || feeConfig[0] || "";
-            state.feePercentRaw = Number(feeConfig.feePercent !== undefined ? feeConfig.feePercent : feeConfig[1]);
-
-            try {
-                state.annualFeeUsdc = await registryRead.annualFeeUsdc();
-            } catch {
-                state.annualFeeUsdc = null;
-            }
-
-            if (dom.textAnnualFee) dom.textAnnualFee.textContent = formatUsdc(state.annualFeeUsdc);
-            if (dom.textWithdrawFee) dom.textWithdrawFee.textContent = formatFeePercent(state.feePercentRaw);
-            if (dom.textTreasury) dom.textTreasury.textContent = state.treasury || "-";
-        } catch (error) {
-            const msg = parseError(error);
-            setNotice("warning", tRuntime("activityFeeConfigFailed", { error: msg }, `Fee config read failed: ${msg}`));
-        }
-    }
-
-    async function enrichSupplierWithProfile(record) {
-        if (!record?.profileAddress) return record;
-
-        try {
-            const profileRead = await getProfileReadContract(record.profileAddress);
-            const [owner, metadataURI] = await Promise.all([
-                profileRead.owner().catch(function () { return record.owner || ""; }),
-                profileRead.metadataURI().catch(function () { return record.metadataURI || ""; }),
-            ]);
-
-            return {
-                ...record,
-                owner: owner || record.owner || "",
-                metadataURI: metadataURI || record.metadataURI || "",
-            };
-        } catch {
-            return record;
-        }
-    }
-
-    async function loadCommercialSuppliers() {
-        if (!state.authenticated) {
-            setNotice("warning", tRuntime("errorNeedAuthAction", null, "Sign in first to continue commercial management."));
-            return;
-        }
-
-        if (!state.baseReady) {
-            setNotice("warning", tRuntime("errorNeedBaseReady", { target: getTargetNetworkConfig().name }, "Switch to selected Base network first."));
-            return;
-        }
-
-        try {
-            setNotice("pending", tRuntime("activityCommercialLoadStart", null, "Loading commercial suppliers from ProtocolRegistry."));
-
-            const registryRead = await getRegistryReadContract();
-            await refreshFeeConfig(registryRead);
-
-            const countRaw = await registryRead.getSupplierCountByOwner(state.walletAddress);
-            const count = Number(countRaw);
-
-            if (dom.textCommercialCount) {
-                dom.textCommercialCount.textContent = Number.isFinite(count) ? String(count) : "0";
-            }
-
-            const suppliers = [];
-            if (Number.isFinite(count) && count > 0) {
-                const hashes = await registryRead.getSupplierHashesByOwner(state.walletAddress, 0, count);
-                for (let i = 0; i < hashes.length; i += 1) {
-                    const hash = hashes[i];
-                    const supplier = await registryRead.getSupplier(hash);
-                    const active = await registryRead.isSupplierActive(hash);
-
-                    const record = {
-                        hash: String(hash),
-                        supplierId: supplier.supplierId || supplier[0] || "",
-                        profileAddress: supplier.profile || supplier[1] || "",
-                        expiry: Number(supplier.expiry || supplier[2] || 0),
-                        suspended: Boolean(supplier.suspended || supplier[3]),
-                        active: Boolean(active),
-                        owner: state.walletAddress,
-                        metadataURI: "",
-                    };
-
-                    suppliers.push(await enrichSupplierWithProfile(record));
-                }
-            }
-
-            state.commercialSuppliers = suppliers;
-            state.commercialDataReady = true;
-            transitionState(MACHINE_STATES.COMMERCIAL_DATA_READY);
-
-            if (suppliers.length) {
-                const existing = suppliers.find(function (item) {
-                    return item.hash === state.selectedSupplierHash;
-                });
-                state.selectedSupplier = existing || suppliers[0];
-                state.selectedSupplierHash = state.selectedSupplier.hash;
-            } else {
-                resetSelectedSupplier();
-            }
-
-            renderCommercialList();
-            renderSelectedSupplier();
-            setNotice("success", tRuntime("activityCommercialLoadSuccess", { count: suppliers.length }, `Commercial supplier list loaded: ${suppliers.length}`));
-        } catch (error) {
-            const message = parseError(error);
-            state.commercialDataReady = false;
-            state.commercialSuppliers = [];
-            resetSelectedSupplier();
-            renderCommercialList();
-            renderSelectedSupplier();
-            setNotice("error", tRuntime("commercialLoadFailed", { error: message }, `Commercial supplier load failed: ${message}`));
-            if (dom.textCommercialCount) dom.textCommercialCount.textContent = "0";
-        }
-    }
-
-    function setButtonLoading(button, loading) {
-        if (!(button instanceof HTMLButtonElement)) return;
-        button.classList.toggle("loading", Boolean(loading));
-    }
-
-    async function runTransaction(scope, button, statusElement, startKey, successKey, failedKey, action) {
-        if (!state.authenticated) {
-            setStatusText(statusElement, tRuntime("errorNeedAuthAction", null, "Sign in first to continue commercial management."), "warning");
-            return;
-        }
-
-        if (!state.baseReady) {
-            setStatusText(statusElement, tRuntime("errorNeedBaseReady", { target: getTargetNetworkConfig().name }, "Switch to selected Base network first."), "warning");
-            return;
-        }
-
-        try {
-            state.txPending = true;
-            transitionState(MACHINE_STATES.TX_PENDING);
-            updateActionGuards();
-            renderTopStatus();
-
-            setButtonLoading(button, true);
-            setStatusText(statusElement, tRuntime(startKey, null, "Submitting transaction..."), "pending");
-            setNotice("pending", tRuntime(startKey, null, "Submitting transaction..."));
-
-            const txResponse = await action();
-            if (txResponse?.hash) {
-                state.lastTxHash = txResponse.hash;
-                setNotice("pending", tRuntime("activityTxSubmitted", { hash: shortHash(txResponse.hash) }, `Transaction submitted: ${shortHash(txResponse.hash)}`));
-            }
-
-            if (txResponse && typeof txResponse.wait === "function") {
-                await txResponse.wait();
-            }
-
-            transitionState(MACHINE_STATES.TX_CONFIRMED);
-            setStatusText(statusElement, tRuntime(successKey, { hash: shortHash(state.lastTxHash) }, "Transaction confirmed."), "success");
-            setNotice("success", tRuntime("activityTxConfirmed", { scope: scope }, `${scope} confirmed.`));
-        } catch (error) {
-            transitionState(MACHINE_STATES.TX_FAILED);
-            const message = parseError(error);
-            setStatusText(statusElement, tRuntime(failedKey, { error: message }, `Transaction failed: ${message}`), "error");
-            setNotice("error", tRuntime("activityTxFailed", { scope: scope, error: message }, `${scope} failed: ${message}`));
-        } finally {
-            state.txPending = false;
-            setButtonLoading(button, false);
-
-            if (state.authenticated) {
-                transitionState(state.commercialDataReady ? MACHINE_STATES.COMMERCIAL_DATA_READY : MACHINE_STATES.AUTHENTICATED);
-            }
-
-            updateActionGuards();
-            renderTopStatus();
-        }
-    }
-
-    async function handleRegisterCommercialSupplier(event) {
-        if (event && typeof event.preventDefault === "function") {
-            event.preventDefault();
-        }
-
-        const supplierId = String(dom.inputRegisterSupplierId?.value || "").trim();
-        const metadataURI = String(dom.inputRegisterMetadataURI?.value || "").trim();
-
-        if (!supplierId) {
-            setStatusText(dom.textRegisterStatus, tRuntime("registerSupplierIdRequired", null, "Supplier ID is required. Fill it and retry."), "error");
-            return;
-        }
-
-        if (!metadataURI) {
-            setStatusText(dom.textRegisterStatus, tRuntime("registerMetadataRequired", null, "Metadata URI is required. Fill it and retry."), "error");
-            return;
-        }
-
-        await runTransaction(
-            "register-commercial",
-            dom.btnRegisterSignSubmit,
-            dom.textRegisterStatus,
-            "registerStart",
-            "registerSuccess",
-            "registerFailed",
-            async function () {
-                const registryWrite = await getRegistryWriteContract();
-                // Keep authorization placeholder for integration with backend signer service.
-                return registryWrite.registerCommercialWithAuthorization(supplierId, metadataURI, "0x");
-            }
-        );
-
-        if (!state.txPending && state.machine !== MACHINE_STATES.TX_FAILED) {
-            toggleRegisterForm(false);
-            await loadCommercialSuppliers();
-            switchView("commercial");
-        }
-    }
-
-    async function handleRenewCommercialSupplier() {
-        if (!state.selectedSupplier?.hash) {
-            setStatusText(dom.textRenewStatus, tRuntime("errorNoSelectedSupplier", null, "Select a commercial supplier from list first."), "warning");
-            return;
-        }
-
-        await runTransaction(
-            "renew-commercial",
-            dom.btnRenewOneYear,
-            dom.textRenewStatus,
-            "renewStart",
-            "renewSuccess",
-            "renewFailed",
-            async function () {
-                const registryWrite = await getRegistryWriteContract();
-                return registryWrite.renewCommercialWithAuthorization(state.selectedSupplier.hash, "0x");
-            }
-        );
-
-        if (!state.txPending && state.machine !== MACHINE_STATES.TX_FAILED) {
-            await loadCommercialSuppliers();
-        }
-    }
-
-    async function handleSaveMetadataURI() {
-        if (!state.selectedSupplier?.profileAddress) {
-            setStatusText(dom.textMetadataStatus, tRuntime("errorNoSelectedSupplier", null, "Select a commercial supplier from list first."), "warning");
-            return;
-        }
-
-        const metadataURI = String(dom.inputMetadataURI?.value || "").trim();
-        if (!metadataURI) {
-            setStatusText(dom.textMetadataStatus, tRuntime("registerMetadataRequired", null, "Metadata URI is required. Fill it and retry."), "error");
-            return;
-        }
-
-        await runTransaction(
-            "save-metadata",
-            dom.btnSaveMetadata,
-            dom.textMetadataStatus,
-            "metadataSaveStart",
-            "metadataSaveSuccess",
-            "metadataSaveFailed",
-            async function () {
-                const profileWrite = await getProfileWriteContract(state.selectedSupplier.profileAddress);
-                return profileWrite.setMetadataURI(metadataURI);
-            }
-        );
-
-        if (!state.txPending && state.machine !== MACHINE_STATES.TX_FAILED) {
-            await loadCommercialSuppliers();
-        }
-    }
-
-    async function handleTransferOwner() {
-        if (!state.selectedSupplier?.profileAddress) {
-            setStatusText(dom.textTransferOwnerStatus, tRuntime("errorNoSelectedSupplier", null, "Select a commercial supplier from list first."), "warning");
-            return;
-        }
-
-        const newOwner = String(dom.inputNewOwner?.value || "").trim();
-        if (!newOwner) {
-            setStatusText(dom.textTransferOwnerStatus, tRuntime("transferOwnerAddressRequired", null, "New owner address is required."), "error");
-            return;
-        }
-
-        try {
-            const ethersLib = ensureEthers();
-            if (!ethersLib.isAddress(newOwner)) {
-                throw new Error(tRuntime("errorInvalidAddress", null, "Address format is invalid. Check and retry."));
-            }
-        } catch (error) {
-            setStatusText(dom.textTransferOwnerStatus, parseError(error), "error");
-            return;
-        }
-
-        await runTransaction(
-            "transfer-owner",
-            dom.btnTransferOwner,
-            dom.textTransferOwnerStatus,
-            "transferOwnerStart",
-            "transferOwnerSuccess",
-            "transferOwnerFailed",
-            async function () {
-                const profileWrite = await getProfileWriteContract(state.selectedSupplier.profileAddress);
-                return profileWrite.transferOwner(newOwner);
-            }
-        );
-
-        if (!state.txPending && state.machine !== MACHINE_STATES.TX_FAILED) {
-            await loadCommercialSuppliers();
-        }
-    }
-
-    function handlePreviewWithdraw() {
-        const amount = Number.parseFloat(String(dom.inputWithdrawAmount?.value || "").trim());
-        if (!Number.isFinite(amount) || amount <= 0) {
-            setStatusText(dom.textWithdrawStatus, tRuntime("withdrawAmountInvalid", null, "Enter valid positive USDC amount."), "error");
-            return;
-        }
-
-        const rate = feeRateDecimal(state.feePercentRaw);
-        const fee = amount * rate;
-        const net = Math.max(amount - fee, 0);
-
-        if (dom.textWithdrawPreviewFee) dom.textWithdrawPreviewFee.textContent = `${fee.toFixed(6)} USDC`;
-        if (dom.textWithdrawPreviewNet) dom.textWithdrawPreviewNet.textContent = `${net.toFixed(6)} USDC`;
-
-        setStatusText(dom.textWithdrawStatus, tRuntime("withdrawPreviewDone", {
-            fee: fee.toFixed(6),
-            net: net.toFixed(6),
-        }, `Preview done. Fee ${fee.toFixed(6)} USDC, net ${net.toFixed(6)} USDC.`), "pending");
-    }
-
-    async function handleWithdraw() {
-        if (!state.selectedSupplier?.profileAddress) {
-            setStatusText(dom.textWithdrawStatus, tRuntime("errorNoSelectedSupplier", null, "Select a commercial supplier from list first."), "warning");
-            return;
-        }
-
-        const rawAmount = String(dom.inputWithdrawAmount?.value || "").trim();
-        const toAddress = String(dom.inputWithdrawTo?.value || "").trim();
-        const numericAmount = Number.parseFloat(rawAmount);
-
-        if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-            setStatusText(dom.textWithdrawStatus, tRuntime("withdrawAmountInvalid", null, "Enter valid positive USDC amount."), "error");
-            return;
-        }
-
-        if (!toAddress) {
-            setStatusText(dom.textWithdrawStatus, tRuntime("withdrawToRequired", null, "Withdraw destination address is required."), "error");
-            return;
-        }
-
-        let amountUnits;
-        try {
-            const ethersLib = ensureEthers();
-            if (!ethersLib.isAddress(toAddress)) {
-                throw new Error(tRuntime("errorInvalidAddress", null, "Address format is invalid. Check and retry."));
-            }
-            amountUnits = ethersLib.parseUnits(rawAmount, 6);
-        } catch (error) {
-            setStatusText(dom.textWithdrawStatus, parseError(error), "error");
-            return;
-        }
-
-        await runTransaction(
-            "withdraw",
-            dom.btnWithdraw,
-            dom.textWithdrawStatus,
-            "withdrawStart",
-            "withdrawSuccess",
-            "withdrawFailed",
-            async function () {
-                const profileWrite = await getProfileWriteContract(state.selectedSupplier.profileAddress);
-                return profileWrite.withdraw(toAddress, amountUnits);
-            }
-        );
-    }
-
-    async function handleWithdrawAll() {
-        if (!state.selectedSupplier?.profileAddress) {
-            setStatusText(dom.textWithdrawStatus, tRuntime("errorNoSelectedSupplier", null, "Select a commercial supplier from list first."), "warning");
-            return;
-        }
-
-        await runTransaction(
-            "withdraw-all",
-            dom.btnWithdrawAll,
-            dom.textWithdrawStatus,
-            "withdrawAllStart",
-            "withdrawAllSuccess",
-            "withdrawAllFailed",
-            async function () {
-                const profileWrite = await getProfileWriteContract(state.selectedSupplier.profileAddress);
-                return profileWrite.withdrawAll();
-            }
-        );
-    }
-
-    function normalizePrivateProfile(rawProfile, source) {
-        if (!rawProfile || typeof rawProfile !== "object" || Array.isArray(rawProfile)) {
-            throw new Error(tRuntime("privateProfileInvalid", null, "Profile JSON must be an object."));
-        }
-
-        const supplierId = String(rawProfile.supplierId || rawProfile.id || `private-${Date.now()}`);
-        const metadataURI = String(rawProfile.metadataURI || rawProfile.metadata_uri || "");
-
-        return {
-            supplierId,
-            metadataURI,
-            source: source || "local",
-            updatedAt: new Date().toISOString(),
-            raw: rawProfile,
+    // --- Shared DOM Map ---
+    let dom = {};
+
+    function initDomMap() {
+        dom = {
+            selectTargetNetwork: document.getElementById("select-target-network"),
+            networkDot: document.getElementById("network-dot"),
+            btnConnectSignin: document.getElementById("btn-connect-signin"),
+            btnInstallMetaMask: document.getElementById("btn-install-metamask"),
+            gateDesc: document.getElementById("gate-desc"),
+            textAuthStatus: document.getElementById("text-auth-status"),
+            btnEnterPrivate: document.getElementById("btn-enter-private"),
+            btnPrivateBack: document.getElementById("btn-private-back"),
+            entryStage: document.getElementById("entry-stage"),
+            privateArea: document.getElementById("private-operation-area"),
+            // Sub-views
+            subviews: {
+                main: document.getElementById("subview-private-main"),
+                config: document.getElementById("subview-private-config"),
+                vps: document.getElementById("subview-private-vps"),
+                import: document.getElementById("subview-private-import"),
+                advanced: document.getElementById("subview-private-advanced")
+            },
+            viewTitle: document.getElementById("private-view-title"),
+            parserModal: document.getElementById("subview-private-parse"),
+            serverList: document.getElementById("server-list-container"),
+            domainChipGrid: document.getElementById("domain-chip-grid"),
+            jsonEditor: document.getElementById("advanced-json-editor"),
+            promptModal: document.getElementById("global-prompt-modal"),
+            promptTitle: document.getElementById("prompt-title"),
+            promptMsg: document.getElementById("prompt-message"),
+            promptActions: document.getElementById("prompt-actions")
         };
     }
 
-    function persistPrivateProfiles() {
-        localStorage.setItem(STORAGE_KEYS.privateProfiles, JSON.stringify(state.privateProfiles));
-    }
-
-    function loadPrivateProfilesFromStorage() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEYS.privateProfiles);
-            if (!saved) return [];
-            const parsed = JSON.parse(saved);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch {
-            return [];
-        }
-    }
-
-    function renderPrivateEditor() {
-        if (!dom.textareaPrivateLocal) return;
-
-        if (!state.selectedPrivateId && state.privateProfiles.length) {
-            state.selectedPrivateId = state.privateProfiles[0].supplierId;
-        }
-
-        const selected = state.privateProfiles.find(function (item) {
-            return item.supplierId === state.selectedPrivateId;
-        });
-
-        if (!selected) {
-            dom.textareaPrivateLocal.value = "";
-            return;
-        }
-
-        try {
-            dom.textareaPrivateLocal.value = JSON.stringify(selected.raw, null, 2);
-        } catch {
-            dom.textareaPrivateLocal.value = "";
-        }
-    }
-
-    function upsertPrivateProfile(profile, source) {
-        const normalized = normalizePrivateProfile(profile, source);
-        const index = state.privateProfiles.findIndex(function (item) {
-            return item.supplierId === normalized.supplierId;
-        });
-
-        if (index >= 0) {
-            state.privateProfiles[index] = normalized;
-        } else {
-            state.privateProfiles.unshift(normalized);
-        }
-
-        state.selectedPrivateId = normalized.supplierId;
-        persistPrivateProfiles();
-        renderPrivateEditor();
-
-        setStatusText(dom.textPrivateStatus, tRuntime("privateProfileSaved", {
-            id: normalized.supplierId,
-            count: state.privateProfiles.length,
-            source: normalized.source,
-        }, `Private profile saved: ${normalized.supplierId}`), "success");
-
-        setNotice("success", tRuntime("activityPrivateProfileSaved", {
-            id: normalized.supplierId,
-            source: normalized.source,
-        }, `Private profile saved: ${normalized.supplierId}`));
-    }
-
-    async function handleImportPrivateFile() {
-        const file = dom.filePrivateProfile?.files ? dom.filePrivateProfile.files[0] : null;
-        if (!file) {
-            setStatusText(dom.textPrivateStatus, tRuntime("privateFileRequired", null, "Select a JSON file first."), "warning");
-            return;
-        }
-
-        try {
-            const content = await file.text();
-            const parsed = JSON.parse(content);
-            upsertPrivateProfile(parsed, `file:${file.name}`);
-        } catch (error) {
-            const msg = parseError(error);
-            setStatusText(dom.textPrivateStatus, tRuntime("privateImportFailed", { error: msg }, `Import failed: ${msg}`), "error");
-            setNotice("error", tRuntime("privateImportFailed", { error: msg }, `Import failed: ${msg}`));
-        }
-    }
-
-    async function handleImportPrivateUrl() {
-        const url = String(dom.inputPrivateProfileUrl?.value || "").trim();
-        if (!url) {
-            setStatusText(dom.textPrivateStatus, tRuntime("privateUrlRequired", null, "Enter profile URL first."), "warning");
-            return;
-        }
-
-        try {
-            const response = await fetch(url, { cache: "no-store" });
-            if (!response.ok) {
-                throw new Error(tRuntime("errorHttpStatus", { status: response.status }, `HTTP ${response.status}`));
-            }
-            const parsed = await response.json();
-            upsertPrivateProfile(parsed, `url:${url}`);
-        } catch (error) {
-            const msg = parseError(error);
-            setStatusText(dom.textPrivateStatus, tRuntime("privateImportFailed", { error: msg }, `Import failed: ${msg}`), "error");
-            setNotice("error", tRuntime("privateImportFailed", { error: msg }, `Import failed: ${msg}`));
-        }
-    }
-
-    function handleUpdatePrivateProfile() {
-        const rawText = String(dom.textareaPrivateLocal?.value || "").trim();
-        if (!rawText) {
-            setStatusText(dom.textPrivateStatus, tRuntime("privateLocalRequired", null, "Paste profile JSON in local editor first."), "warning");
-            return;
-        }
-
-        try {
-            const parsed = JSON.parse(rawText);
-            upsertPrivateProfile(parsed, "local-edit");
-        } catch (error) {
-            const msg = parseError(error);
-            setStatusText(dom.textPrivateStatus, tRuntime("privateUpdateFailed", { error: msg }, `Update failed: ${msg}`), "error");
-            setNotice("error", tRuntime("privateUpdateFailed", { error: msg }, `Update failed: ${msg}`));
-        }
-    }
-
-    function clearActivityTimeline() {
-        // Activity timeline was intentionally removed in v3 product redesign.
-        return;
-    }
-
-    async function copyFromElement(sourceId) {
-        const source = document.getElementById(sourceId);
-        if (!source) return;
-        const value = String(source.textContent || "").trim();
-        if (!value || value === "-") return;
-
-        try {
-            await navigator.clipboard.writeText(value);
-            setNotice("success", tRuntime("activityCopied", { text: shortAddress(value) }, "Copied to clipboard."));
-        } catch {
-            setNotice("error", tRuntime("activityCopyFailed", null, "Copy failed. Check browser clipboard permission."));
-        }
-    }
-
-    function bindCopyButtons() {
-        document.querySelectorAll("[data-copy-source]").forEach(function (button) {
-            button.addEventListener("click", function () {
-                const sourceId = String(button.getAttribute("data-copy-source") || "");
-                if (sourceId) copyFromElement(sourceId);
-            });
-        });
-    }
-
-    function registerWalletEvents() {
-        if (!window.ethereum || typeof window.ethereum.on !== "function") return;
-
-        window.ethereum.on("accountsChanged", async function () {
-            const previous = state.walletAddress;
-            await syncWalletStateFromProvider();
-            if (previous && previous !== state.walletAddress) {
-                state.authenticated = false;
-                state.commercialDataReady = false;
-                state.commercialSuppliers = [];
-                resetSelectedSupplier();
-                renderCommercialList();
-                renderSelectedSupplier();
-                transitionState(MACHINE_STATES.WALLET_CONNECTED);
-                setNotice("warning", tRuntime("authAccountChanged", null, "Account changed. Please sign in again."));
-            }
-        });
-
-        window.ethereum.on("chainChanged", async function () {
-            await syncWalletStateFromProvider();
-            if (!state.baseReady) {
-                state.authenticated = false;
-                state.commercialDataReady = false;
-                setNotice("warning", tRuntime("authChainChanged", null, "Network changed. Switch target Base network and sign in again."));
-            }
-            updateActionGuards();
-            renderTopStatus();
-        });
-    }
-
-    function bindViewNav() {
-        document.querySelectorAll(".console-nav-btn").forEach(function (button) {
-            button.addEventListener("click", function () {
-                const view = String(button.getAttribute("data-view-target") || "overview");
-                switchView(view);
-            });
-        });
-
-        if (dom.btnGoCommercialView) {
-            dom.btnGoCommercialView.addEventListener("click", function () {
-                switchView("commercial");
-            });
-        }
-    }
-
-    function bindActions() {
-        if (dom.btnConnectSignIn) dom.btnConnectSignIn.addEventListener("click", handleConnectAndSignIn);
-        if (dom.btnSwitchBase) dom.btnSwitchBase.addEventListener("click", function () {
-            handleSwitchBaseNetwork(false);
-        });
-        if (dom.btnDisconnect) dom.btnDisconnect.addEventListener("click", handleDisconnect);
-
-        if (dom.selectTargetNetwork) {
-            dom.selectTargetNetwork.addEventListener("change", async function () {
-                setTargetNetworkSelection(dom.selectTargetNetwork.value, true);
-                setNotice("pending", tRuntime("networkTargetChanged", null, "Target network changed. Switch network and sign in again."));
-                if (state.authenticated && state.baseReady) {
-                    await loadCommercialSuppliers();
-                }
-            });
-        }
-
-        if (dom.btnRefreshCommercial) dom.btnRefreshCommercial.addEventListener("click", loadCommercialSuppliers);
-        if (dom.btnOpenRegisterForm) dom.btnOpenRegisterForm.addEventListener("click", function () {
-            toggleRegisterForm();
-        });
-        if (dom.btnCloseRegisterModal) dom.btnCloseRegisterModal.addEventListener("click", function () {
-            toggleRegisterForm(false);
-        });
-
-        document.querySelectorAll("[data-close-register-modal='true']").forEach(function (el) {
-            el.addEventListener("click", function () {
-                toggleRegisterForm(false);
-            });
-        });
-
-        if (dom.formCommercialRegister) dom.formCommercialRegister.addEventListener("submit", handleRegisterCommercialSupplier);
-
-        if (dom.btnRenewOneYear) dom.btnRenewOneYear.addEventListener("click", handleRenewCommercialSupplier);
-        if (dom.btnSaveMetadata) dom.btnSaveMetadata.addEventListener("click", handleSaveMetadataURI);
-        if (dom.btnTransferOwner) dom.btnTransferOwner.addEventListener("click", handleTransferOwner);
-
-        if (dom.btnPreviewWithdraw) dom.btnPreviewWithdraw.addEventListener("click", handlePreviewWithdraw);
-        if (dom.btnWithdraw) dom.btnWithdraw.addEventListener("click", handleWithdraw);
-        if (dom.btnWithdrawAll) dom.btnWithdrawAll.addEventListener("click", handleWithdrawAll);
-
-        if (dom.btnImportPrivateFile) dom.btnImportPrivateFile.addEventListener("click", handleImportPrivateFile);
-        if (dom.btnImportPrivateUrl) dom.btnImportPrivateUrl.addEventListener("click", handleImportPrivateUrl);
-        if (dom.btnUpdatePrivateLocal) dom.btnUpdatePrivateLocal.addEventListener("click", handleUpdatePrivateProfile);
-
-        bindViewNav();
-        bindCopyButtons();
-
-        window.addEventListener("languageChanged", function () {
-            renderTopStatus();
-            renderCommercialList();
-            renderSelectedSupplier();
-            toggleRegisterForm(false);
-            setNotice("muted", tRuntime("logConsoleInit", null, "Vendor console initialized"));
-            if (dom.btnOpenRegisterForm) {
-                dom.btnOpenRegisterForm.textContent = tPage("openRegisterFormButton", null, "Register New Supplier");
-            }
-        });
-    }
-
-    function cacheDom() {
-        dom.btnConnectSignIn = document.getElementById("btn-connect-signin");
-        dom.btnSwitchBase = document.getElementById("btn-switch-base");
-        dom.btnDisconnect = document.getElementById("btn-disconnect");
-        dom.selectTargetNetwork = document.getElementById("select-target-network");
-        dom.badgeWallet = document.getElementById("badge-wallet");
-        dom.badgeChain = document.getElementById("badge-chain");
-        dom.textAuthStatus = document.getElementById("text-auth-status");
-        dom.consoleNotice = document.getElementById("console-notice");
-
-        dom.textCommercialCount = document.getElementById("text-commercial-count");
-        dom.btnRefreshCommercial = document.getElementById("btn-refresh-commercial");
-        dom.btnOpenRegisterForm = document.getElementById("btn-open-register-form");
-        dom.listCommercialSuppliers = document.getElementById("list-commercial-suppliers");
-        dom.emptyCommercialState = document.getElementById("empty-commercial-state");
-
-        dom.registerModal = document.getElementById("register-modal");
-        dom.btnCloseRegisterModal = document.getElementById("btn-close-register-modal");
-        dom.formCommercialRegister = document.getElementById("form-commercial-register");
-        dom.inputRegisterSupplierId = document.getElementById("input-register-supplier-id");
-        dom.inputRegisterMetadataURI = document.getElementById("input-register-metadata-uri");
-        dom.textAnnualFee = document.getElementById("text-annual-fee");
-        dom.textWithdrawFee = document.getElementById("text-withdraw-fee");
-        dom.textTreasury = document.getElementById("text-treasury");
-        dom.btnRegisterSignSubmit = document.getElementById("btn-register-sign-submit");
-        dom.textRegisterStatus = document.getElementById("text-register-status");
-
-        dom.textSelectedSupplierId = document.getElementById("text-selected-supplier-id");
-        dom.textSelectedOwner = document.getElementById("text-selected-owner");
-        dom.textSelectedProfileAddress = document.getElementById("text-selected-profile-address");
-        dom.textSelectedExpiry = document.getElementById("text-selected-expiry");
-        dom.textSelectedActiveStatus = document.getElementById("text-selected-active-status");
-        dom.btnRenewOneYear = document.getElementById("btn-renew-one-year");
-        dom.textRenewStatus = document.getElementById("text-renew-status");
-
-        dom.inputMetadataURI = document.getElementById("input-metadata-uri");
-        dom.btnSaveMetadata = document.getElementById("btn-save-metadata");
-        dom.textMetadataStatus = document.getElementById("text-metadata-status");
-        dom.inputNewOwner = document.getElementById("input-new-owner");
-        dom.btnTransferOwner = document.getElementById("btn-transfer-owner");
-        dom.textTransferOwnerStatus = document.getElementById("text-transfer-owner-status");
-
-        dom.inputWithdrawAmount = document.getElementById("input-withdraw-amount");
-        dom.inputWithdrawTo = document.getElementById("input-withdraw-to");
-        dom.btnPreviewWithdraw = document.getElementById("btn-preview-withdraw");
-        dom.textWithdrawPreviewFee = document.getElementById("text-withdraw-preview-fee");
-        dom.textWithdrawPreviewNet = document.getElementById("text-withdraw-preview-net");
-        dom.btnWithdraw = document.getElementById("btn-withdraw");
-        dom.btnWithdrawAll = document.getElementById("btn-withdraw-all");
-        dom.textWithdrawStatus = document.getElementById("text-withdraw-status");
-
-        dom.filePrivateProfile = document.getElementById("file-private-profile");
-        dom.btnImportPrivateFile = document.getElementById("btn-import-private-file");
-        dom.inputPrivateProfileUrl = document.getElementById("input-private-profile-url");
-        dom.btnImportPrivateUrl = document.getElementById("btn-import-private-url");
-        dom.textareaPrivateLocal = document.getElementById("textarea-private-local");
-        dom.btnUpdatePrivateLocal = document.getElementById("btn-update-private-local");
-        dom.textPrivateStatus = document.getElementById("text-private-status");
-
-        dom.commercialLockOverlay = document.getElementById("commercial-lock-overlay");
-        dom.btnGoCommercialView = document.getElementById("btn-go-commercial-view");
-    }
-
-    async function initializeVendorConsole() {
-        cacheDom();
-        setTargetNetworkSelection(state.targetNetworkKey, false);
-
-        if (dom.textCommercialCount) dom.textCommercialCount.textContent = "0";
-        if (dom.textAnnualFee) dom.textAnnualFee.textContent = "-";
-        if (dom.textWithdrawFee) dom.textWithdrawFee.textContent = "-";
-        if (dom.textTreasury) dom.textTreasury.textContent = "-";
-
-        setStatusText(dom.textRegisterStatus, tPage("registerStatusIdle", null, "No register transaction submitted."), "muted");
-        setStatusText(dom.textRenewStatus, tPage("renewStatusIdle", null, "No renewal submitted."), "muted");
-        setStatusText(dom.textMetadataStatus, tPage("metadataStatusIdle", null, "No metadata update yet."), "muted");
-        setStatusText(dom.textTransferOwnerStatus, tPage("transferOwnerStatusIdle", null, "No owner transfer yet."), "muted");
-        setStatusText(dom.textWithdrawStatus, tPage("withdrawStatusIdle", null, "No withdraw transaction yet."), "muted");
-        setStatusText(dom.textPrivateStatus, tPage("privateStatusIdle", null, "No private profile imported yet."), "muted");
-        setNotice("muted", tRuntime("logConsoleInit", null, "Vendor console initialized"));
-
-        switchView("overview");
-        toggleRegisterForm(false);
-        renderPrivateEditor();
-        renderCommercialList();
-        renderSelectedSupplier();
-        renderTopStatus();
-        updateActionGuards();
-
-        bindActions();
-        registerWalletEvents();
-
-        try {
-            await syncWalletStateFromProvider();
-        } catch {
-            renderTopStatus();
-        }
-    }
-
-    window.MeshVendorConsole = {
-        initializeVendorConsole,
-        handleConnectAndSignIn,
-        handleSwitchBaseNetwork,
-        handleDisconnect,
-        loadCommercialSuppliers,
-        toggleRegisterForm,
-        handleRegisterCommercialSupplier,
-        handleRenewCommercialSupplier,
-        handleSaveMetadataURI,
-        handleTransferOwner,
-        handlePreviewWithdraw,
-        handleWithdraw,
-        handleWithdrawAll,
-        handleImportPrivateFile,
-        handleImportPrivateUrl,
-        handleUpdatePrivateProfile,
-        clearActivityTimeline,
+    // --- Utility Functions ---
+    const utils = {
+        hasMetaMask: () => Boolean(window.ethereum && window.ethereum.isMetaMask),
+        shortAddress: (value) => {
+            if (!value) return "";
+            return value.length > 10 ? value.slice(0, 6) + "..." + value.slice(-4) : value;
+        },
+        setStatus: (level, text) => {
+            dom.textAuthStatus.textContent = text;
+            dom.textAuthStatus.classList.remove("success", "warning", "error", "pending");
+            if (level) dom.textAuthStatus.classList.add(level);
+        },
+        isBaseReady: () => {
+            return Boolean(state.chainIdHex) &&
+                state.chainIdHex.toLowerCase() === NETWORKS[state.targetNetwork].chainIdHex;
+        },
+        getSessionKey: (address) => `mesh_vendor_session_${address.toLowerCase()}`
     };
+
+    // --- Session Management ---
+    const session = {
+        hasValid: (address) => {
+            const data = localStorage.getItem(utils.getSessionKey(address));
+            if (!data) return false;
+            try {
+                const s = JSON.parse(data);
+                return (Date.now() - s.timestamp) < 24 * 60 * 60 * 1000;
+            } catch { return false; }
+        },
+        create: (address) => {
+            const data = { address: address.toLowerCase(), timestamp: Date.now() };
+            localStorage.setItem(utils.getSessionKey(address), JSON.stringify(data));
+        }
+    };
+
+    // --- UI Components & Modals ---
+    function switchSubView(viewKey, title) {
+        Object.values(dom.subviews).forEach(v => v.classList.add("hidden"));
+        dom.subviews[viewKey].classList.remove("hidden");
+        dom.viewTitle.textContent = title;
+    }
+
+    function showPrompt(title, message, buttons = []) {
+        return new Promise((resolve) => {
+            dom.promptTitle.textContent = title;
+            dom.promptMsg.textContent = message;
+            dom.promptActions.innerHTML = "";
+
+            buttons.forEach(btn => {
+                const b = document.createElement("button");
+                b.className = btn.primary ? "btn btn-primary" : "btn ghost";
+                b.textContent = btn.label;
+                b.onclick = () => {
+                    dom.promptModal.classList.remove("shown");
+                    resolve(btn.label === "确定");
+                };
+                dom.promptActions.appendChild(b);
+            });
+            dom.promptModal.classList.add("shown");
+        });
+    }
+
+    function notify(msg, title = "提示") {
+        return showPrompt(title, msg, [{ label: "确定", primary: true }]);
+    }
+
+    function confirmAction(msg, title = "操作确认") {
+        return showPrompt(title, msg, [
+            { label: "取消", primary: false },
+            { label: "确定", primary: true }
+        ]);
+    }
+
+    // --- Domain & Server Management ---
+    function renderDomainChips() {
+        const mandatory = ["githubusercontent.com", "workers.dev"];
+        dom.domainChipGrid.innerHTML = "";
+
+        mandatory.forEach(domain => {
+            const chip = document.createElement("div");
+            chip.className = "domain-chip mandatory";
+            chip.innerHTML = `<span>${domain}</span><span style="font-size:0.7rem; opacity:0.6;">🛡️</span>`;
+            dom.domainChipGrid.appendChild(chip);
+        });
+
+        state.userDomains.forEach((domain, idx) => {
+            const chip = document.createElement("div");
+            chip.className = "domain-chip";
+            chip.innerHTML = `<span>${domain}</span><div class="remove-chip" onclick="removeDomainChip(${idx})">✕</div>`;
+            dom.domainChipGrid.appendChild(chip);
+        });
+    }
+
+    window.removeDomainChip = (idx) => {
+        state.userDomains.splice(idx, 1);
+        renderDomainChips();
+    };
+
+    window.injectDomainPreset = (type) => {
+        const presets = {
+            ai: [
+                "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "anthropic.com", "claude.ai",
+                "perplexity.ai", "deepseek.com", "mistral.ai", "groq.com", "cohere.com",
+                "gemini.google.com", "ai.google.dev", "aistudio.google.com", "accounts.google.com", "gstatic.com", "googleusercontent.com",
+                "github.com", "api.github.com", "githubassets.com", "cursor.com", "cursor.sh", "huggingface.co", "discord.com"
+            ],
+            shop: ["amazon.com", "ebay.com", "shopify.com", "temu.com", "shein.com", "aliexpress.com", "paypal.com", "etsy.com"]
+        };
+        const list = presets[type] || [];
+        let count = 0;
+        list.forEach(d => {
+            if (!state.userDomains.includes(d)) {
+                state.userDomains.push(d);
+                count++;
+            }
+        });
+        renderDomainChips();
+        if (count > 0) notify(`成功注入 ${count} 个核心后缀。`, "注入成功");
+    };
+
+    function addServerItem(ip = "", port = "10086", pass = "") {
+        const div = document.createElement("div");
+        div.className = "server-item";
+        div.style.gridTemplateColumns = "1fr 100px 1.2fr auto";
+        div.innerHTML = `
+      <input type="text" class="form-control" placeholder="IP 地址" value="${ip}" oninput="validateServerIP(this)">
+      <input type="number" class="form-control" placeholder="端口" value="${port}">
+      <div class="input-group-pass">
+        <input type="password" class="form-control" placeholder="密码" value="${pass}">
+        <div class="btn-toggle-pass" onclick="togglePassVisibility(this)">👁️</div>
+      </div>
+      <div class="btn-remove-server" onclick="this.parentElement.remove()" style="padding: 0 0.5rem; cursor:pointer; color:#fca5a5; font-size:1.2rem;">✕</div>
+      <div class="server-validation-msg"></div>
+    `;
+        dom.serverList.appendChild(div);
+        if (ip) validateServerIP(div.querySelector('input'));
+    }
+
+    window.validateServerIP = (el) => {
+        const val = el.value.trim();
+        const msgEl = el.parentElement.querySelector('.server-validation-msg');
+        el.classList.remove('invalid-ip', 'warning-ip');
+        msgEl.className = 'server-validation-msg';
+        msgEl.textContent = '';
+        if (!val) return;
+
+        const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        if (!ipv4Regex.test(val)) {
+            el.classList.add('invalid-ip');
+            msgEl.classList.add('error');
+            msgEl.textContent = '❌ 无效的 IP 地址格式';
+            return;
+        }
+
+        const parts = val.split('.').map(Number);
+        const isPrivate = (parts[0] === 10) || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+            (parts[0] === 192 && parts[1] === 168) || (parts[0] === 127) || (parts[0] === 169 && parts[1] === 254);
+
+        if (isPrivate) {
+            el.classList.add('warning-ip');
+            msgEl.classList.add('warning');
+            msgEl.textContent = '⚠️ 这是一个局域网/回环地址，外部可能无法访问';
+        }
+    };
+
+    window.togglePassVisibility = (el) => {
+        const input = el.parentElement.querySelector('input');
+        const isPass = input.type === "password";
+        input.type = isPass ? "text" : "password";
+        el.textContent = isPass ? "👁️‍🗨️" : "👁️";
+        el.style.opacity = isPass ? "1" : "0.5";
+    };
+
+    // --- MetaMask & Auth ---
+    async function syncChain() {
+        if (!utils.hasMetaMask()) return;
+        try {
+            state.chainIdHex = await window.ethereum.request({ method: "eth_chainId" });
+        } catch { state.chainIdHex = ""; }
+        renderNetworkStatusDot();
+    }
+
+    function renderNetworkStatusDot() {
+        const ready = utils.isBaseReady();
+        dom.networkDot.classList.remove("ready", "not-ready");
+        dom.networkDot.classList.add(ready ? "ready" : "not-ready");
+    }
+
+    function renderAuthGate() {
+        const installed = utils.hasMetaMask();
+        dom.btnConnectSignin.classList.toggle("hidden", !installed);
+        dom.btnInstallMetaMask.classList.toggle("hidden", installed);
+
+        if (!installed) {
+            utils.setStatus("warning", "MetaMask not found.");
+            dom.gateDesc.textContent = "浏览器未检测到 MetaMask。";
+            return;
+        }
+
+        if (!state.connected) {
+            utils.setStatus("", "MetaMask detected.");
+            dom.gateDesc.textContent = "请选择网络后连接钱包。";
+            dom.btnConnectSignin.textContent = "Sign In By MetaMask";
+            return;
+        }
+
+        if (!state.signedIn) {
+            utils.setStatus("warning", "Signature required.");
+            dom.btnConnectSignin.textContent = "Sign In & Authorize";
+            return;
+        }
+
+        if (!utils.isBaseReady()) {
+            utils.setStatus("warning", "Network mismatch.");
+            dom.btnConnectSignin.textContent = "Switch Network to Enter";
+            return;
+        }
+
+        utils.setStatus("success", "Commercial session ready");
+        dom.btnConnectSignin.textContent = "Enter Workspace";
+    }
+
+    async function connectAndSignIn() {
+        if (!utils.hasMetaMask()) return renderAuthGate();
+        if (state.signedIn && utils.isBaseReady()) return;
+
+        try {
+            if (!state.connected) {
+                utils.setStatus("pending", "Connecting...");
+                const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                state.address = accounts[0] || "";
+                state.connected = Boolean(state.address);
+            }
+
+            // Switch Network
+            try {
+                await window.ethereum.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: NETWORKS[state.targetNetwork].chainIdHex }]
+                });
+                await syncChain();
+            } catch (e) {
+                utils.setStatus("error", "Network switch rejected.");
+                return;
+            }
+
+            // Session / Sign
+            if (session.hasValid(state.address)) {
+                state.signedIn = true;
+            } else {
+                utils.setStatus("pending", "Awaiting signature...");
+                await window.ethereum.request({
+                    method: "personal_sign",
+                    params: ["MeshNetProtocol Vendor Console Sign-In", state.address]
+                });
+                session.create(state.address);
+                state.signedIn = true;
+            }
+            renderAuthGate();
+        } catch (e) {
+            state.signedIn = false;
+            utils.setStatus("error", "Auth failed.");
+        }
+    }
+
+    // --- Events ---
+    function bindEvents() {
+        dom.selectTargetNetwork.addEventListener("change", async () => {
+            state.targetNetwork = dom.selectTargetNetwork.value;
+            await syncChain();
+            renderAuthGate();
+        });
+
+        dom.btnConnectSignin.addEventListener("click", connectAndSignIn);
+
+        dom.btnEnterPrivate.addEventListener("click", () => {
+            dom.entryStage.classList.add("hidden");
+            dom.privateArea.classList.remove("hidden");
+            switchSubView("main", "Private Workspace / Menu");
+        });
+
+        dom.btnPrivateBack.addEventListener("click", () => {
+            if (!dom.subviews.main.classList.contains("hidden")) {
+                dom.privateArea.classList.add("hidden");
+                dom.entryStage.classList.remove("hidden");
+            } else {
+                switchSubView("main", "Private Workspace / Menu");
+            }
+        });
+
+        document.querySelectorAll(".btn-cancel").forEach(btn => {
+            btn.addEventListener("click", () => switchSubView("main", "Private Workspace / Menu"));
+        });
+
+        // Modules
+        document.getElementById("btn-goto-config").addEventListener("click", () => {
+            switchSubView("config", "生成配置文件 (Wizard)");
+            dom.serverList.innerHTML = "";
+            state.userDomains = [];
+            renderDomainChips();
+        });
+
+        document.getElementById("btn-goto-vps").addEventListener("click", () => switchSubView("vps", "购买与部署指引"));
+        document.getElementById("btn-goto-import").addEventListener("click", () => switchSubView("import", "导入 APP 教程"));
+        document.getElementById("btn-goto-advanced").addEventListener("click", () => {
+            switchSubView("advanced", "高级 JSON 编辑器");
+            dom.jsonEditor.value = JSON.stringify(SINGBOX_TEMPLATE, null, 2);
+        });
+
+        // Wizard
+        document.getElementById("btn-gen-id").addEventListener("click", () => {
+            const rand = Math.random().toString(36).slice(2, 7);
+            const ts = Date.now().toString(36).slice(-4);
+            document.getElementById("config-id").value = `com.mesh.${rand}.${ts}.v1`;
+            document.getElementById("wizard-main-fields").classList.add("config-unlocked");
+        });
+
+        document.getElementById("btn-open-parser").addEventListener("click", () => dom.parserModal.classList.add("shown"));
+        document.getElementById("btn-close-parser").addEventListener("click", () => dom.parserModal.classList.remove("shown"));
+
+        document.getElementById("btn-do-parse").addEventListener("click", () => {
+            const area = document.getElementById("import-json-textarea");
+            try {
+                const data = JSON.parse(area.value);
+                const resolvedId = data.provider_id || data.id;
+                if (!resolvedId) throw new Error("缺少标识符字段");
+
+                document.getElementById("config-id").value = resolvedId;
+                document.getElementById("config-name").value = data.name || "";
+                document.getElementById("config-desc").value = data.description || "";
+                dom.serverList.innerHTML = "";
+
+                let rawServers = Array.isArray(data.servers) ? data.servers : [];
+                if (rawServers.length === 0) {
+                    const outbounds = (data.config && data.config.outbounds) || data.outbounds || [];
+                    rawServers = outbounds.filter(o => o.server && (o.server_port || o.port));
+                }
+                rawServers.forEach(s => addServerItem(s.ip || s.server, s.port || s.server_port, s.pass || s.password));
+
+                state.userDomains = [];
+                const mandatory = ["githubusercontent.com", "workers.dev"];
+                let suffixes = (data.routing_rules && data.routing_rules.domain_suffix) ||
+                    (data.routing_rules && data.routing_rules.proxy && data.routing_rules.proxy.domain_suffix) || [];
+                suffixes.forEach(ds => { if (!mandatory.includes(ds)) state.userDomains.push(ds); });
+                renderDomainChips();
+
+                document.getElementById("wizard-main-fields").classList.add("config-unlocked");
+                dom.parserModal.classList.remove("shown");
+                area.value = "";
+                notify("回填成功", "解析完成");
+            } catch (e) { notify("解析失败: " + e.message, "格式错误"); }
+        });
+
+        document.getElementById("btn-add-server").addEventListener("click", () => addServerItem());
+
+        document.getElementById("btn-do-add-domain").addEventListener("click", () => {
+            const input = document.getElementById("input-quick-add-domain");
+            let val = input.value.trim().toLowerCase();
+            if (!val) return;
+            try { if (val.includes("://")) val = new URL(val).hostname; } catch (e) { }
+            const parts = val.split(".");
+            if (parts.length >= 2) val = parts.slice(-2).join(".");
+            if (state.userDomains.includes(val)) {
+                notify("已在列表中。", "重复添加");
+            } else {
+                state.userDomains.push(val);
+                renderDomainChips();
+            }
+            input.value = "";
+        });
+
+        document.getElementById("btn-generate-json").addEventListener("click", () => {
+            const name = document.getElementById("config-name").value.trim();
+            if (!name) return notify("请输入供应商名称", "校验未通过");
+
+            const userServers = Array.from(dom.serverList.children).map(item => {
+                const inputs = item.querySelectorAll("input");
+                return { ip: inputs[0].value.trim(), port: parseInt(inputs[1].value), pass: inputs[2].value.trim() };
+            }).filter(s => s.ip && s.port);
+
+            if (userServers.length === 0) return confirmAction("尚未配置节点。是否前往部署教程？", "缺失配置").then(ok => ok && switchSubView("vps", "部署指引"));
+
+            const final = JSON.parse(JSON.stringify(SINGBOX_TEMPLATE));
+            final.provider_id = document.getElementById("config-id").value || final.provider_id;
+            final.name = name;
+            final.description = document.getElementById("config-desc").value.trim();
+            final.updated_at = new Date().toISOString();
+
+            const otherOutbounds = final.config.outbounds.filter(o => o.type !== "shadowsocks");
+            const selector = otherOutbounds.find(o => o.tag === "proxy" && o.type === "selector");
+            const newNodes = userServers.map((s, i) => ({ type: "shadowsocks", tag: `node-${i + 1}`, server: s.ip, server_port: s.port, method: "aes-256-gcm", password: s.pass }));
+
+            if (selector) {
+                selector.outbounds = newNodes.map(n => n.tag);
+                selector.default = newNodes[0].tag;
+            }
+            final.config.outbounds = [...newNodes, ...otherOutbounds];
+            final.routing_rules = { version: 8, domain: ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"], domain_suffix: [...new Set(["githubusercontent.com", "workers.dev", ...state.userDomains])] };
+
+            switchSubView("advanced", "JSON 预览与导出");
+            dom.jsonEditor.value = JSON.stringify(final, null, 2);
+        });
+
+        // VPS Help
+        document.getElementById("btn-goto-server-help").addEventListener("click", () => notify("Ubuntu 22.04+ \nsudo bash <(curl -sL install.sh)", "部署指引"));
+
+        // Tabs
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                const docs = {
+                    win: "Windows: 下载 MeshNet-Win 导入 JSON。",
+                    mac: "macOS: 下载 MeshNet-Mac 拖入 JSON。",
+                    ios: "iOS: 通过 iCloud 发送并导入。",
+                    android: "Android: 扫描二维码或直接打开。"
+                };
+                document.getElementById("import-docs").innerHTML = `<p>${docs[btn.dataset.tab]}</p>`;
+            });
+        });
+
+        // Editor
+        document.getElementById("btn-check-json").addEventListener("click", () => {
+            try { JSON.parse(dom.jsonEditor.value); notify("语法正确。", "校验成功"); } catch (e) { notify("格式错误: " + e.message, "失败"); }
+        });
+        document.getElementById("btn-copy-json").addEventListener("click", () => {
+            navigator.clipboard.writeText(dom.jsonEditor.value); notify("已复制", "成功");
+        });
+        document.getElementById("btn-save-file").addEventListener("click", () => {
+            const blob = new Blob([dom.jsonEditor.value], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "mesh-config.json";
+            a.click();
+        });
+
+        if (utils.hasMetaMask()) {
+            window.ethereum.on("chainChanged", (cid) => {
+                state.chainIdHex = String(cid || "");
+                renderNetworkStatusDot(); renderAuthGate();
+            });
+            window.ethereum.on("accountsChanged", (accs) => {
+                state.address = accs[0] || ""; state.connected = Boolean(state.address); state.signedIn = false;
+                renderAuthGate();
+            });
+        }
+    }
+
+    // --- Initialize ---
+    async function bootstrap() {
+        initDomMap();
+        bindCardMotion();
+        bindEvents();
+        await syncChain();
+        // Check local session
+        if (utils.hasMetaMask()) {
+            const accounts = await window.ethereum.request({ method: "eth_accounts" });
+            state.address = accounts[0] || "";
+            state.connected = Boolean(state.address);
+            if (state.connected && session.hasValid(state.address)) state.signedIn = true;
+        }
+        renderAuthGate();
+    }
+
+    function bindCardMotion() {
+        document.querySelectorAll(".card-hover").forEach((card) => {
+            card.addEventListener("pointermove", (e) => {
+                const rect = card.getBoundingClientRect();
+                const px = (e.clientX - rect.left) / rect.width;
+                const py = (e.clientY - rect.top) / rect.height;
+                card.style.setProperty("--mx", (px * 100).toFixed(2) + "%");
+                card.style.setProperty("--my", (py * 100).toFixed(2) + "%");
+                card.style.transform = `rotateX(${(0.5 - py) * 5}deg) rotateY(${(px - 0.5) * 5}deg) translateY(-2px)`;
+            });
+            card.addEventListener("pointerleave", () => card.style.transform = "none");
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", bootstrap);
 })();
