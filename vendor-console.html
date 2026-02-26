@@ -376,6 +376,345 @@
       display: none !important;
     }
 
+    .private-operation-area {
+      width: 100%;
+      min-height: 500px;
+      border: 1px solid rgba(41, 176, 160, 0.4);
+      background: linear-gradient(180deg, rgba(10, 35, 52, 0.9), rgba(8, 23, 37, 0.9));
+      border-radius: 20px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .operation-header {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      border-bottom: 1px solid rgba(41, 176, 160, 0.2);
+      padding-bottom: 1rem;
+    }
+
+    .operation-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #6ee7d2;
+      font-weight: 600;
+    }
+
+    .module-stack {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .module-card {
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 1.8rem 2.2rem;
+      background: linear-gradient(110deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.04) 100%);
+      display: grid;
+      grid-template-columns: 1fr 200px;
+      align-items: center;
+      gap: 2.5rem;
+      transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+
+    .module-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, var(--module-color, rgba(255, 255, 255, 0.1)), transparent 25%);
+      opacity: 0.15;
+      transition: opacity 300ms ease;
+    }
+
+    .module-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--module-color);
+      box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.4);
+      background: linear-gradient(110deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.06) 100%);
+    }
+
+    .module-card:hover::before {
+      opacity: 0.3;
+    }
+
+    /* Module Themes */
+    .module-config {
+      --module-color: #2dd4bf;
+    }
+
+    .module-vps {
+      --module-color: #6366f1;
+    }
+
+    .module-import {
+      --module-color: #f59e0b;
+    }
+
+    .module-advanced {
+      --module-color: #d946ef;
+    }
+
+    .module-header-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .module-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--module-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 0 15px var(--module-color);
+    }
+
+    .module-info h3 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .module-summary {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #94a3b8;
+      margin-bottom: 1.4rem;
+    }
+
+    .module-features {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .module-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      opacity: 0.9;
+    }
+
+    .module-features li::before {
+      content: "✦";
+      color: var(--module-color);
+      font-size: 0.8rem;
+      margin-top: 0.1rem;
+    }
+
+    .module-action {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .btn-module {
+      position: relative;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 200ms ease;
+      background: var(--module-color);
+      color: #0c111d;
+      border: none;
+      cursor: pointer;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-module:hover {
+      filter: brightness(1.1);
+      transform: scale(1.02);
+      box-shadow: 0 8px 25px -5px var(--module-color);
+    }
+
+    .btn-module::after {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transform: rotate(45deg);
+      transition: all 500ms ease;
+      pointer-events: none;
+    }
+
+    .btn-module:hover::after {
+      left: 100%;
+    }
+
+    /* Sub-view Styles */
+    .sub-view {
+      animation: fadeIn 300ms ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Wizard Styles */
+    .wizard-form {
+      display: grid;
+      gap: 1.5rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .form-control {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: white;
+      font-family: inherit;
+    }
+
+    .server-item {
+      border: 1px solid rgba(41, 176, 160, 0.2);
+      border-radius: 12px;
+      padding: 1rem;
+      position: relative;
+      background: rgba(41, 176, 160, 0.05);
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr auto;
+      gap: 0.8rem;
+    }
+
+    .btn-remove-server {
+      color: #fca5a5;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    /* VPS List */
+    .vps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .vps-item {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.4);
+      text-align: center;
+    }
+
+    .vps-logo {
+      height: 40px;
+      margin-bottom: 0.8rem;
+      filter: brightness(1.2);
+    }
+
+    .vps-name {
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .vps-traits {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+
+    /* Tabs */
+    .tab-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 1rem;
+    }
+
+    .tab-btn {
+      padding: 0.6rem 1.2rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    .tab-btn.active {
+      color: #6ee7d2;
+      border-bottom-color: #6ee7d2;
+    }
+
+    .tab-content {
+      padding: 1rem 0;
+    }
+
+    /* JSON Editor */
+    .json-editor-wrap {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .json-textarea {
+      width: 100%;
+      height: 400px;
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.85rem;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      resize: vertical;
+    }
+
+    @media (max-width: 900px) {
+      .module-card {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .server-item {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
     @media (max-width: 1060px) {
       .entry-stage {
         grid-template-columns: 1fr;
@@ -439,7 +778,7 @@
   </header>
 
   <main class="console-shell">
-    <section class="entry-stage">
+    <section id="entry-stage" class="entry-stage">
       <article class="entry-card private card-hover">
         <div>
           <p class="card-kicker">Private Supplier</p>
@@ -489,6 +828,206 @@
         </div>
       </article>
     </section>
+
+    <section id="private-operation-area" class="private-operation-area hidden">
+      <div class="operation-header">
+        <button id="btn-private-back" class="btn ghost">Back</button>
+        <h2 id="private-view-title">Private Workspace</h2>
+      </div>
+
+      <div class="operation-content">
+        <!-- Main Menu sub-view -->
+        <div id="subview-private-main" class="sub-view">
+          <div class="module-stack">
+            <!-- Module 1: Generation -->
+            <article class="module-card module-config">
+              <div class="module-wrapper">
+                <div class="module-header-wrap">
+                  <div class="module-icon-box">⚙️</div>
+                  <div class="module-title-box">
+                    <h3>生成配置文件 (Profile Builder)</h3>
+                  </div>
+                </div>
+                <p class="module-summary">
+                  为个人或特定圈子定制去中心化供应节点配置。生成的 JSON 包含加密基座与 x402 支付元数据，支持多服务器聚合。
+                </p>
+                <ul class="module-features">
+                  <li><strong>零门槛配置</strong>：傻瓜式输入 IP、端口、密码，自动生成标准 sing-box 核心配置。</li>
+                  <li><strong>私密共享</strong>：配置仅存本地或由您托管在公网 Gist，通过 URL 拉取即可同步给好友。</li>
+                  <li><strong>无中间商</strong>：流量不经过 MeshNet 公共市场检索，完全属于您的私有地下网络。</li>
+                  <li><strong>多端兼容</strong>：一键生成符合全平台 MeshNet App 规范的统一数据结构。</li>
+                </ul>
+              </div>
+              <div class="module-action">
+                <button id="btn-goto-config" class="btn-module">开始配置 (Build)</button>
+              </div>
+            </article>
+
+            <!-- Module 2: VPS -->
+            <article class="module-card module-vps">
+              <div class="module-wrapper">
+                <div class="module-header-wrap">
+                  <div class="module-icon-box">☁️</div>
+                  <div class="module-title-box">
+                    <h3>购买与部署 VPS (Server Setup)</h3>
+                  </div>
+                </div>
+                <p class="module-summary">
+                  连接全球算力底座。选择合适的 VPS 服务商是建立高性能供应节点的开端，配合我们的自动化脚本即可一键变身运营商。
+                </p>
+                <ul class="module-features">
+                  <li><strong>厂商精选</strong>：推荐 DigitalOcean(易用)、Vultr(全球)、Hetzner(极致性价比) 等节点。</li>
+                  <li><strong>自动化脚本</strong>：提供 sudo bash install.sh 一键安装包，自动配置内核转发与 BBR。</li>
+                  <li><strong>运行环境</strong>：支持 Ubuntu 22.04+ 及 Debian 11+，最小仅需 512MB 内存即可流畅运行。</li>
+                  <li><strong>安全性增强</strong>：脚本自动配置基础防火墙与 SSH 密钥校验，保护您的服务器不被扫描攻击。</li>
+                </ul>
+              </div>
+              <div class="module-action">
+                <button id="btn-goto-vps" class="btn-module">部署指引 (Deploy)</button>
+              </div>
+            </article>
+
+            <!-- Module 3: Import -->
+            <article class="module-card module-import">
+              <div class="module-wrapper">
+                <div class="module-header-wrap">
+                  <div class="module-icon-box">📲</div>
+                  <div class="module-title-box">
+                    <h3>导入 APP (Client Connect)</h3>
+                  </div>
+                </div>
+                <p class="module-summary">
+                  将配置映射到最终物理设备。支持 Windows, macOS, iOS 和 Android 全平台 MeshNet 客户端的快速接入方案。
+                </p>
+                <ul class="module-features">
+                  <li><strong>多平台指引</strong>：覆盖桌面端与移动端的详细安装、导入、连接与切换视频/图文教程。</li>
+                  <li><strong>URL 订阅模式</strong>：演示如何将 JSON 托管后，在客户端输入一个 URL 实现永久配置同步。</li>
+                  <li><strong>状态实时监控</strong>：教你如何在 App 中查看节点延迟、流量负荷以及 x402 支付结算状态。</li>
+                  <li><strong>二维码快速共享</strong>：生成一次性或持久化的配置二维码，手机一扫即连。</li>
+                </ul>
+              </div>
+              <div class="module-action">
+                <button id="btn-goto-import" class="btn-module">查看教程 (Tutorial)</button>
+              </div>
+            </article>
+
+            <!-- Module 4: Advanced -->
+            <article class="module-card module-advanced">
+              <div class="module-wrapper">
+                <div class="module-header-wrap">
+                  <div class="module-icon-box">⚡</div>
+                  <div class="module-title-box">
+                    <h3>高级实验室 (Advanced Labs)</h3>
+                  </div>
+                </div>
+                <p class="module-summary">
+                  MeshNet 开发者乐园。如果您精通 sing-box 协议，可以在此手动编写极其复杂的路由规则与分流逻辑。
+                </p>
+                <ul class="module-features">
+                  <li><strong>协议深钻</strong>：在 sing-box 基础上原生注入 x402 支付协议，支持按量、按时、按次等复杂结算。</li>
+                  <li><strong>路由自定义</strong>：精准控制哪些流量走代理、哪些直连，甚至实现负载均衡与故障切换。</li>
+                  <li><strong>模板库</strong>：内置常用的全平台通用加速模板、流媒体解锁模板等进阶 JSON 片段。</li>
+                  <li><strong>JSON 语法加固</strong>：内置校验引擎，确保您的每一行配置都符合 sing-box / MeshNet 标准。</li>
+                </ul>
+              </div>
+              <div class="module-action">
+                <button id="btn-goto-advanced" class="btn-module">前往实验室 (Labs)</button>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <!-- Wizard Config sub-view -->
+        <div id="subview-private-config" class="sub-view hidden">
+          <div class="wizard-form">
+            <div class="form-group">
+              <label>供应商名称 (Name)</label>
+              <input id="config-name" type="text" class="form-control" placeholder="例如: MyPrivateNode">
+            </div>
+            <div class="form-group">
+              <label>简介 (Description)</label>
+              <input id="config-desc" type="text" class="form-control" placeholder="这个节点的简短描述">
+            </div>
+
+            <div class="form-group">
+              <label>服务器列表</label>
+              <div id="server-list-container" style="display:grid; gap:0.8rem;">
+                <!-- dynamic server items -->
+              </div>
+              <button id="btn-add-server" class="btn ghost" style="justify-self:start; margin-top:0.5rem;">+
+                增加服务器</button>
+            </div>
+
+            <div style="margin-top:2rem; display:flex; gap:1rem;">
+              <button id="btn-generate-json" class="btn btn-primary">生成并预览 JSON</button>
+              <button class="btn-cancel btn ghost">取消</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VPS Guide sub-view -->
+        <div id="subview-private-vps" class="sub-view hidden">
+          <p style="color:#94a3b8; line-height:1.6;">购买 VPS 后，建议使用 Ubuntu 22.04+
+            系统。购买完成后，点击下方的【配置服务器】按钮查看详细的自动化安装脚本与部署说明。</p>
+          <div class="vps-grid">
+            <div class="vps-item">
+              <div class="vps-name">DigitalOcean</div>
+              <div class="vps-traits">最广泛使用的入门级 VPS</div>
+            </div>
+            <div class="vps-item">
+              <div class="vps-name">Vultr</div>
+              <div class="vps-traits">多机房选择，支持小时扣费</div>
+            </div>
+            <div class="vps-item">
+              <div class="vps-name">Hetzner</div>
+              <div class="vps-traits">欧洲性价比之王</div>
+            </div>
+            <div class="vps-item">
+              <div class="vps-name">Linode</div>
+              <div class="vps-traits">极致稳定的老牌厂商</div>
+            </div>
+          </div>
+          <div style="margin-top:2rem;">
+            <button id="btn-goto-server-help" class="btn btn-primary">配置服务器</button>
+            <button class="btn-cancel btn ghost">返回</button>
+          </div>
+        </div>
+
+        <!-- Import Guide sub-view -->
+        <div id="subview-private-import" class="sub-view hidden">
+          <div class="tab-nav">
+            <div class="tab-btn active" data-tab="win">Windows</div>
+            <div class="tab-btn" data-tab="mac">macOS</div>
+            <div class="tab-btn" data-tab="ios">iOS</div>
+            <div class="tab-btn" data-tab="android">Android</div>
+          </div>
+          <div class="tab-content" id="import-docs">
+            <p>请选择对应的平台查看导入说明。</p>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:1.5rem; margin-top:1rem;">
+            <h3>进阶：通过 URL 托管配置</h3>
+            <p style="color:#94a3b8; font-size:0.9rem;">您可以将生成的 JSON 文件上传至 GitHub Gist、Pastebin 或任何公网对象存储（OSS），然后在 APP
+              中直接输入该 URL 即可实现多端同步更新。</p>
+          </div>
+          <button class="btn-cancel btn ghost" style="margin-top:1rem;">返回</button>
+        </div>
+
+        <!-- Advanced Editor sub-view -->
+        <div id="subview-private-advanced" class="sub-view hidden">
+          <div class="json-editor-wrap">
+            <p style="font-size:0.85rem; color:#94a3b8;">基于 <a href="https://sing-box.sagernet.org/" target="_blank"
+                style="color:#6ee7d2;">sing-box</a> 协议，内置 x402 结算模块。请在下方编辑器修改您的原始 JSON 配置。</p>
+            <textarea id="advanced-json-editor" class="json-textarea" spellcheck="false"></textarea>
+            <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+              <button id="btn-check-json" class="btn btn-secondary">检查 JSON</button>
+              <button id="btn-copy-json" class="btn btn-secondary">复制 JSON 数据</button>
+              <button id="btn-save-file" class="btn btn-secondary">另存为 JSON 文件</button>
+              <button class="btn-cancel btn ghost">返回</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -507,7 +1046,21 @@
         btnInstallMetaMask: document.getElementById("btn-install-metamask"),
         gateDesc: document.getElementById("gate-desc"),
         textAuthStatus: document.getElementById("text-auth-status"),
-        btnEnterPrivate: document.getElementById("btn-enter-private")
+        btnEnterPrivate: document.getElementById("btn-enter-private"),
+        btnPrivateBack: document.getElementById("btn-private-back"),
+        entryStage: document.getElementById("entry-stage"),
+        privateArea: document.getElementById("private-operation-area"),
+        // Sub-views
+        subviews: {
+          main: document.getElementById("subview-private-main"),
+          config: document.getElementById("subview-private-config"),
+          vps: document.getElementById("subview-private-vps"),
+          import: document.getElementById("subview-private-import"),
+          advanced: document.getElementById("subview-private-advanced")
+        },
+        viewTitle: document.getElementById("private-view-title"),
+        serverList: document.getElementById("server-list-container"),
+        jsonEditor: document.getElementById("advanced-json-editor")
       };
 
       const state = {
@@ -719,6 +1272,43 @@
         });
       }
 
+      const SINGBOX_TEMPLATE = {
+        "outbounds": [
+          {
+            "type": "shadowsocks",
+            "tag": "proxy",
+            "server": "1.2.3.4",
+            "server_port": 443,
+            "method": "aes-256-gcm",
+            "password": "password",
+            "x402": { "enabled": true, "protocol": "base-mainnet" }
+          }
+        ]
+      };
+
+      function switchSubView(viewKey, title) {
+        Object.values(dom.subviews).forEach(v => v.classList.add("hidden"));
+        dom.subviews[viewKey].classList.remove("hidden");
+        dom.viewTitle.textContent = title;
+      }
+
+      function addServerItem(ip = "", port = "", pass = "", method = "aes-256-gcm") {
+        const div = document.createElement("div");
+        div.className = "server-item";
+        div.innerHTML = `
+          <input type="text" class="form-control" placeholder="IP 地址" value="${ip}">
+          <input type="number" class="form-control" placeholder="端口" value="${port}">
+          <input type="text" class="form-control" placeholder="密码" value="${pass}">
+          <select class="form-control">
+            <option value="aes-256-gcm" ${method === 'aes-256-gcm' ? 'selected' : ''}>aes-256-gcm</option>
+            <option value="chacha20-ietf-poly1305" ${method === 'chacha20-ietf-poly1305' ? 'selected' : ''}>chacha20-poly1305</option>
+            <option value="none" ${method === 'none' ? 'selected' : ''}>none</option>
+          </select>
+          <div class="btn-remove-server" onclick="this.parentElement.remove()">✕</div>
+        `;
+        dom.serverList.appendChild(div);
+      }
+
       function bindEvents() {
         dom.selectTargetNetwork.addEventListener("change", async function () {
           state.targetNetwork = dom.selectTargetNetwork.value;
@@ -727,8 +1317,99 @@
         });
 
         dom.btnConnectSignin.addEventListener("click", connectAndSignIn);
+
+        // Navigation
         dom.btnEnterPrivate.addEventListener("click", function () {
-          window.location.href = "index.html#private-supplier";
+          dom.entryStage.classList.add("hidden");
+          dom.privateArea.classList.remove("hidden");
+          switchSubView("main", "Private Workspace / Menu");
+        });
+
+        dom.btnPrivateBack.addEventListener("click", function () {
+          if (!dom.subviews.main.classList.contains("hidden")) {
+            dom.privateArea.classList.add("hidden");
+            dom.entryStage.classList.remove("hidden");
+          } else {
+            switchSubView("main", "Private Workspace / Menu");
+          }
+        });
+
+        document.querySelectorAll(".btn-cancel").forEach(btn => {
+          btn.addEventListener("click", () => switchSubView("main", "Private Workspace / Menu"));
+        });
+
+        // Module Entry
+        document.getElementById("btn-goto-config").addEventListener("click", () => {
+          switchSubView("config", "生成配置文件 (Wizard)");
+          dom.serverList.innerHTML = "";
+          addServerItem();
+        });
+        document.getElementById("btn-goto-vps").addEventListener("click", () => switchSubView("vps", "购买与部署指引"));
+        document.getElementById("btn-goto-import").addEventListener("click", () => switchSubView("import", "导入 APP 教程"));
+        document.getElementById("btn-goto-advanced").addEventListener("click", () => {
+          switchSubView("advanced", "高级 JSON 编辑器");
+          dom.jsonEditor.value = JSON.stringify(SINGBOX_TEMPLATE, null, 2);
+        });
+
+        // Wizard Logic
+        document.getElementById("btn-add-server").addEventListener("click", () => addServerItem());
+        document.getElementById("btn-generate-json").addEventListener("click", () => {
+          const servers = Array.from(dom.serverList.children).map(item => {
+            const inputs = item.querySelectorAll("input, select");
+            return {
+              ip: inputs[0].value,
+              port: parseInt(inputs[1].value),
+              pass: inputs[2].value,
+              method: inputs[3].value
+            };
+          });
+          const profile = {
+            id: "mesh-private-" + Math.random().toString(36).slice(2, 7),
+            name: document.getElementById("config-name").value,
+            description: document.getElementById("config-desc").value,
+            servers
+          };
+          switchSubView("advanced", "JSON 预览与导出");
+          dom.jsonEditor.value = JSON.stringify(profile, null, 2);
+        });
+
+        // VPS Logic
+        document.getElementById("btn-goto-server-help").addEventListener("click", () => {
+          alert("即将转跳至服务器自动化安装文档：\n1. 下载 install.sh\n2. 运行 sudo bash install.sh\n3. 填入刚才生成的 JSON 配置即可。");
+        });
+
+        // Tabs Logic
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            const platform = btn.dataset.tab;
+            const docs = {
+              win: "Windows: 下载 MeshNet-Win，点击 'Import JSON'，选择文件后连接。",
+              mac: "macOS: 下载 MeshNet-Mac，拖动 JSON 文件到状态栏图标即可。",
+              ios: "iOS: 通过 iCloud 或隔空投送发送 JSON，在 App 内点击 '+' 导入。",
+              android: "Android: 扫描生成的二维码或直接通过文件管理器打开 JSON。"
+            };
+            document.getElementById("import-docs").innerHTML = `<p>${docs[platform]}</p>`;
+          });
+        });
+
+        // Advanced Logic
+        document.getElementById("btn-check-json").addEventListener("click", () => {
+          try { JSON.parse(dom.jsonEditor.value); alert("JSON 格式正确！"); }
+          catch (e) { alert("JSON 格式错误: " + e.message); }
+        });
+        document.getElementById("btn-copy-json").addEventListener("click", () => {
+          navigator.clipboard.writeText(dom.jsonEditor.value);
+          alert("已复制到剪贴板");
+        });
+        document.getElementById("btn-save-file").addEventListener("click", () => {
+          const blob = new Blob([dom.jsonEditor.value], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "mesh-config.json";
+          a.click();
         });
 
         if (hasMetaMask()) {
