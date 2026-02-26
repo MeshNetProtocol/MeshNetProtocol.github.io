@@ -628,26 +628,116 @@
       align-items: center;
     }
 
-    /* VPS List */
-    .vps-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1rem;
+    /* Wizard Section Isolation */
+    .wizard-section {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
       margin-top: 1rem;
     }
 
-    .vps-item {
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 1rem;
-      background: rgba(15, 23, 42, 0.4);
-      text-align: center;
+    .wizard-section-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #6ee7d2;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
     }
 
-    .vps-logo {
+    .preset-rail {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .preset-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      transition: all 200ms ease;
+    }
+
+    .preset-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--accent-color, #94a3b8);
+      transform: translateY(-2px);
+    }
+
+    .preset-card.ai {
+      --accent-color: #a855f7;
+    }
+
+    .preset-card.shop {
+      --accent-color: #f59e0b;
+    }
+
+    .preset-icon {
+      font-size: 1.5rem;
+      width: 40px;
       height: 40px;
-      margin-bottom: 0.8rem;
-      filter: brightness(1.2);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      min-height: 40px;
+    }
+
+    .domain-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: chipPulse 400ms ease-out;
+    }
+
+    .domain-chip.mandatory {
+      background: rgba(45, 212, 191, 0.1);
+      border-color: rgba(45, 212, 191, 0.3);
+      color: #2dd4bf;
+    }
+
+    .domain-chip .remove-chip {
+      cursor: pointer;
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      font-size: 10px;
+    }
+
+    @keyframes chipPulse {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
     .vps-name {
@@ -1051,27 +1141,52 @@
                 <input id="config-desc" type="text" class="form-control" placeholder="这个节点的简短描述 (可选)">
               </div>
 
-              <div class="form-group" style="margin-top:1.5rem;">
-                <label>服务器列表 (至少需要一个服务器)</label>
+              <div class="wizard-section">
+                <div class="wizard-section-title"><span>📡</span> 节点服务器配置 (Server Nodes)</div>
                 <div id="server-list-container" style="display:grid; gap:0.8rem;">
                   <!-- dynamic server items -->
                 </div>
-                <div style="display:flex; gap:1rem; margin-top:1rem;">
+                <div style="display:flex; gap:1rem; margin-top:1.2rem;">
                   <button id="btn-add-server" class="btn btn-secondary">+ 增加服务器</button>
                   <button id="btn-goto-vps-direct" class="btn ghost">☁️ 去购买 VPS</button>
                 </div>
               </div>
 
-              <div class="form-group" style="margin-top:1.5rem;">
-                <label>代理域名后缀 (Proxy Domain Suffixes)</label>
-                <div id="domain-list-container" style="display:grid; gap:0.8rem;">
-                  <!-- dynamic domain items -->
+              <div class="wizard-section">
+                <div class="wizard-section-title"><span>🌐</span> 代理域名后缀 (Domain Suffixes)</div>
+                <div class="domain-mgmt-section" style="background:transparent; border:none; padding:0;">
+                  <!-- Preset Selection Rail -->
+                  <div class="preset-rail">
+                    <div class="preset-card ai" onclick="injectDomainPreset('ai')">
+                      <div class="preset-icon">🧠</div>
+                      <div style="text-align:left;">
+                        <div style="font-weight:600; font-size:0.9rem;">AI 实验室增强</div>
+                        <div style="font-size:0.75rem; color:#64748b;">支持 OpenAI, Claude...</div>
+                      </div>
+                    </div>
+                    <div class="preset-card shop" onclick="injectDomainPreset('shop')">
+                      <div class="preset-icon">🛍️</div>
+                      <div style="text-align:left;">
+                        <div style="font-weight:600; font-size:0.9rem;">全球电商加速</div>
+                        <div style="font-size:0.75rem; color:#64748b;">支持 Amazon, Temu...</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Quick Add Row -->
+                  <div class="id-gen-row" style="margin: 0.5rem 0;">
+                    <input id="input-quick-add-domain" type="text" class="form-control"
+                      placeholder="输入域名或 URL，如 google.com">
+                    <button id="btn-do-add-domain" class="btn btn-secondary">添加</button>
+                  </div>
+
+                  <!-- Chips Display -->
+                  <div id="domain-chip-grid" class="chip-grid">
+                    <!-- chips injected via JS -->
+                  </div>
                 </div>
-                <div style="display:flex; gap:1rem; margin-top:1rem;">
-                  <button id="btn-add-domain" class="btn btn-secondary">+ 增加域名后缀</button>
-                </div>
-                <p style="font-size:0.75rem; color:#64748b; margin-top:0.5rem;">
-                  粘贴完整 URL 或域名，系统将自动提取根后缀。官方域名 (githubusercontent.com, workers.dev) 将被强制包含。
+                <p style="font-size:0.75rem; color:#64748b; margin-top:0.8rem;">
+                  提示：系统已强制包含官方基础域名。您可以手动添加或使用上方预设。
                 </p>
               </div>
 
@@ -1206,7 +1321,7 @@
         viewTitle: document.getElementById("private-view-title"),
         parserModal: document.getElementById("subview-private-parse"),
         serverList: document.getElementById("server-list-container"),
-        domainList: document.getElementById("domain-list-container"),
+        domainChipGrid: document.getElementById("domain-chip-grid"),
         jsonEditor: document.getElementById("advanced-json-editor"),
         promptModal: document.getElementById("global-prompt-modal"),
         promptTitle: document.getElementById("prompt-title"),
@@ -1219,7 +1334,8 @@
         chainIdHex: "",
         connected: false,
         signedIn: false,
-        address: ""
+        address: "",
+        userDomains: [] // Track domains as a flat array for chips
       };
 
       function hasMetaMask() {
@@ -1495,16 +1611,53 @@
         }
       };
 
-      function addDomainSuffixItem(suffix = "") {
-        const div = document.createElement("div");
-        div.className = "server-item"; // Reuse same styling
-        div.style.gridTemplateColumns = "1fr auto";
-        div.innerHTML = `
-          <input type="text" class="form-control" placeholder="例如: google.com 或 https://www.google.com" value="${suffix}">
-          <div class="btn-remove-server" onclick="this.parentElement.remove()" style="padding: 0 0.5rem;">✕</div>
-        `;
-        dom.domainList.appendChild(div);
+      function renderDomainChips() {
+        const mandatory = ["githubusercontent.com", "workers.dev"];
+        dom.domainChipGrid.innerHTML = "";
+
+        // Render mandatory first
+        mandatory.forEach(domain => {
+          const chip = document.createElement("div");
+          chip.className = "domain-chip mandatory";
+          chip.innerHTML = `<span>${domain}</span><span style="font-size:0.7rem; opacity:0.6;">🛡️</span>`;
+          dom.domainChipGrid.appendChild(chip);
+        });
+
+        // Render user domains
+        state.userDomains.forEach((domain, idx) => {
+          const chip = document.createElement("div");
+          chip.className = "domain-chip";
+          chip.innerHTML = `
+            <span>${domain}</span>
+            <div class="remove-chip" onclick="removeDomainChip(${idx})">✕</div>
+          `;
+          dom.domainChipGrid.appendChild(chip);
+        });
       }
+
+      window.removeDomainChip = (idx) => {
+        state.userDomains.splice(idx, 1);
+        renderDomainChips();
+      };
+
+      window.injectDomainPreset = (type) => {
+        const presets = {
+          ai: ["openai.com", "chatgpt.com", "anthropic.com", "claude.ai", "perplexity.ai", "deepseek.com", "huggingface.co", "midjourney.com", "discord.com"],
+          shop: ["amazon.com", "ebay.com", "shopify.com", "temu.com", "shein.com", "aliexpress.com", "paypal.com", "etsy.com"]
+        };
+        const list = presets[type] || [];
+        let count = 0;
+        list.forEach(d => {
+          if (!state.userDomains.includes(d)) {
+            state.userDomains.push(d);
+            count++;
+          }
+        });
+        renderDomainChips();
+        if (count > 0) {
+          notify(`成功注入 ${count} 个${type === 'ai' ? 'AI 实验室' : '全球电商'}核心后缀。`, "注入成功");
+        }
+      };
 
       function notify(msg, title = "提示") {
         return showPrompt(title, msg, [{ label: "确定", primary: true }]);
@@ -1594,7 +1747,8 @@
           document.getElementById("config-name").value = "";
           document.getElementById("config-desc").value = "";
           dom.serverList.innerHTML = "";
-          dom.domainList.innerHTML = "";
+          state.userDomains = [];
+          renderDomainChips();
           document.getElementById("wizard-main-fields").classList.remove("config-unlocked");
         });
         document.getElementById("btn-goto-vps").addEventListener("click", () => switchSubView("vps", "购买与部署指引"));
@@ -1655,13 +1809,14 @@
             }
 
             // 3. Resolve Domain Suffixes
-            dom.domainList.innerHTML = "";
+            state.userDomains = [];
             const mandatory = ["githubusercontent.com", "workers.dev"];
             if (data.routing_rules && data.routing_rules.proxy && Array.isArray(data.routing_rules.proxy.domain_suffix)) {
               data.routing_rules.proxy.domain_suffix.forEach(ds => {
-                if (!mandatory.includes(ds)) addDomainSuffixItem(ds);
+                if (!mandatory.includes(ds)) state.userDomains.push(ds);
               });
             }
+            renderDomainChips();
 
             document.getElementById("wizard-main-fields").classList.add("config-unlocked");
             dom.parserModal.classList.remove("shown");
@@ -1677,7 +1832,29 @@
         });
 
         document.getElementById("btn-add-server").addEventListener("click", () => addServerItem());
-        document.getElementById("btn-add-domain").addEventListener("click", () => addDomainSuffixItem());
+
+        document.getElementById("btn-do-add-domain").addEventListener("click", () => {
+          const input = document.getElementById("input-quick-add-domain");
+          let val = input.value.trim().toLowerCase();
+          if (!val) return;
+
+          try {
+            if (val.includes("://")) val = new URL(val).hostname;
+          } catch (e) { }
+
+          const parts = val.split(".");
+          if (parts.length >= 2) {
+            val = parts.slice(-2).join(".");
+          }
+
+          if (state.userDomains.includes(val)) {
+            notify("该域名后缀已在列表中。", "重复添加");
+          } else {
+            state.userDomains.push(val);
+            renderDomainChips();
+          }
+          input.value = "";
+        });
 
         document.getElementById("btn-generate-json").addEventListener("click", () => {
           const nameInput = document.getElementById("config-name").value.trim();
@@ -1740,25 +1917,8 @@
 
           // 4. Resolve Domain Suffixes surgically
           const mandatoryDomains = ["githubusercontent.com", "workers.dev"];
-          const userSuffixes = Array.from(dom.domainList.children).map(item => {
-            let val = item.querySelector("input").value.trim().toLowerCase();
-            if (!val) return null;
-
-            // Extract root domain (last 2 segments)
-            // Handle URL vs plain domain
-            try {
-              if (val.includes("://")) val = new URL(val).hostname;
-            } catch (e) { }
-
-            const parts = val.split(".");
-            if (parts.length >= 2) {
-              return parts.slice(-2).join(".");
-            }
-            return val;
-          }).filter(v => v && !mandatoryDomains.includes(v));
-
-          // Unique set
-          const finalSuffixes = [...new Set([...mandatoryDomains, ...userSuffixes])];
+          // Use state.userDomains directly from our reactive state
+          const finalSuffixes = [...new Set([...mandatoryDomains, ...state.userDomains])];
 
           if (!finalJson.routing_rules) finalJson.routing_rules = { version: 0, proxy: {} };
           if (!finalJson.routing_rules.proxy) finalJson.routing_rules.proxy = {};
