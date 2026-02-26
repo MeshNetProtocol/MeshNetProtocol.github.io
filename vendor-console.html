@@ -544,6 +544,27 @@
         dom.networkDot.classList.add(ready ? "ready" : "not-ready");
       }
 
+      function getSessionKey(address) {
+        return `mesh_vendor_session_${address.toLowerCase()}`;
+      }
+
+      function hasValidSession(address) {
+        const session = localStorage.getItem(getSessionKey(address));
+        if (!session) return false;
+        try {
+          const data = JSON.parse(session);
+          // Simple session check: expires in 24h
+          return (Date.now() - data.timestamp) < 24 * 60 * 60 * 1000;
+        } catch {
+          return false;
+        }
+      }
+
+      function createSession(address) {
+        const data = { address: address.toLowerCase(), timestamp: Date.now() };
+        localStorage.setItem(getSessionKey(address), JSON.stringify(data));
+      }
+
       function renderAuthGate() {
         const installed = hasMetaMask();
         dom.btnConnectSignin.classList.toggle("hidden", !installed);
@@ -558,21 +579,25 @@
         if (!state.connected) {
           setStatus("", "MetaMask detected. Continue with wallet sign-in.");
           dom.gateDesc.textContent = "请选择 Base 网络后，连接 MetaMask 并签名登录。";
+          dom.btnConnectSignin.textContent = "Sign In By MetaMask";
           return;
         }
 
         if (!state.signedIn) {
           setStatus("warning", "Wallet connected. Signature required.");
+          dom.btnConnectSignin.textContent = "Sign In & Authorize";
           return;
         }
 
         if (!isBaseReady()) {
           setStatus("warning", "Signed in, but current network is not the selected Base network.");
+          dom.btnConnectSignin.textContent = "Switch Network to Enter";
           return;
         }
 
         setStatus("success", "Commercial session ready: " + shortAddress(state.address));
         dom.gateDesc.textContent = "商业供应商会话已就绪，可进入注册、续费与提现工作区。";
+        dom.btnConnectSignin.textContent = "Enter Workspace";
       }
 
       async function syncChain() {
@@ -595,9 +620,11 @@
           });
           await syncChain();
           renderAuthGate();
+          return true;
         } catch (error) {
           setStatus("error", "Network switch rejected. Please approve in MetaMask.");
           console.error("switch network error", error);
+          return false;
         }
       }
 
@@ -607,33 +634,66 @@
           return;
         }
 
-        try {
-          setStatus("pending", "Requesting wallet connection...");
-          const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-          const account = Array.isArray(accounts) && accounts[0] ? accounts[0] : "";
+        // If already fully ready, navigate
+        if (state.signedIn && isBaseReady()) {
+          // Future navigation logic here, currently just visual feedback
+          setStatus("success", "Entering workspace...");
+          return;
+        }
 
-          if (!account) {
-            setStatus("error", "No unlocked account found in MetaMask.");
-            return;
+        try {
+          if (!state.connected) {
+            setStatus("pending", "Requesting wallet connection...");
+            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+            const account = Array.isArray(accounts) && accounts[0] ? accounts[0] : "";
+            if (!account) {
+              setStatus("error", "No unlocked account found.");
+              return;
+            }
+            state.connected = true;
+            state.address = account;
           }
 
-          state.connected = true;
-          state.address = account;
+          // Ensure network is correct
+          const switched = await switchToSelectedNetwork();
+          if (!switched) return;
 
-          await switchToSelectedNetwork();
+          // Check for existing session before signing
+          if (hasValidSession(state.address)) {
+            state.signedIn = true;
+          } else {
+            setStatus("pending", "Awaiting signature...");
+            await window.ethereum.request({
+              method: "personal_sign",
+              params: ["MeshNetProtocol Vendor Console Sign-In", state.address]
+            });
+            createSession(state.address);
+            state.signedIn = true;
+          }
 
-          setStatus("pending", "Awaiting signature...");
-          await window.ethereum.request({
-            method: "personal_sign",
-            params: ["MeshNetProtocol Vendor Console Sign-In", account]
-          });
-
-          state.signedIn = true;
           renderAuthGate();
         } catch (error) {
           state.signedIn = false;
-          setStatus("error", "Sign-in failed. Reopen MetaMask and approve requests.");
+          setStatus("error", "Action failed. Please check MetaMask.");
           console.error("sign in error", error);
+        }
+      }
+
+      async function checkExistingConnection() {
+        if (!hasMetaMask()) return;
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_accounts" });
+          const account = Array.isArray(accounts) && accounts[0] ? accounts[0] : "";
+          if (account) {
+            state.connected = true;
+            state.address = account;
+            if (hasValidSession(account)) {
+              state.signedIn = true;
+            }
+          }
+          renderAuthGate();
+        } catch (error) {
+          console.error("error checking session", error);
         }
       }
 
@@ -688,13 +748,14 @@
         }
       }
 
-      function bootstrap() {
+      async function bootstrap() {
         dom.selectTargetNetwork.value = state.targetNetwork;
         bindCardMotion();
         renderNetworkStatusDot();
         renderAuthGate();
         bindEvents();
-        syncChain();
+        await syncChain();
+        await checkExistingConnection();
       }
 
       document.addEventListener("DOMContentLoaded", bootstrap);
