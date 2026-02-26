@@ -1,16 +1,40 @@
 /**
  * MeshNetProtocol Vendor Console
- * Main Logic Module (v10 Fix - Media AI Added)
+ * Main Logic Module (v14 - Standardized Domains, Cleaned Versioning)
  */
 
 (function () {
     "use strict";
+
+    const MESH_CONSOLE_VERSION = 17;
+    console.log(`[MeshNet] Loading Vendor Console v${MESH_CONSOLE_VERSION}...`);
 
     // --- Constants & Configuration ---
     const NETWORKS = {
         "base-mainnet": { name: "Base Mainnet", chainIdHex: "0x2105" },
         "base-sepolia": { name: "Base Sepolia", chainIdHex: "0x14a34" }
     };
+
+    const AI_DOMAIN_PRESETS = [
+        // Text & General AI
+        "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com",
+        "anthropic.com", "claude.ai",
+        "perplexity.ai",
+        "mistral.ai",
+        "deepseek.com",
+        "google.com", "gemini.google.com", "generativelanguage.googleapis.com",
+        "bing.com",
+        // Image & Video AI
+        "midjourney.com",
+        "runwayml.com",
+        "pika.art",
+        "luma.ai",
+        "sora.com",
+        // Audio & Music AI
+        "suno.ai",
+        "udio.com",
+        "elevenlabs.io"
+    ];
 
     const SINGBOX_TEMPLATE = {
         "provider_id": "com.meshnetprotocol.profile",
@@ -20,9 +44,9 @@
         "author": "OpenMesh Team",
         "visibility": "public",
         "status": "active",
-        "updated_at": "1970-01-01T00:00:00Z",
-        "package_hash": "seed-0",
-        "source_updated_at": "2026-02-08T00:00:00Z",
+        "updated_at": new Date().toISOString(),
+        "package_hash": `v${MESH_CONSOLE_VERSION}`,
+        "source_updated_at": new Date().toISOString(),
         "config": {
             "dns": {
                 "final": "google-dns",
@@ -54,12 +78,7 @@
             ],
             "experimental": { "cache_file": { "enabled": true } },
             "log": { "level": "debug" },
-            "outbounds": [
-                { "type": "shadowsocks", "tag": "meshflux168", "server": "45.32.115.168", "server_port": 10086, "method": "aes-256-gcm", "password": "yourpassword123" },
-                { "type": "shadowsocks", "tag": "meshflux252", "server": "45.76.45.252", "server_port": 10086, "method": "aes-256-gcm", "password": "yourpassword123" },
-                { "type": "selector", "tag": "proxy", "outbounds": ["meshflux168", "meshflux252"], "default": "meshflux168" },
-                { "domain_strategy": "ipv4_only", "fallback_delay": "300ms", "tag": "direct", "type": "direct" }
-            ],
+            "outbounds": [],
             "route": {
                 "auto_detect_interface": true,
                 "default_domain_resolver": "google-dns",
@@ -77,9 +96,11 @@
             }
         },
         "routing_rules": {
-            "version": 8,
-            "domain": ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
-            "domain_suffix": ["githubusercontent.com", "workers.dev"]
+            "version": MESH_CONSOLE_VERSION,
+            "proxy": {
+                "domain": ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
+                "domain_suffix": ["githubusercontent.com", "workers.dev"]
+            }
         }
     };
 
@@ -108,7 +129,6 @@
             btnPrivateBack: document.getElementById("btn-private-back"),
             entryStage: document.getElementById("entry-stage"),
             privateArea: document.getElementById("private-operation-area"),
-            // Sub-views
             subviews: {
                 main: document.getElementById("subview-private-main"),
                 config: document.getElementById("subview-private-config"),
@@ -136,6 +156,7 @@
             return value.length > 10 ? value.slice(0, 6) + "..." + value.slice(-4) : value;
         },
         setStatus: (level, text) => {
+            if (!dom.textAuthStatus) return;
             dom.textAuthStatus.textContent = text;
             dom.textAuthStatus.classList.remove("success", "warning", "error", "pending");
             if (level) dom.textAuthStatus.classList.add(level);
@@ -147,7 +168,6 @@
         getSessionKey: (address) => `mesh_vendor_session_${address.toLowerCase()}`
     };
 
-    // --- Session Management ---
     const session = {
         hasValid: (address) => {
             const data = localStorage.getItem(utils.getSessionKey(address));
@@ -163,15 +183,15 @@
         }
     };
 
-    // --- UI Components & Modals ---
     function switchSubView(viewKey, title) {
-        Object.values(dom.subviews).forEach(v => v.classList.add("hidden"));
-        dom.subviews[viewKey].classList.remove("hidden");
-        dom.viewTitle.textContent = title;
+        Object.values(dom.subviews).forEach(v => { if (v) v.classList.add("hidden"); });
+        if (dom.subviews[viewKey]) dom.subviews[viewKey].classList.remove("hidden");
+        if (dom.viewTitle) dom.viewTitle.textContent = title;
     }
 
     function showPrompt(title, message, buttons = []) {
         return new Promise((resolve) => {
+            if (!dom.promptModal) return resolve(false);
             dom.promptTitle.textContent = title;
             dom.promptMsg.textContent = message;
             dom.promptActions.innerHTML = "";
@@ -201,9 +221,9 @@
         ]);
     }
 
-    // --- Domain & Server Management ---
     function renderDomainChips() {
         const mandatory = ["githubusercontent.com", "workers.dev"];
+        if (!dom.domainChipGrid) return;
         dom.domainChipGrid.innerHTML = "";
 
         mandatory.forEach(domain => {
@@ -227,17 +247,7 @@
     };
 
     window.injectDomainPreset = (type) => {
-        const presets = {
-            ai: [
-                "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", "anthropic.com", "claude.ai",
-                "perplexity.ai", "deepseek.com", "mistral.ai", "groq.com", "cohere.com",
-                "gemini.google.com", "ai.google.dev", "aistudio.google.com", "accounts.google.com", "gstatic.com", "googleusercontent.com",
-                "github.com", "api.github.com", "githubassets.com", "cursor.com", "cursor.sh", "huggingface.co", "discord.com", "midjourney.com",
-                "suno.com", "suno.ai", "udio.com", "elevenlabs.io", "runwayml.com", "lumalabs.ai", "pika.art", "klingai.com", "heygen.com", "viggle.ai", "sora.com"
-            ],
-            shop: ["amazon.com", "ebay.com", "shopify.com", "temu.com", "shein.com", "aliexpress.com", "paypal.com", "etsy.com"]
-        };
-        const list = presets[type] || [];
+        const list = type === 'ai' ? AI_DOMAIN_PRESETS : ["amazon.com", "ebay.com", "shopify.com"];
         let count = 0;
         list.forEach(d => {
             if (!state.userDomains.includes(d)) {
@@ -263,34 +273,23 @@
       <div class="btn-remove-server" onclick="this.parentElement.remove()" style="padding: 0 0.5rem; cursor:pointer; color:#fca5a5; font-size:1.2rem;">✕</div>
       <div class="server-validation-msg"></div>
     `;
-        dom.serverList.appendChild(div);
+        if (dom.serverList) dom.serverList.appendChild(div);
         if (ip) validateServerIP(div.querySelector('input'));
     }
 
     window.validateServerIP = (el) => {
         const val = el.value.trim();
         const msgEl = el.parentElement.querySelector('.server-validation-msg');
+        if (!msgEl) return;
         el.classList.remove('invalid-ip', 'warning-ip');
         msgEl.className = 'server-validation-msg';
         msgEl.textContent = '';
         if (!val) return;
-
         const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         if (!ipv4Regex.test(val)) {
             el.classList.add('invalid-ip');
             msgEl.classList.add('error');
             msgEl.textContent = '❌ 无效的 IP 地址格式';
-            return;
-        }
-
-        const parts = val.split('.').map(Number);
-        const isPrivate = (parts[0] === 10) || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
-            (parts[0] === 192 && parts[1] === 168) || (parts[0] === 127) || (parts[0] === 169 && parts[1] === 254);
-
-        if (isPrivate) {
-            el.classList.add('warning-ip');
-            msgEl.classList.add('warning');
-            msgEl.textContent = '⚠️ 这是一个局域网/回环地址，外部可能无法访问';
         }
     };
 
@@ -299,10 +298,8 @@
         const isPass = input.type === "password";
         input.type = isPass ? "text" : "password";
         el.textContent = isPass ? "👁️‍🗨️" : "👁️";
-        el.style.opacity = isPass ? "1" : "0.5";
     };
 
-    // --- MetaMask & Auth ---
     async function syncChain() {
         if (!utils.hasMetaMask()) return;
         try {
@@ -312,6 +309,7 @@
     }
 
     function renderNetworkStatusDot() {
+        if (!dom.networkDot) return;
         const ready = utils.isBaseReady();
         dom.networkDot.classList.remove("ready", "not-ready");
         dom.networkDot.classList.add(ready ? "ready" : "not-ready");
@@ -319,42 +317,36 @@
 
     function renderAuthGate() {
         const installed = utils.hasMetaMask();
-        dom.btnConnectSignin.classList.toggle("hidden", !installed);
-        dom.btnInstallMetaMask.classList.toggle("hidden", installed);
-
+        if (dom.btnConnectSignin) dom.btnConnectSignin.classList.toggle("hidden", !installed);
+        if (dom.btnInstallMetaMask) dom.btnInstallMetaMask.classList.toggle("hidden", installed);
         if (!installed) {
             utils.setStatus("warning", "MetaMask not found.");
-            dom.gateDesc.textContent = "浏览器未检测到 MetaMask。";
+            if (dom.gateDesc) dom.gateDesc.textContent = "浏览器未检测到 MetaMask。";
             return;
         }
-
         if (!state.connected) {
             utils.setStatus("", "MetaMask detected.");
-            dom.gateDesc.textContent = "请选择网络后连接钱包。";
-            dom.btnConnectSignin.textContent = "Sign In By MetaMask";
+            if (dom.gateDesc) dom.gateDesc.textContent = "请选择网络后连接钱包。";
+            if (dom.btnConnectSignin) dom.btnConnectSignin.textContent = "Sign In By MetaMask";
             return;
         }
-
         if (!state.signedIn) {
             utils.setStatus("warning", "Signature required.");
-            dom.btnConnectSignin.textContent = "Sign In & Authorize";
+            if (dom.btnConnectSignin) dom.btnConnectSignin.textContent = "Sign In & Authorize";
             return;
         }
-
         if (!utils.isBaseReady()) {
             utils.setStatus("warning", "Network mismatch.");
-            dom.btnConnectSignin.textContent = "Switch Network to Enter";
+            if (dom.btnConnectSignin) dom.btnConnectSignin.textContent = "Switch Network to Enter";
             return;
         }
-
         utils.setStatus("success", "Commercial session ready");
-        dom.btnConnectSignin.textContent = "Enter Workspace";
+        if (dom.btnConnectSignin) dom.btnConnectSignin.textContent = "Enter Workspace";
     }
 
     async function connectAndSignIn() {
         if (!utils.hasMetaMask()) return renderAuthGate();
         if (state.signedIn && utils.isBaseReady()) return;
-
         try {
             if (!state.connected) {
                 utils.setStatus("pending", "Connecting...");
@@ -362,8 +354,6 @@
                 state.address = accounts[0] || "";
                 state.connected = Boolean(state.address);
             }
-
-            // Switch Network
             try {
                 await window.ethereum.request({
                     method: "wallet_switchEthereumChain",
@@ -374,8 +364,6 @@
                 utils.setStatus("error", "Network switch rejected.");
                 return;
             }
-
-            // Session / Sign
             if (session.hasValid(state.address)) {
                 state.signedIn = true;
             } else {
@@ -394,229 +382,190 @@
         }
     }
 
-    // --- Events ---
     function bindEvents() {
-        dom.selectTargetNetwork.addEventListener("change", async () => {
+        if (dom.selectTargetNetwork) dom.selectTargetNetwork.addEventListener("change", async () => {
             state.targetNetwork = dom.selectTargetNetwork.value;
-            await syncChain();
-            renderAuthGate();
+            await syncChain(); renderAuthGate();
         });
-
-        dom.btnConnectSignin.addEventListener("click", connectAndSignIn);
-
-        dom.btnEnterPrivate.addEventListener("click", () => {
-            dom.entryStage.classList.add("hidden");
-            dom.privateArea.classList.remove("hidden");
+        if (dom.btnConnectSignin) dom.btnConnectSignin.addEventListener("click", connectAndSignIn);
+        if (dom.btnEnterPrivate) dom.btnEnterPrivate.addEventListener("click", () => {
+            console.log("[MeshNet] Entering Private Workspace...");
+            if (dom.entryStage) dom.entryStage.classList.add("hidden");
+            if (dom.privateArea) dom.privateArea.classList.remove("hidden");
             switchSubView("main", "Private Workspace / Menu");
         });
-
-        dom.btnPrivateBack.addEventListener("click", () => {
-            if (!dom.subviews.main.classList.contains("hidden")) {
-                dom.privateArea.classList.add("hidden");
-                dom.entryStage.classList.remove("hidden");
-            } else {
-                switchSubView("main", "Private Workspace / Menu");
-            }
+        if (dom.btnPrivateBack) dom.btnPrivateBack.addEventListener("click", () => {
+            console.log("[MeshNet] Back to entry stage...");
+            if (dom.subviews.main && !dom.subviews.main.classList.contains("hidden")) {
+                if (dom.privateArea) dom.privateArea.classList.add("hidden");
+                if (dom.entryStage) dom.entryStage.classList.remove("hidden");
+            } else { switchSubView("main", "Private Workspace / Menu"); }
         });
+        document.querySelectorAll(".btn-cancel").forEach(btn => btn.addEventListener("click", () => switchSubView("main", "Private Workspace / Menu")));
 
-        document.querySelectorAll(".btn-cancel").forEach(btn => {
-            btn.addEventListener("click", () => switchSubView("main", "Private Workspace / Menu"));
-        });
-
-        // Modules
-        document.getElementById("btn-goto-config").addEventListener("click", () => {
+        const gotoConfigBtn = document.getElementById("btn-goto-config");
+        if (gotoConfigBtn) gotoConfigBtn.addEventListener("click", () => {
             switchSubView("config", "生成配置文件 (Wizard)");
-            dom.serverList.innerHTML = "";
-            state.userDomains = [];
-            renderDomainChips();
+            if (dom.serverList) dom.serverList.innerHTML = "";
+            state.userDomains = []; renderDomainChips();
         });
-
-        document.getElementById("btn-goto-vps").addEventListener("click", () => switchSubView("vps", "购买与部署指引"));
-        document.getElementById("btn-goto-import").addEventListener("click", () => switchSubView("import", "导入 APP 教程"));
-        document.getElementById("btn-goto-advanced").addEventListener("click", () => {
+        const gotoVpsBtn = document.getElementById("btn-goto-vps");
+        if (gotoVpsBtn) gotoVpsBtn.addEventListener("click", () => switchSubView("vps", "购买与部署指引"));
+        const gotoImportBtn = document.getElementById("btn-goto-import");
+        if (gotoImportBtn) gotoImportBtn.addEventListener("click", () => switchSubView("import", "导入 APP 教程"));
+        const gotoAdvancedBtn = document.getElementById("btn-goto-advanced");
+        if (gotoAdvancedBtn) gotoAdvancedBtn.addEventListener("click", () => {
             switchSubView("advanced", "高级 JSON 编辑器");
-            dom.jsonEditor.value = JSON.stringify(SINGBOX_TEMPLATE, null, 2);
+            if (dom.jsonEditor) dom.jsonEditor.value = JSON.stringify(SINGBOX_TEMPLATE, null, 2);
         });
 
-        // Wizard
-        document.getElementById("btn-gen-id").addEventListener("click", () => {
-            const rand = Math.random().toString(36).slice(2, 7);
-            const ts = Date.now().toString(36).slice(-4);
-            document.getElementById("config-id").value = `com.mesh.${rand}.${ts}.v1`;
-            document.getElementById("wizard-main-fields").classList.add("config-unlocked");
+        const genIdBtn = document.getElementById("btn-gen-id");
+        if (genIdBtn) genIdBtn.addEventListener("click", () => {
+            const idInput = document.getElementById("config-id");
+            if (idInput) idInput.value = `com.mesh.${Math.random().toString(36).slice(2, 7)}.${Date.now().toString(36).slice(-4)}.v1`;
+            const fields = document.getElementById("wizard-main-fields");
+            if (fields) fields.classList.add("config-unlocked");
         });
 
-        document.getElementById("btn-open-parser").addEventListener("click", () => dom.parserModal.classList.add("shown"));
-        document.getElementById("btn-close-parser").addEventListener("click", () => dom.parserModal.classList.remove("shown"));
+        const openParserBtn = document.getElementById("btn-open-parser");
+        if (openParserBtn) openParserBtn.addEventListener("click", () => dom.parserModal.classList.add("shown"));
+        const closeParserBtn = document.getElementById("btn-close-parser");
+        if (closeParserBtn) closeParserBtn.addEventListener("click", () => dom.parserModal.classList.remove("shown"));
 
-        document.getElementById("btn-do-parse").addEventListener("click", () => {
+        const doParseBtn = document.getElementById("btn-do-parse");
+        if (doParseBtn) doParseBtn.addEventListener("click", () => {
+            console.log("[MeshNet] Parsing JSON...");
             const area = document.getElementById("import-json-textarea");
             try {
                 const data = JSON.parse(area.value);
                 const resolvedId = data.provider_id || data.id;
-                if (!resolvedId) throw new Error("缺少标识符字段");
+                if (!resolvedId) throw new Error("缺少标识符字段 (provider_id)");
 
                 document.getElementById("config-id").value = resolvedId;
                 document.getElementById("config-name").value = data.name || "";
                 document.getElementById("config-desc").value = data.description || "";
-                dom.serverList.innerHTML = "";
 
-                let rawServers = Array.isArray(data.servers) ? data.servers : [];
-                if (rawServers.length === 0) {
-                    const outbounds = (data.config && data.config.outbounds) || data.outbounds || [];
+                dom.serverList.innerHTML = "";
+                // 智能检测节点
+                let rawServers = [];
+                if (Array.isArray(data.servers)) {
+                    rawServers = data.servers;
+                } else {
+                    // 从 sing-box config 中提取
+                    const config = data.config || data;
+                    const outbounds = config.outbounds || [];
                     rawServers = outbounds.filter(o => o.server && (o.server_port || o.port));
                 }
-                rawServers.forEach(s => addServerItem(s.ip || s.server, s.port || s.server_port, s.pass || s.password));
+
+                if (rawServers.length === 0) {
+                    console.warn("[MeshNet] No servers found in JSON.");
+                }
+
+                rawServers.forEach(s => addServerItem(s.ip || s.server, s.port || s.server_port, s.pass || s.password || s.pass));
 
                 state.userDomains = [];
                 const mandatory = ["githubusercontent.com", "workers.dev"];
-                let suffixes = (data.routing_rules && data.routing_rules.domain_suffix) ||
-                    (data.routing_rules && data.routing_rules.proxy && data.routing_rules.proxy.domain_suffix) || [];
-                suffixes.forEach(ds => { if (!mandatory.includes(ds)) state.userDomains.push(ds); });
-                renderDomainChips();
+                let suffixes = (data.routing_rules && data.routing_rules.domain_suffix) || [];
+                suffixes.forEach(ds => {
+                    const clean = ds.startsWith('.') ? ds.slice(1) : ds;
+                    if (!mandatory.includes(clean)) state.userDomains.push(clean);
+                });
 
-                document.getElementById("wizard-main-fields").classList.add("config-unlocked");
+                renderDomainChips();
+                document.getElementById("wizard-main-fields")?.classList.add("config-unlocked");
                 dom.parserModal.classList.remove("shown");
                 area.value = "";
                 notify("回填成功", "解析完成");
-            } catch (e) { notify("解析失败: " + e.message, "格式错误"); }
+                console.log("[MeshNet] Parsing complete.");
+            } catch (e) {
+                console.error("[MeshNet] Parse error:", e);
+                notify("解析失败: " + e.message, "格式错误");
+            }
         });
 
-        document.getElementById("btn-add-server").addEventListener("click", () => addServerItem());
-
-        document.getElementById("btn-do-add-domain").addEventListener("click", () => {
+        const addServerBtn = document.getElementById("btn-add-server");
+        if (addServerBtn) addServerBtn.addEventListener("click", () => addServerItem());
+        const addDomainBtn = document.getElementById("btn-do-add-domain");
+        if (addDomainBtn) addDomainBtn.addEventListener("click", () => {
             const input = document.getElementById("input-quick-add-domain");
             let val = input.value.trim().toLowerCase();
             if (!val) return;
-            try { if (val.includes("://")) val = new URL(val).hostname; } catch (e) { }
-            const parts = val.split(".");
-            if (parts.length >= 2) val = parts.slice(-2).join(".");
-            if (state.userDomains.includes(val)) {
-                notify("已在列表中。", "重复添加");
-            } else {
-                state.userDomains.push(val);
-                renderDomainChips();
-            }
-            input.value = "";
+            state.userDomains.push(val); renderDomainChips(); input.value = "";
         });
 
-        document.getElementById("btn-generate-json").addEventListener("click", () => {
-            const name = document.getElementById("config-name").value.trim();
+        const generateBtn = document.getElementById("btn-generate-json");
+        if (generateBtn) generateBtn.addEventListener("click", () => {
+            const nameInput = document.getElementById("config-name");
+            const name = nameInput ? nameInput.value.trim() : "";
             if (!name) return notify("请输入供应商名称", "校验未通过");
-
             const userServers = Array.from(dom.serverList.children).map(item => {
                 const inputs = item.querySelectorAll("input");
                 return { ip: inputs[0].value.trim(), port: parseInt(inputs[1].value), pass: inputs[2].value.trim() };
             }).filter(s => s.ip && s.port);
-
-            if (userServers.length === 0) return confirmAction("尚未配置节点。是否前往部署教程？", "缺失配置").then(ok => ok && switchSubView("vps", "部署指引"));
+            if (userServers.length === 0) return notify("尚未配置节点。", "缺少配置");
 
             const final = JSON.parse(JSON.stringify(SINGBOX_TEMPLATE));
             final.provider_id = document.getElementById("config-id").value || final.provider_id;
             final.name = name;
             final.description = document.getElementById("config-desc").value.trim();
             final.updated_at = new Date().toISOString();
-
-            const otherOutbounds = final.config.outbounds.filter(o => o.type !== "shadowsocks");
-            const selector = otherOutbounds.find(o => o.tag === "proxy" && o.type === "selector");
-            const newNodes = userServers.map((s, i) => ({ type: "shadowsocks", tag: `node-${i + 1}`, server: s.ip, server_port: s.port, method: "aes-256-gcm", password: s.pass }));
-
-            if (selector) {
-                selector.outbounds = newNodes.map(n => n.tag);
-                selector.default = newNodes[0].tag;
-            }
-            final.config.outbounds = [...newNodes, ...otherOutbounds];
-
-            // 彻底重定向生成逻辑，确保不经过任何中间层级
+            const nodes = userServers.map((s, i) => ({ type: "shadowsocks", tag: `node-${i + 1}`, server: s.ip, server_port: s.port, method: "aes-256-gcm", password: s.pass }));
+            const proxyGroup = { tag: "proxy", type: "selector", outbounds: nodes.map(n => n.tag), default: nodes[0].tag };
+            final.config.outbounds = [...nodes, proxyGroup, { type: "direct", tag: "direct", domain_strategy: "ipv4_only", fallback_delay: "300ms" }];
+            // 确保后缀不带点，遵循 standard 规范
+            const domains = [...AI_DOMAIN_PRESETS];
+            state.userDomains.forEach(d => {
+                const clean = d.startsWith('.') ? d.slice(1) : d;
+                if (!domains.includes(clean)) domains.push(clean);
+            });
             final.routing_rules = {
-                version: 8,
-                domain: ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
-                domain_suffix: [...new Set(["githubusercontent.com", "workers.dev", ...state.userDomains])]
+                version: MESH_CONSOLE_VERSION,
+                proxy: {
+                    domain: ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
+                    domain_suffix: [...new Set(["githubusercontent.com", "workers.dev", ...domains])]
+                }
             };
-
-            // 删除可能存在的旧嵌套层级（防御性代码）
-            if (final.routing_rules.proxy) delete final.routing_rules.proxy;
-
             switchSubView("advanced", "JSON 预览与导出");
-            dom.jsonEditor.value = JSON.stringify(final, null, 2);
+            if (dom.jsonEditor) dom.jsonEditor.value = JSON.stringify(final, null, 2);
         });
 
-        // VPS Help
-        document.getElementById("btn-goto-server-help").addEventListener("click", () => notify("Ubuntu 22.04+ \nsudo bash <(curl -sL install.sh)", "部署指引"));
-
-        // Tabs
-        document.querySelectorAll(".tab-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                const docs = {
-                    win: "Windows: 下载 MeshNet-Win 导入 JSON。",
-                    mac: "macOS: 下载 MeshNet-Mac 拖入 JSON。",
-                    ios: "iOS: 通过 iCloud 发送并导入。",
-                    android: "Android: 扫描二维码或直接打开。"
-                };
-                document.getElementById("import-docs").innerHTML = `<p>${docs[btn.dataset.tab]}</p>`;
-            });
-        });
-
-        // Editor
-        document.getElementById("btn-check-json").addEventListener("click", () => {
-            try { JSON.parse(dom.jsonEditor.value); notify("语法正确。", "校验成功"); } catch (e) { notify("格式错误: " + e.message, "失败"); }
-        });
-        document.getElementById("btn-copy-json").addEventListener("click", () => {
-            navigator.clipboard.writeText(dom.jsonEditor.value); notify("已复制", "成功");
-        });
-        document.getElementById("btn-save-file").addEventListener("click", () => {
+        const checkJsonBtn = document.getElementById("btn-check-json");
+        if (checkJsonBtn) checkJsonBtn.addEventListener("click", () => { try { JSON.parse(dom.jsonEditor.value); notify("语法正确。", "校验成功"); } catch (e) { notify("格式错误: " + e.message, "失败"); } });
+        const copyJsonBtn = document.getElementById("btn-copy-json");
+        if (copyJsonBtn) copyJsonBtn.addEventListener("click", () => { navigator.clipboard.writeText(dom.jsonEditor.value); notify("已复制", "成功"); });
+        const saveFileBtn = document.getElementById("btn-save-file");
+        if (saveFileBtn) saveFileBtn.addEventListener("click", () => {
             const blob = new Blob([dom.jsonEditor.value], { type: "application/json" });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "mesh-config.json";
-            a.click();
+            const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "mesh-config.json"; a.click();
         });
 
         if (utils.hasMetaMask()) {
-            window.ethereum.on("chainChanged", (cid) => {
-                state.chainIdHex = String(cid || "");
-                renderNetworkStatusDot(); renderAuthGate();
-            });
-            window.ethereum.on("accountsChanged", (accs) => {
-                state.address = accs[0] || ""; state.connected = Boolean(state.address); state.signedIn = false;
-                renderAuthGate();
-            });
+            window.ethereum.on("chainChanged", (cid) => { state.chainIdHex = String(cid || ""); renderNetworkStatusDot(); renderAuthGate(); });
+            window.ethereum.on("accountsChanged", (accs) => { state.address = accs[0] || ""; state.connected = Boolean(state.address); state.signedIn = false; renderAuthGate(); });
         }
     }
 
-    // --- Initialize ---
     async function bootstrap() {
+        console.log("[MeshNet] Bootstrap started...");
         initDomMap();
-        bindCardMotion();
         bindEvents();
-        await syncChain();
-        // Check local session
-        if (utils.hasMetaMask()) {
-            const accounts = await window.ethereum.request({ method: "eth_accounts" });
-            state.address = accounts[0] || "";
-            state.connected = Boolean(state.address);
-            if (state.connected && session.hasValid(state.address)) state.signedIn = true;
+
+        try {
+            await syncChain();
+            if (utils.hasMetaMask()) {
+                const accounts = await window.ethereum.request({ method: "eth_accounts" });
+                state.address = accounts[0] || "";
+                state.connected = Boolean(state.address);
+                if (state.connected && session.hasValid(state.address)) state.signedIn = true;
+            }
+        } catch (e) {
+            console.error("[MeshNet] MetaMask init failed/blocked:", e);
         }
+
         renderAuthGate();
-        window.MESH_CONSOLE_V = 10;
-        console.log("%c MeshNet Console Loaded: v" + window.MESH_CONSOLE_V + " %c", "background:#2dd4bf; color:#0c111d; font-weight:bold; border-radius:4px; padding:2px 6px;", "");
+        window.MESH_CONSOLE_V = MESH_CONSOLE_VERSION;
+        console.log(`[MeshNet] Console v${MESH_CONSOLE_VERSION} ready.`);
     }
 
-    function bindCardMotion() {
-        document.querySelectorAll(".card-hover").forEach((card) => {
-            card.addEventListener("pointermove", (e) => {
-                const rect = card.getBoundingClientRect();
-                const px = (e.clientX - rect.left) / rect.width;
-                const py = (e.clientY - rect.top) / rect.height;
-                card.style.setProperty("--mx", (px * 100).toFixed(2) + "%");
-                card.style.setProperty("--my", (py * 100).toFixed(2) + "%");
-                card.style.transform = `rotateX(${(0.5 - py) * 5}deg) rotateY(${(px - 0.5) * 5}deg) translateY(-2px)`;
-            });
-            card.addEventListener("pointerleave", () => card.style.transform = "none");
-        });
-    }
-
-    document.addEventListener("DOMContentLoaded", bootstrap);
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootstrap); else bootstrap();
 })();
