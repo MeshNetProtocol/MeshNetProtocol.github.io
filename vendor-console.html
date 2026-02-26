@@ -621,11 +621,55 @@
       gap: 0.8rem;
     }
 
-    .btn-remove-server {
-      color: #fca5a5;
-      cursor: pointer;
+    .input-group-pass {
+      position: relative;
       display: flex;
       align-items: center;
+    }
+
+    .input-group-pass .form-control {
+      padding-right: 2.5rem;
+      width: 100%;
+    }
+
+    .btn-toggle-pass {
+      position: absolute;
+      right: 0.8rem;
+      cursor: pointer;
+      font-size: 1.1rem;
+      opacity: 0.5;
+      transition: opacity 200ms;
+      user-select: none;
+    }
+
+    .btn-toggle-pass:hover {
+      opacity: 1;
+    }
+
+    .server-validation-msg {
+      grid-column: 1 / -1;
+      font-size: 0.75rem;
+      margin-top: -0.4rem;
+      display: none;
+      padding-left: 0.2rem;
+    }
+
+    .server-validation-msg.error {
+      color: #f87171;
+      display: block;
+    }
+
+    .server-validation-msg.warning {
+      color: #fbbf24;
+      display: block;
+    }
+
+    .form-control.invalid-ip {
+      border-color: rgba(239, 68, 68, 0.5) !important;
+    }
+
+    .form-control.warning-ip {
+      border-color: rgba(251, 191, 36, 0.5) !important;
     }
 
     /* Wizard Section Isolation */
@@ -1700,15 +1744,69 @@
       function addServerItem(ip = "", port = "10086", pass = "") {
         const div = document.createElement("div");
         div.className = "server-item";
-        div.style.gridTemplateColumns = "1fr 100px 1fr auto";
+        div.style.gridTemplateColumns = "1fr 100px 1.2fr auto";
         div.innerHTML = `
-          <input type="text" class="form-control" placeholder="IP 地址" value="${ip}">
+          <input type="text" class="form-control" placeholder="IP 地址" value="${ip}" oninput="validateServerIP(this)">
           <input type="number" class="form-control" placeholder="端口" value="${port}">
-          <input type="text" class="form-control" placeholder="密码" value="${pass}">
-          <div class="btn-remove-server" onclick="this.parentElement.remove()" style="padding: 0 0.5rem;">✕</div>
+          <div class="input-group-pass">
+            <input type="password" class="form-control" placeholder="密码" value="${pass}">
+            <div class="btn-toggle-pass" onclick="togglePassVisibility(this)">👁️</div>
+          </div>
+          <div class="btn-remove-server" onclick="this.parentElement.remove()" style="padding: 0 0.5rem; cursor:pointer; color:#fca5a5; font-size:1.2rem;">✕</div>
+          <div class="server-validation-msg"></div>
         `;
         dom.serverList.appendChild(div);
+        if (ip) validateServerIP(div.querySelector('input'));
       }
+
+      window.validateServerIP = (el) => {
+        const val = el.value.trim();
+        const msgEl = el.parentElement.querySelector('.server-validation-msg');
+        el.classList.remove('invalid-ip', 'warning-ip');
+        msgEl.className = 'server-validation-msg';
+        msgEl.textContent = '';
+
+        if (!val) return;
+
+        // Basic IPv4 check
+        const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        const isIP = ipv4Regex.test(val);
+
+        if (!isIP) {
+          el.classList.add('invalid-ip');
+          msgEl.classList.add('error');
+          msgEl.textContent = '❌ 无效的 IP 地址格式';
+          return;
+        }
+
+        // Private range check
+        const parts = val.split('.').map(Number);
+        const isPrivate =
+          (parts[0] === 10) ||
+          (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+          (parts[0] === 192 && parts[1] === 168) ||
+          (parts[0] === 127) ||
+          (parts[0] === 169 && parts[1] === 254);
+
+        if (isPrivate) {
+          el.classList.add('warning-ip');
+          msgEl.classList.add('warning');
+          msgEl.textContent = '⚠️ 这是一个局域网/回环地址，外部可能无法访问';
+        }
+      };
+
+      window.togglePassVisibility = (el) => {
+        const input = el.parentElement.querySelector('input');
+        if (input.type === "password") {
+          input.type = "text";
+          el.textContent = "👁️‍🗨️"; // Active eye
+          el.style.opacity = "1";
+        } else {
+          input.type = "password";
+          el.textContent = "👁️"; // Closed/Normal eye
+          el.style.opacity = "0.5";
+        }
+      };
 
       function bindEvents() {
         dom.selectTargetNetwork.addEventListener("change", async function () {
