@@ -1,6 +1,6 @@
 /**
  * MeshNetProtocol Vendor Console
- * Main Logic Module (v8 Compat)
+ * Main Logic Module (v9 Fix - Flat Routing Rules)
  */
 
 (function () {
@@ -525,7 +525,16 @@
                 selector.default = newNodes[0].tag;
             }
             final.config.outbounds = [...newNodes, ...otherOutbounds];
-            final.routing_rules = { version: 8, domain: ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"], domain_suffix: [...new Set(["githubusercontent.com", "workers.dev", ...state.userDomains])] };
+
+            // 彻底重定向生成逻辑，确保不经过任何中间层级
+            final.routing_rules = {
+                version: 8,
+                domain: ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
+                domain_suffix: [...new Set(["githubusercontent.com", "workers.dev", ...state.userDomains])]
+            };
+
+            // 删除可能存在的旧嵌套层级（防御性代码）
+            if (final.routing_rules.proxy) delete final.routing_rules.proxy;
 
             switchSubView("advanced", "JSON 预览与导出");
             dom.jsonEditor.value = JSON.stringify(final, null, 2);
@@ -590,6 +599,8 @@
             if (state.connected && session.hasValid(state.address)) state.signedIn = true;
         }
         renderAuthGate();
+        window.MESH_CONSOLE_V = 9;
+        console.log("%c MeshNet Console Loaded: v" + window.MESH_CONSOLE_V + " %c", "background:#2dd4bf; color:#0c111d; font-weight:bold; border-radius:4px; padding:2px 6px;", "");
     }
 
     function bindCardMotion() {
