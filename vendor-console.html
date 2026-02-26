@@ -715,6 +715,64 @@
       }
     }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .modal-content {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 600px;
+      display: grid;
+      gap: 1.5rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .config-lock-mask {
+      opacity: 0.4;
+      pointer-events: none;
+      filter: grayscale(1);
+      transition: all 400ms ease;
+    }
+
+    .config-unlocked {
+      opacity: 1;
+      pointer-events: auto;
+      filter: none;
+    }
+
+    .readonly-input {
+      background: rgba(0, 0, 0, 0.3) !important;
+      color: #64748b !important;
+      cursor: not-allowed;
+    }
+
+    .id-gen-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .wizard-actions-top {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 1rem;
+    }
+
     @media (max-width: 1060px) {
       .entry-stage {
         grid-template-columns: 1fr;
@@ -839,31 +897,7 @@
         <!-- Main Menu sub-view -->
         <div id="subview-private-main" class="sub-view">
           <div class="module-stack">
-            <!-- Module 1: Generation -->
-            <article class="module-card module-config">
-              <div class="module-wrapper">
-                <div class="module-header-wrap">
-                  <div class="module-icon-box">⚙️</div>
-                  <div class="module-title-box">
-                    <h3>生成配置文件 (Profile Builder)</h3>
-                  </div>
-                </div>
-                <p class="module-summary">
-                  为个人或特定圈子定制去中心化供应节点配置。生成的 JSON 包含加密基座与 x402 支付元数据，支持多服务器聚合。
-                </p>
-                <ul class="module-features">
-                  <li><strong>零门槛配置</strong>：傻瓜式输入 IP、端口、密码，自动生成标准 sing-box 核心配置。</li>
-                  <li><strong>私密共享</strong>：配置仅存本地或由您托管在公网 Gist，通过 URL 拉取即可同步给好友。</li>
-                  <li><strong>无中间商</strong>：流量不经过 MeshNet 公共市场检索，完全属于您的私有地下网络。</li>
-                  <li><strong>多端兼容</strong>：一键生成符合全平台 MeshNet App 规范的统一数据结构。</li>
-                </ul>
-              </div>
-              <div class="module-action">
-                <button id="btn-goto-config" class="btn-module">开始配置 (Build)</button>
-              </div>
-            </article>
-
-            <!-- Module 2: VPS -->
+            <!-- Module 1: VPS -->
             <article class="module-card module-vps">
               <div class="module-wrapper">
                 <div class="module-header-wrap">
@@ -884,6 +918,30 @@
               </div>
               <div class="module-action">
                 <button id="btn-goto-vps" class="btn-module">部署指引 (Deploy)</button>
+              </div>
+            </article>
+
+            <!-- Module 2: Generation -->
+            <article class="module-card module-config">
+              <div class="module-wrapper">
+                <div class="module-header-wrap">
+                  <div class="module-icon-box">⚙️</div>
+                  <div class="module-title-box">
+                    <h3>生成配置文件 (Profile Builder)</h3>
+                  </div>
+                </div>
+                <p class="module-summary">
+                  为个人或特定圈子定制去中心化供应节点配置。生成的 JSON 包含加密基座与 x402 支付元数据，支持多服务器聚合。
+                </p>
+                <ul class="module-features">
+                  <li><strong>零门槛配置</strong>：傻瓜式输入 IP、端口、密码，自动生成标准 sing-box 核心配置。</li>
+                  <li><strong>私密共享</strong>：配置仅存本地或由您托管在公网 Gist，通过 URL 拉取即可同步给好友。</li>
+                  <li><strong>无中间商</strong>：流量不经过 MeshNet 公共市场检索，完全属于您的私有地下网络。</li>
+                  <li><strong>多端兼容</strong>：一键生成符合全平台 MeshNet App 规范的统一数据结构。</li>
+                </ul>
+              </div>
+              <div class="module-action">
+                <button id="btn-goto-config" class="btn-module">开始配置 (Build)</button>
               </div>
             </article>
 
@@ -939,28 +997,61 @@
 
         <!-- Wizard Config sub-view -->
         <div id="subview-private-config" class="sub-view hidden">
+          <div class="wizard-actions-top">
+            <button id="btn-open-parser" class="btn ghost">📥 解析已有 JSON</button>
+          </div>
+
           <div class="wizard-form">
             <div class="form-group">
-              <label>供应商名称 (Name)</label>
-              <input id="config-name" type="text" class="form-control" placeholder="例如: MyPrivateNode">
-            </div>
-            <div class="form-group">
-              <label>简介 (Description)</label>
-              <input id="config-desc" type="text" class="form-control" placeholder="这个节点的简短描述">
-            </div>
-
-            <div class="form-group">
-              <label>服务器列表</label>
-              <div id="server-list-container" style="display:grid; gap:0.8rem;">
-                <!-- dynamic server items -->
+              <label>唯一标识符 (Profile ID - 按量商业格式)</label>
+              <div class="id-gen-row">
+                <input id="config-id" type="text" class="form-control readonly-input" placeholder="请点击右侧生成按钮" readonly>
+                <button id="btn-gen-id" class="btn btn-secondary">生成 ID</button>
               </div>
-              <button id="btn-add-server" class="btn ghost" style="justify-self:start; margin-top:0.5rem;">+
-                增加服务器</button>
+              <p style="font-size:0.75rem; color:#64748b; margin-top:0.3rem;">格式: com.mesh.[unique].[version]</p>
             </div>
 
-            <div style="margin-top:2rem; display:flex; gap:1rem;">
-              <button id="btn-generate-json" class="btn btn-primary">生成并预览 JSON</button>
-              <button class="btn-cancel btn ghost">取消</button>
+            <div id="wizard-main-fields" class="config-lock-mask">
+              <div class="form-group" style="margin-bottom:1.5rem;">
+                <label>供应商名称 (Name) *</label>
+                <input id="config-name" type="text" class="form-control" placeholder="例如: MyPrivateNode">
+              </div>
+              <div class="form-group" style="margin-bottom:1.5rem;">
+                <label>简介 (Description)</label>
+                <input id="config-desc" type="text" class="form-control" placeholder="这个节点的简短描述 (可选)">
+              </div>
+
+              <div class="form-group">
+                <label>服务器列表 (至少需要一个服务器)</label>
+                <div id="server-list-container" style="display:grid; gap:0.8rem;">
+                  <!-- dynamic server items -->
+                </div>
+                <div style="display:flex; gap:1rem; margin-top:1rem;">
+                  <button id="btn-add-server" class="btn btn-secondary">+ 增加服务器</button>
+                  <button id="btn-goto-vps-direct" class="btn ghost">☁️ 去购买 VPS</button>
+                </div>
+              </div>
+
+              <div
+                style="margin-top:3rem; display:flex; gap:1.2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top:2rem;">
+                <button id="btn-generate-json" class="btn-module" style="width:240px; --module-color: #2dd4bf;">生成并预览
+                  JSON</button>
+                <button class="btn-cancel btn ghost">取消并返回列表</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- JSON Parser Modal (sub-view) -->
+        <div id="subview-private-parse" class="modal-backdrop hidden">
+          <div class="modal-content">
+            <h3 style="margin-top:0;">解析 JSON 配置</h3>
+            <p style="font-size:0.9rem; color:#94a3b8;">粘贴您已有的 JSON 文本，系统将尝试自动回填關鍵字段。</p>
+            <textarea id="import-json-textarea" class="json-textarea" style="height:250px;"
+              placeholder='{ "id": "com.mesh.xyz.v1", ... }'></textarea>
+            <div style="display:flex; gap:1rem; justify-content:flex-end;">
+              <button id="btn-do-parse" class="btn btn-primary">立即解析</button>
+              <button id="btn-close-parser" class="btn ghost">关闭</button>
             </div>
           </div>
         </div>
@@ -1273,17 +1364,76 @@
       }
 
       const SINGBOX_TEMPLATE = {
-        "outbounds": [
-          {
-            "type": "shadowsocks",
-            "tag": "proxy",
-            "server": "1.2.3.4",
-            "server_port": 443,
-            "method": "aes-256-gcm",
-            "password": "password",
-            "x402": { "enabled": true, "protocol": "base-mainnet" }
+        "provider_id": "com.meshnetprotocol.profile",
+        "name": "启动种子",
+        "description": "官方引导配置文件",
+        "tags": ["Official", "Online", "Bootstrap"],
+        "author": "OpenMesh Team",
+        "visibility": "public",
+        "status": "active",
+        "updated_at": "1970-01-01T00:00:00Z",
+        "package_hash": "seed-0",
+        "source_updated_at": "2026-02-08T00:00:00Z",
+        "config": {
+          "dns": {
+            "final": "google-dns",
+            "reverse_mapping": true,
+            "rules": [
+              { "action": "route", "rule_set": "geosite-geolocation-cn", "server": "local-dns", "strategy": "ipv4_only" }
+            ],
+            "servers": [
+              { "detour": "proxy", "server": "dns.google", "tag": "google-dns", "type": "https" },
+              { "detour": "direct", "server": "223.5.5.5", "tag": "local-dns", "type": "udp" }
+            ],
+            "strategy": "ipv4_only"
+          },
+          "inbounds": [
+            {
+              "address": ["172.18.0.1/30", "fdfe:dcba:9876::1/126"],
+              "auto_route": true,
+              "route_exclude_address": [
+                "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16",
+                "223.5.5.5/32", "::1/128", "fc00::/7", "fe80::/10"
+              ],
+              "route_exclude_address_set": ["geoip-cn"],
+              "strict_route": false,
+              "tag": "tun-in",
+              "type": "tun",
+              "sniff": true,
+              "sniff_override_destination": true
+            }
+          ],
+          "experimental": { "cache_file": { "enabled": true } },
+          "log": { "level": "debug" },
+          "outbounds": [
+            { "type": "shadowsocks", "tag": "meshflux168", "server": "45.32.115.168", "server_port": 10086, "method": "aes-256-gcm", "password": "yourpassword123" },
+            { "type": "shadowsocks", "tag": "meshflux252", "server": "45.76.45.252", "server_port": 10086, "method": "aes-256-gcm", "password": "yourpassword123" },
+            { "type": "selector", "tag": "proxy", "outbounds": ["meshflux168", "meshflux252"], "default": "meshflux168" },
+            { "domain_strategy": "ipv4_only", "fallback_delay": "300ms", "tag": "direct", "type": "direct" }
+          ],
+          "route": {
+            "auto_detect_interface": true,
+            "default_domain_resolver": "google-dns",
+            "final": "proxy",
+            "rule_set": [
+              { "type": "remote", "tag": "geoip-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "proxy", "update_interval": "1d" },
+              { "type": "remote", "tag": "geosite-geolocation-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs", "download_detour": "proxy", "update_interval": "1d" }
+            ],
+            "rules": [
+              { "action": "hijack-dns", "protocol": "dns" },
+              { "action": "sniff" },
+              { "rule_set": "geosite-geolocation-cn", "outbound": "direct" },
+              { "rule_set": "geoip-cn", "outbound": "direct" }
+            ]
           }
-        ]
+        },
+        "routing_rules": {
+          "version": 0,
+          "proxy": {
+            "domain": ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
+            "domain_suffix": ["githubusercontent.com", "workers.dev"]
+          }
+        }
       };
 
       function switchSubView(viewKey, title) {
@@ -1292,19 +1442,15 @@
         dom.viewTitle.textContent = title;
       }
 
-      function addServerItem(ip = "", port = "", pass = "", method = "aes-256-gcm") {
+      function addServerItem(ip = "", port = "10086", pass = "") {
         const div = document.createElement("div");
         div.className = "server-item";
+        div.style.gridTemplateColumns = "1fr 100px 1fr auto";
         div.innerHTML = `
           <input type="text" class="form-control" placeholder="IP 地址" value="${ip}">
           <input type="number" class="form-control" placeholder="端口" value="${port}">
           <input type="text" class="form-control" placeholder="密码" value="${pass}">
-          <select class="form-control">
-            <option value="aes-256-gcm" ${method === 'aes-256-gcm' ? 'selected' : ''}>aes-256-gcm</option>
-            <option value="chacha20-ietf-poly1305" ${method === 'chacha20-ietf-poly1305' ? 'selected' : ''}>chacha20-poly1305</option>
-            <option value="none" ${method === 'none' ? 'selected' : ''}>none</option>
-          </select>
-          <div class="btn-remove-server" onclick="this.parentElement.remove()">✕</div>
+          <div class="btn-remove-server" onclick="this.parentElement.remove()" style="padding: 0 0.5rem;">✕</div>
         `;
         dom.serverList.appendChild(div);
       }
@@ -1341,8 +1487,12 @@
         // Module Entry
         document.getElementById("btn-goto-config").addEventListener("click", () => {
           switchSubView("config", "生成配置文件 (Wizard)");
+          // Reset wizard state
+          document.getElementById("config-id").value = "";
+          document.getElementById("config-name").value = "";
+          document.getElementById("config-desc").value = "";
           dom.serverList.innerHTML = "";
-          addServerItem();
+          document.getElementById("wizard-main-fields").classList.remove("config-unlocked");
         });
         document.getElementById("btn-goto-vps").addEventListener("click", () => switchSubView("vps", "购买与部署指引"));
         document.getElementById("btn-goto-import").addEventListener("click", () => switchSubView("import", "导入 APP 教程"));
@@ -1352,25 +1502,133 @@
         });
 
         // Wizard Logic
+        document.getElementById("btn-gen-id").addEventListener("click", () => {
+          const rand = Math.random().toString(36).slice(2, 7);
+          const timestamp = Date.now().toString(36).slice(-4);
+          const newId = `com.mesh.${rand}.${timestamp}.v1`;
+          document.getElementById("config-id").value = newId;
+          document.getElementById("wizard-main-fields").classList.add("config-unlocked");
+        });
+
+        document.getElementById("btn-open-parser").addEventListener("click", () => {
+          document.getElementById("subview-private-parse").classList.remove("hidden");
+        });
+
+        document.getElementById("btn-close-parser").addEventListener("click", () => {
+          document.getElementById("subview-private-parse").classList.add("hidden");
+        });
+
+        document.getElementById("btn-do-parse").addEventListener("click", () => {
+          const area = document.getElementById("import-json-textarea");
+          try {
+            const data = JSON.parse(area.value);
+            // 1. Resolve ID (Support provider_id or id)
+            const resolvedId = data.provider_id || data.id;
+            if (!resolvedId) throw new Error("缺少标识符字段 ('provider_id' 或 'id')");
+
+            document.getElementById("config-id").value = resolvedId;
+            document.getElementById("config-name").value = data.name || "";
+            document.getElementById("config-desc").value = data.description || "";
+
+            dom.serverList.innerHTML = "";
+
+            // 2. Resolve Servers (Flat, Nested Config, or Root Outbounds)
+            let rawServers = [];
+            if (Array.isArray(data.servers)) {
+              rawServers = data.servers;
+            } else {
+              const outbounds = (data.config && Array.isArray(data.config.outbounds))
+                ? data.config.outbounds
+                : (Array.isArray(data.outbounds) ? data.outbounds : []);
+
+              // Only pick real proxy entries
+              rawServers = outbounds.filter(o => o.server && (o.server_port || o.port));
+            }
+
+            if (rawServers.length > 0) {
+              rawServers.forEach(s => {
+                addServerItem(s.ip || s.server, s.port || s.server_port, s.pass || s.password);
+              });
+            }
+
+            document.getElementById("wizard-main-fields").classList.add("config-unlocked");
+            document.getElementById("subview-private-parse").classList.add("hidden");
+            area.value = "";
+          } catch (e) {
+            alert("解析失败: " + e.message);
+          }
+        });
+
+        document.getElementById("btn-goto-vps-direct").addEventListener("click", () => {
+          switchSubView("vps", "购买与部署指引");
+        });
+
         document.getElementById("btn-add-server").addEventListener("click", () => addServerItem());
+
         document.getElementById("btn-generate-json").addEventListener("click", () => {
-          const servers = Array.from(dom.serverList.children).map(item => {
-            const inputs = item.querySelectorAll("input, select");
+          const nameInput = document.getElementById("config-name").value.trim();
+          const descInput = document.getElementById("config-desc").value.trim();
+          const idInput = document.getElementById("config-id").value.trim();
+
+          if (!nameInput) {
+            alert("错误: 请输入供应商名称");
+            return;
+          }
+
+          const userServers = Array.from(dom.serverList.children).map(item => {
+            const inputs = item.querySelectorAll("input");
             return {
-              ip: inputs[0].value,
+              ip: inputs[0].value.trim(),
               port: parseInt(inputs[1].value),
-              pass: inputs[2].value,
-              method: inputs[3].value
+              pass: inputs[2].value.trim()
+            };
+          }).filter(s => s.ip && s.port);
+
+          if (userServers.length === 0) {
+            if (confirm("尚未配置服务器。是否前往查看 VPS 购买指引？")) {
+              switchSubView("vps", "购买与部署指引");
+            }
+            return;
+          }
+
+          // 1. Clone deep template
+          const finalJson = JSON.parse(JSON.stringify(SINGBOX_TEMPLATE));
+
+          // 2. Map root fields
+          finalJson.provider_id = idInput || finalJson.provider_id;
+          finalJson.name = nameInput;
+          finalJson.description = descInput || finalJson.description;
+          finalJson.updated_at = new Date().toISOString();
+
+          // 3. Rebuild outbounds surgically
+          // Find selector and non-proxy outbounds
+          const otherOutbounds = finalJson.config.outbounds.filter(o => o.type !== "shadowsocks");
+          const proxySelector = otherOutbounds.find(o => o.tag === "proxy" && o.type === "selector");
+
+          // Generate new shadowsocks nodes
+          const newNodes = userServers.map((s, idx) => {
+            const tag = `node-${idx + 1}`;
+            return {
+              type: "shadowsocks",
+              tag: tag,
+              server: s.ip,
+              server_port: s.port,
+              method: "aes-256-gcm",
+              password: s.pass
             };
           });
-          const profile = {
-            id: "mesh-private-" + Math.random().toString(36).slice(2, 7),
-            name: document.getElementById("config-name").value,
-            description: document.getElementById("config-desc").value,
-            servers
-          };
+
+          // Update selector's outbound list
+          if (proxySelector) {
+            proxySelector.outbounds = newNodes.map(n => n.tag);
+            proxySelector.default = newNodes[0].tag;
+          }
+
+          // Merge back: user nodes first, then logic nodes (selector/direct)
+          finalJson.config.outbounds = [...newNodes, ...otherOutbounds];
+
           switchSubView("advanced", "JSON 预览与导出");
-          dom.jsonEditor.value = JSON.stringify(profile, null, 2);
+          dom.jsonEditor.value = JSON.stringify(finalJson, null, 2);
         });
 
         // VPS Logic

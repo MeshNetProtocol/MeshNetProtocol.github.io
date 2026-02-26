@@ -64,7 +64,9 @@
         ],
         "strict_route": false,
         "tag": "tun-in",
-        "type": "tun"
+        "type": "tun",
+        "sniff": true,
+        "sniff_override_destination": true
       }
     ],
     "experimental": {
@@ -132,6 +134,10 @@
       ],
       "rules": [
         {
+          "action": "hijack-dns",
+          "protocol": "dns"
+        },
+        {
           "action": "sniff"
         },
         {
@@ -141,10 +147,6 @@
         {
           "rule_set": "geoip-cn",
           "outbound": "direct"
-        },
-        {
-          "action": "hijack-dns",
-          "protocol": "dns"
         }
       ]
     }
