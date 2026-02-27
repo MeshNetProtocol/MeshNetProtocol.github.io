@@ -4,7 +4,7 @@
 window.MeshVendor = window.MeshVendor || {};
 
 window.MeshVendor.Constants = {
-    MESH_CONSOLE_VERSION: 17,
+    MESH_CONSOLE_VERSION: 18,
     NETWORKS: {
         "base-mainnet": { name: "Base Mainnet", chainIdHex: "0x2105" },
         "base-sepolia": { name: "Base Sepolia", chainIdHex: "0x14a34" }
