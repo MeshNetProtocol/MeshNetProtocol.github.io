@@ -330,8 +330,13 @@
                     <li><strong>Size:</strong> 512MB 内存或 1GB 内存 (约 $2.5 - $5/月)</li>
                   </ul>
                   <div class="ai-prompt-box">
-                    <div class="prompt-title">💡 遇到困难？尝试复制以下提示词问 AI：</div>
-                    <div class="prompt-text">“我需要购买一台用于搭建 sing-box 节点的 VPS。请帮我对比 DigitalOcean, Vultr 和 Hetzner
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <div class="prompt-title">💡 遇到困难？尝试复制以下提示词问 AI：</div>
+                      <button class="btn-copy-prompt"
+                        onclick="window.MeshVendor.Private.copyCode(this, 'ai-prompt-1')">Copy</button>
+                    </div>
+                    <div class="prompt-text" id="ai-prompt-1">“我需要购买一台用于搭建 sing-box 节点的 VPS。请帮我对比 DigitalOcean, Vultr 和
+                      Hetzner
                       的基础套餐价格。我希望系统用 Debian 12，内存 1GB。请给我一份具体的新手购买图文步骤指南。”</div>
                   </div>
                 </div>
@@ -350,8 +355,13 @@
                       onclick="window.MeshVendor.Private.copyCode(this, 'ssh-command')">Copy</button>
                   </div>
                   <div class="ai-prompt-box">
-                    <div class="prompt-title">💡 不知道终端在哪里？尝试复制以下提示词问 AI：</div>
-                    <div class="prompt-text">“我是一个纯粹的新手小白，我使用的是 [Windows 11 / macOS] 系统。我现在有了一台 VPS，IP 是 1.1.1.1，并且有了
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <div class="prompt-title">💡 不知道终端在哪里？尝试复制以下提示词问 AI：</div>
+                      <button class="btn-copy-prompt"
+                        onclick="window.MeshVendor.Private.copyCode(this, 'ai-prompt-2')">Copy</button>
+                    </div>
+                    <div class="prompt-text" id="ai-prompt-2">“我是一个纯粹的新手小白，我使用的是 [Windows 11 / macOS] 系统。我现在有了一台 VPS，IP
+                      是 1.1.1.1，并且有了
                       root 密码。请一步步教我如何使用自带的 [PowerShell / 终端] 通过 SSH 登录上这台服务器，请告诉我每一步该点哪里、输入什么，详细到回车键。”</div>
                   </div>
                 </div>
