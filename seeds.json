@@ -1,5 +1,5 @@
 {
-  "provider_id": "com.meshnetprotocol.profile.v2.smart",
+  "provider_id": "com.meshnetprotocol.profile",
   "name": "种子配置",
   "description": "启动测试专用",
   "tags": [

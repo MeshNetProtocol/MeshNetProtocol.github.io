@@ -295,7 +295,7 @@
         <div id="subview-private-vps" class="sub-view hidden">
           <div class="vps-guide-container">
             <div class="vps-help-header">
-              <h3>Deploy Your Node on Vultr</h3>
+              <h3>Deploy Your Node</h3>
               <p>只需简单的 4 步，一键自动化构建您的私有供应节点。</p>
             </div>
 
@@ -304,16 +304,36 @@
               <div class="vps-step">
                 <div class="step-marker">1</div>
                 <div class="step-content">
-                  <h4>购买 Vultr 服务器 (Purchase VPS)</h4>
-                  <p>前往 Vultr 官网注册并部署一台新实例。请确保选择以下配置：</p>
+                  <h4>选择并购买 VPS (Purchase VPS)</h4>
+                  <p>前往您喜欢的云服务商注册并部署一台新实例。如果没有偏好，可以从下方选择我们推荐的厂商：</p>
+
+                  <div class="provider-grid">
+                    <a href="https://www.digitalocean.com/" target="_blank" class="provider-card do">
+                      <div class="name">DigitalOcean</div>
+                      <div class="tag">最易用的入门级 VPS</div>
+                    </a>
+                    <a href="https://www.vultr.com/" target="_blank" class="provider-card vultr">
+                      <div class="name">Vultr</div>
+                      <div class="tag">全球机房 · 小时计费</div>
+                    </a>
+                    <a href="https://www.hetzner.com/" target="_blank" class="provider-card hetzner">
+                      <div class="name">Hetzner</div>
+                      <div class="tag">欧洲性价比之王</div>
+                    </a>
+                  </div>
+
+                  <p>购买时**推荐**参考以下系统与配置（因为我们底层的 <strong>sing-box</strong> 内核拥有极强的跨平台兼容性，只要是主流 Linux 发行版均能完美运行）：</p>
                   <ul class="vps-recommendations">
-                    <li><strong>System:</strong> Ubuntu 22.04 LTS 或 24.04 LTS</li>
-                    <li><strong>Plan:</strong> Cloud Compute (Regular Performance 即可)</li>
-                    <li><strong>Location:</strong> 推荐选择日本(Tokyo)、新加坡(Singapore)或美国(Silicon Valley)</li>
-                    <li><strong>Size:</strong> 512MB 内存或 1GB 内存 ($2.5 - $5/月)</li>
+                    <li><strong>OS (操作系统):</strong> 推荐 <strong>Debian 11/12</strong> 或 <strong>Ubuntu
+                        22.04/24.04</strong> （同时也全面支持 CentOS 8+ 等 RPM 系系统）</li>
+                    <li><strong>Plan:</strong> 基础云计算 (Basic / Regular Performance 即可)</li>
+                    <li><strong>Size:</strong> 512MB 内存或 1GB 内存 (约 $2.5 - $5/月)</li>
                   </ul>
-                  <a href="https://www.vultr.com/" target="_blank" class="btn btn-secondary btn-sm mt-2"
-                    style="display:inline-block; text-decoration:none;">前往 Vultr 官网 ↗</a>
+                  <div class="ai-prompt-box">
+                    <div class="prompt-title">💡 遇到困难？尝试复制以下提示词问 AI：</div>
+                    <div class="prompt-text">“我需要购买一台用于搭建 sing-box 节点的 VPS。请帮我对比 DigitalOcean, Vultr 和 Hetzner
+                      的基础套餐价格。我希望系统用 Debian 12，内存 1GB。请给我一份具体的新手购买图文步骤指南。”</div>
+                  </div>
                 </div>
               </div>
 
@@ -322,12 +342,17 @@
                 <div class="step-marker">2</div>
                 <div class="step-content">
                   <h4>通过 SSH 连接服务器</h4>
-                  <p>购买成功后，在 Vultr 面板可以找到服务器的 <strong>IP 地址</strong> 和 <strong>Root 密码</strong>。打开你电脑上的终端 (Terminal) /
+                  <p>购买成功后，在 VPS 控制台后台可以找到新服务器的 <strong>IP 地址</strong> 和 <strong>Root 密码</strong>。打开你电脑上的终端 (Terminal) /
                     PowerShell，输入以下命令并回车，按提示输入密码进行连接：</p>
                   <div class="code-block-wrapper has-copy">
                     <pre><code id="ssh-command">ssh root@你的服务器IP</code></pre>
                     <button class="btn-copy-code"
                       onclick="window.MeshVendor.Private.copyCode(this, 'ssh-command')">Copy</button>
+                  </div>
+                  <div class="ai-prompt-box">
+                    <div class="prompt-title">💡 不知道终端在哪里？尝试复制以下提示词问 AI：</div>
+                    <div class="prompt-text">“我是一个纯粹的新手小白，我使用的是 [Windows 11 / macOS] 系统。我现在有了一台 VPS，IP 是 1.1.1.1，并且有了
+                      root 密码。请一步步教我如何使用自带的 [PowerShell / 终端] 通过 SSH 登录上这台服务器，请告诉我每一步该点哪里、输入什么，详细到回车键。”</div>
                   </div>
                 </div>
               </div>
