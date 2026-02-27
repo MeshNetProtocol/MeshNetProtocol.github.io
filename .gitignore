@@ -7,3 +7,5 @@ contracts/remix.config_1.json
 contracts/remix.config_2.json
 contracts/remix.config.json
 mesh-config (1).json
+vendor-console-analysis.md
+node_modules

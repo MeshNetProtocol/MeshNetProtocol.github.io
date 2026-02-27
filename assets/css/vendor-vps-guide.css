@@ -1,0 +1,157 @@
+/**
+ * MeshNetProtocol Vendor Console - VPS Setup Guide Styles
+ */
+
+.vps-guide-container {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.vps-help-header {
+  margin-bottom: 2.5rem;
+  text-align: center;
+}
+
+.vps-help-header h3 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.vps-help-header p {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Timeline specific styles */
+.vps-timeline {
+  display: grid;
+  gap: 2rem;
+  position: relative;
+}
+
+.vps-timeline::before {
+  content: "";
+  position: absolute;
+  left: 17px;
+  top: 10px;
+  bottom: 0;
+  width: 2px;
+  background: rgba(99, 102, 241, 0.2);
+  z-index: 0;
+}
+
+.vps-step {
+  display: flex;
+  gap: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.step-marker {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: white;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 4px #0a1725, 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.step-content {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.step-content h4 {
+  margin: 0 0 0.8rem;
+  font-size: 1.1rem;
+  color: #e2e8f0;
+}
+
+.step-content p {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+/* Specific Content */
+.vps-recommendations {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.vps-recommendations strong {
+  color: #38bdf8;
+}
+
+/* Code Snippets */
+.code-block-wrapper {
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.code-block-wrapper pre {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.code-block-wrapper code {
+  font-family: 'IBM Plex Mono', Menlo, monospace;
+  font-size: 0.82rem;
+  color: #a78bfa;
+}
+
+.code-block-wrapper.has-copy {
+  padding-right: 80px;
+}
+
+.btn-copy-code {
+  position: absolute;
+  top: 50%;
+  right: 0.6rem;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 200ms ease;
+  white-space: nowrap;
+}
+
+.btn-copy-code:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Utility constraints */
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+}
+.mt-2 {
+  margin-top: 1rem;
+}
