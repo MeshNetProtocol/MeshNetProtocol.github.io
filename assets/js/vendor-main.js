@@ -137,11 +137,20 @@
                 const clean = d.startsWith('.') ? d.slice(1) : d;
                 if (!domains.includes(clean)) domains.push(clean);
             });
+            const manualProxySet = [...new Set(["githubusercontent.com", "workers.dev", ...domains])];
+
+            // SmartRouting V2: Inject high-priority proxy override rule at index 2
+            final.config.route.rules.splice(2, 0, {
+                domain_suffix: manualProxySet,
+                outbound: "proxy"
+            });
+
+            // Ensure the deprecated field explicitly remains completely empty like V2 shell
             final.routing_rules = {
-                version: Constants.MESH_CONSOLE_VERSION,
+                version: 2,
                 proxy: {
-                    domain: ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
-                    domain_suffix: [...new Set(["githubusercontent.com", "workers.dev", ...domains])]
+                    domain: [],
+                    domain_suffix: []
                 }
             };
             Utils.switchSubView("advanced", "JSON 预览与导出");

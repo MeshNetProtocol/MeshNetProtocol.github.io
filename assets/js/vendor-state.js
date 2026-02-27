@@ -17,69 +17,62 @@ window.MeshVendor.Constants = {
         "suno.ai", "udio.com", "elevenlabs.io"
     ],
     SINGBOX_TEMPLATE: {
-        "provider_id": "com.meshnetprotocol.profile",
+        "provider_id": "com.meshnetprotocol.profile.v2.smart",
         "name": "启动种子",
         "description": "官方引导配置文件",
-        "tags": ["Official", "Online", "Bootstrap"],
+        "tags": ["Official", "SmartRouting", "V2"],
         "author": "OpenMesh Team",
         "visibility": "public",
         "status": "active",
         "updated_at": new Date().toISOString(),
-        "package_hash": "v17",
+        "package_hash": "seed-v2-smart",
         "source_updated_at": new Date().toISOString(),
         "config": {
+            "log": { "level": "debug" },
             "dns": {
-                "final": "google-dns",
-                "reverse_mapping": true,
-                "rules": [
-                    { "action": "route", "rule_set": "geosite-geolocation-cn", "server": "local-dns", "strategy": "ipv4_only" }
-                ],
                 "servers": [
-                    { "detour": "proxy", "server": "dns.google", "tag": "google-dns", "type": "https" },
-                    { "detour": "direct", "server": "223.5.5.5", "tag": "local-dns", "type": "udp" }
+                    { "tag": "local-dns", "address": "223.5.5.5", "detour": "direct" },
+                    { "tag": "google-dns", "address": "https://dns.google/dns-query", "detour": "proxy" }
                 ],
-                "strategy": "ipv4_only"
+                "rules": [
+                    { "rule_set": "geosite-geolocation-cn", "server": "local-dns" }
+                ],
+                "final": "google-dns",
+                "strategy": "prefer_ipv4"
             },
             "inbounds": [
                 {
-                    "address": ["172.18.0.1/30", "fdfe:dcba:9876::1/126"],
-                    "auto_route": true,
-                    "route_exclude_address": [
-                        "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16",
-                        "223.5.5.5/32", "::1/128", "fc00::/7", "fe80::/10"
-                    ],
-                    "route_exclude_address_set": ["geoip-cn"],
-                    "strict_route": false,
-                    "tag": "tun-in",
                     "type": "tun",
+                    "tag": "tun-in",
+                    "address": ["172.18.0.1/30"],
+                    "auto_route": true,
                     "sniff": true,
                     "sniff_override_destination": true
                 }
             ],
-            "experimental": { "cache_file": { "enabled": true } },
-            "log": { "level": "debug" },
             "outbounds": [],
             "route": {
-                "auto_detect_interface": true,
-                "default_domain_resolver": "google-dns",
+                "rules": [
+                    { "protocol": "dns", "action": "hijack-dns" },
+                    { "action": "sniff" },
+                    // MANUAL PROXY OVERRIDE GOES HERE (Index 2)
+                    { "rule_set": "geosite-geolocation-cn", "outbound": "direct" },
+                    { "rule_set": "geoip-cn", "outbound": "direct" },
+                    { "ip_is_private": true, "outbound": "direct" }
+                ],
                 "final": "proxy",
+                "auto_detect_interface": true,
                 "rule_set": [
                     { "type": "remote", "tag": "geoip-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "proxy", "update_interval": "1d" },
                     { "type": "remote", "tag": "geosite-geolocation-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs", "download_detour": "proxy", "update_interval": "1d" }
-                ],
-                "rules": [
-                    { "action": "hijack-dns", "protocol": "dns" },
-                    { "action": "sniff" },
-                    { "rule_set": "geosite-geolocation-cn", "outbound": "direct" },
-                    { "rule_set": "geoip-cn", "outbound": "direct" }
                 ]
             }
         },
         "routing_rules": {
-            "version": 17,
+            "version": 2,
             "proxy": {
-                "domain": ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
-                "domain_suffix": ["githubusercontent.com", "workers.dev"]
+                "domain": [],
+                "domain_suffix": []
             }
         }
     }
