@@ -1,7 +1,7 @@
 {
-  "provider_id": "com.meshnetprotocol.profile",
-  "name": "种子配置",
-  "description": "启动测试专用",
+  "provider_id": "com.mesh.qa4ac.s43k.v1",
+  "name": "最新好用",
+  "description": "",
   "tags": [
     "Official",
     "SmartRouting",
@@ -10,9 +10,9 @@
   "author": "OpenMesh Team",
   "visibility": "public",
   "status": "active",
-  "updated_at": "2026-02-27T15:55:00Z",
+  "updated_at": "2026-02-28T06:13:41.758Z",
   "package_hash": "seed-v2-smart",
-  "source_updated_at": "2026-02-27T15:55:00Z",
+  "source_updated_at": "2026-02-28T05:58:04.371Z",
   "config": {
     "log": {
       "level": "debug"
@@ -54,32 +54,34 @@
     "outbounds": [
       {
         "type": "shadowsocks",
-        "tag": "meshflux168",
-        "server": "45.32.115.168",
+        "tag": "node-1",
+        "server": "216.128.182.150",
         "server_port": 10086,
         "method": "aes-256-gcm",
         "password": "yourpassword123"
       },
       {
         "type": "shadowsocks",
-        "tag": "meshflux252",
-        "server": "45.76.45.252",
-        "server_port": 10086,
+        "tag": "node-2",
+        "server": "64.176.39.224",
+        "server_port": 29809,
         "method": "aes-256-gcm",
-        "password": "yourpassword123"
+        "password": "mMxNObzBIYKEw1qV"
       },
       {
-        "type": "selector",
         "tag": "proxy",
+        "type": "selector",
         "outbounds": [
-          "meshflux168",
-          "meshflux252"
+          "node-1",
+          "node-2"
         ],
-        "default": "meshflux168"
+        "default": "node-1"
       },
       {
         "type": "direct",
-        "tag": "direct"
+        "tag": "direct",
+        "domain_strategy": "ipv4_only",
+        "fallback_delay": "300ms"
       }
     ],
     "route": {
@@ -107,10 +109,9 @@
             "app-measurement.com",
             "github.com",
             "githubusercontent.com",
+            "workers.dev",
             "twitter.com",
             "telegram.org",
-            "claude.ai",
-            "openai.com",
             "facebook.com",
             "fbcdn.net",
             "instagram.com",
@@ -118,11 +119,29 @@
             "whatsapp.net",
             "tiktok.com",
             "byteoversea.com",
+            "openai.com",
+            "chatgpt.com",
+            "oaistatic.com",
+            "oaiusercontent.com",
+            "anthropic.com",
+            "claude.ai",
+            "perplexity.ai",
+            "mistral.ai",
+            "deepseek.com",
+            "gemini.google.com",
+            "generativelanguage.googleapis.com",
+            "midjourney.com",
+            "runwayml.com",
+            "pika.art",
+            "luma.ai",
+            "sora.com",
+            "suno.ai",
+            "udio.com",
+            "elevenlabs.io",
+            "deepl.com",
             "netflix.com",
             "microsoft.com",
-            "bing.com",
-            "perplexity.ai",
-            "deepl.com"
+            "bing.com"
           ],
           "outbound": "proxy"
         },
