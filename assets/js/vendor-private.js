@@ -34,8 +34,28 @@ Private.removeDomainChip = (idx) => {
 Private.injectDomainPreset = (type) => {
     const state = window.MeshVendor.State;
     const consts = window.MeshVendor.Constants;
-    const list = type === 'ai' ? consts.AI_DOMAIN_PRESETS : ["amazon.com", "ebay.com", "shopify.com"];
+    const isAI = type === 'ai';
+
+    // Define the AI preset domains locally to fix the loading issue.
+    const aiPresetDomains = [
+        "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com", 
+        "anthropic.com", "claude.ai", "perplexity.ai", "mistral.ai", 
+        "deepseek.com", "gemini.google.com", "generativelanguage.googleapis.com", 
+        "midjourney.com", "runwayml.com", "pika.art", "luma.ai", "sora.com", 
+        "suno.ai", "udio.com", "elevenlabs.io",
+        "google.com", "github.com", "microsoft.com", "bing.com" 
+    ];
+
+    const list = isAI ? (consts.AI_DOMAIN_PRESETS || aiPresetDomains) : ["amazon.com", "ebay.com", "shopify.com"];
+    const presetName = isAI ? "AI 实验室增强" : "全球电商加速";
     let count = 0;
+
+    if (!Array.isArray(list)) {
+        window.MeshVendor.Utils.notify(`[${presetName}] 预设列表加载失败。`, "错误");
+        console.error("Preset list is not a valid array for type:", type);
+        return;
+    }
+
     list.forEach(d => {
         if (!state.userDomains.includes(d)) {
             state.userDomains.push(d);
@@ -43,7 +63,11 @@ Private.injectDomainPreset = (type) => {
         }
     });
     Private.renderDomainChips();
-    if (count > 0) window.MeshVendor.Utils.notify(`成功注入 ${count} 个核心后缀。`, "注入成功");
+    if (count > 0) {
+        window.MeshVendor.Utils.notify(`成功注入 ${count} 个 [${presetName}] 后缀。`, "注入成功");
+    } else {
+        window.MeshVendor.Utils.notify(`无需注入，当前已包含所有 [${presetName}] 所需后缀。`, "无需操作");
+    }
 };
 
 Private.addServerItem = (ip = "", port = "10086", pass = "") => {

@@ -86,7 +86,20 @@
 
                 State.userDomains = [];
                 const mandatory = ["githubusercontent.com", "workers.dev"];
-                let suffixes = (data.routing_rules && data.routing_rules.domain_suffix) || [];
+                let suffixes = [];
+
+                if (data.config && data.config.route && Array.isArray(data.config.route.rules)) {
+                    const proxyRule = data.config.route.rules.find(r => r.domain_suffix && r.outbound === 'proxy');
+                    if (proxyRule && Array.isArray(proxyRule.domain_suffix)) {
+                        suffixes = proxyRule.domain_suffix;
+                    }
+                }
+
+                // Fallback for the old custom format
+                if (suffixes.length === 0 && data.routing_rules && Array.isArray(data.routing_rules.domain_suffix)) {
+                    suffixes = data.routing_rules.domain_suffix;
+                }
+
                 suffixes.forEach(ds => {
                     const clean = ds.startsWith('.') ? ds.slice(1) : ds;
                     if (!mandatory.includes(clean)) State.userDomains.push(clean);
