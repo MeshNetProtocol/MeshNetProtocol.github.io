@@ -9,12 +9,24 @@ window.MeshVendor.Constants = {
         "base-mainnet": { name: "Base Mainnet", chainIdHex: "0x2105" },
         "base-sepolia": { name: "Base Sepolia", chainIdHex: "0x14a34" }
     },
-    AI_DOMAIN_PRESETS: [
+    CORE_DOMAIN_PRESETS: [
+        // Google & Android Ecosystem
+        "google.com", "googleapis.com", "gstatic.com", "googleusercontent.com",
+        "gvt1.com", "gvt2.com", "1e100.net", "youtube.com", "ytimg.com", "ggpht.com",
+        "android.com", "app-measurement.com",
+        // Developer & Global Infra
+        "github.com", "githubusercontent.com", "workers.dev",
+        // Social Media & Comms
+        "twitter.com", "telegram.org", "facebook.com", "fbcdn.net",
+        "instagram.com", "whatsapp.com", "whatsapp.net", "tiktok.com", "byteoversea.com",
+        // AI Services & Tools
         "openai.com", "chatgpt.com", "oaistatic.com", "oaiusercontent.com",
-        "anthropic.com", "claude.ai", "perplexity.ai", "mistral.ai",
-        "deepseek.com", "google.com", "gemini.google.com", "generativelanguage.googleapis.com",
-        "bing.com", "midjourney.com", "runwayml.com", "pika.art", "luma.ai", "sora.com",
-        "suno.ai", "udio.com", "elevenlabs.io"
+        "anthropic.com", "claude.ai", "perplexity.ai", "mistral.ai", "deepseek.com",
+        "gemini.google.com", "generativelanguage.googleapis.com",
+        "midjourney.com", "runwayml.com", "pika.art", "luma.ai", "sora.com",
+        "suno.ai", "udio.com", "elevenlabs.io", "deepl.com",
+        // Entertainment & Productivity
+        "netflix.com", "microsoft.com", "bing.com"
     ],
     SINGBOX_TEMPLATE: {
         "provider_id": "com.meshnetprotocol.profile.v2.smart",

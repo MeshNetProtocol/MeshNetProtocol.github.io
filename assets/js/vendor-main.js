@@ -132,12 +132,12 @@
             const proxyGroup = { tag: "proxy", type: "selector", outbounds: nodes.map(n => n.tag), default: nodes[0].tag };
             final.config.outbounds = [...nodes, proxyGroup, { type: "direct", tag: "direct", domain_strategy: "ipv4_only", fallback_delay: "300ms" }];
 
-            const domains = [...Constants.AI_DOMAIN_PRESETS];
+            const domains = [...Constants.CORE_DOMAIN_PRESETS];
             State.userDomains.forEach(d => {
                 const clean = d.startsWith('.') ? d.slice(1) : d;
                 if (!domains.includes(clean)) domains.push(clean);
             });
-            const manualProxySet = [...new Set(["githubusercontent.com", "workers.dev", ...domains])];
+            const manualProxySet = [...new Set(domains)];
 
             // SmartRouting V2: Inject high-priority proxy override rule at index 2
             final.config.route.rules.splice(2, 0, {
