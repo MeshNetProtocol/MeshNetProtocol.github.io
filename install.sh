@@ -10,6 +10,31 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
+CONFIG_PATH="/usr/local/etc/sing-box/config.json"
+
+if [ "$1" = "--show" ] || [ "$1" = "show" ] || [ "$1" = "--info" ] || [ "$1" = "info" ]; then
+    echo -e "${BLUE}================================================${NC}"
+    echo -e "${BLUE}    🚀 OpenMesh Node Automated Installer        ${NC}"
+    echo -e "${BLUE}================================================${NC}"
+    if [ ! -f "$CONFIG_PATH" ]; then
+        echo -e "${RED}[ERROR] Config not found at ${CONFIG_PATH}${NC}"
+        exit 1
+    fi
+    PORT=$(grep -o '"listen_port":[[:space:]]*[0-9]*' "$CONFIG_PATH" | head -n 1 | tr -cd '0-9')
+    PASSWORD=$(grep -o '"password":[[:space:]]*"[^"]*"' "$CONFIG_PATH" | head -n 1 | sed 's/.*"password":[[:space:]]*"\([^"]*\)".*/\1/')
+    METHOD=$(grep -o '"method":[[:space:]]*"[^"]*"' "$CONFIG_PATH" | head -n 1 | sed 's/.*"method":[[:space:]]*"\([^"]*\)".*/\1/')
+    PUBLIC_IP=$(curl -s ifconfig.me)
+    echo -e "${GREEN}================================================${NC}"
+    echo -e "${GREEN}[INFO] Sing-Box Server Credentials${NC}"
+    echo -e "${GREEN}================================================${NC}"
+    echo -e "  🌍 Server IP : ${GREEN}${PUBLIC_IP}${NC}"
+    echo -e "  🚪 Port      : ${GREEN}${PORT:-N/A}${NC}"
+    echo -e "  🔑 Password  : ${GREEN}${PASSWORD:-N/A}${NC}"
+    echo -e ""
+    echo -e "  ✨ Method    : ${GREEN}${METHOD:-aes-256-gcm}${NC}"
+    echo -e "${GREEN}================================================${NC}"
+    exit 0
+fi
 
 echo -e "${BLUE}================================================${NC}"
 echo -e "${BLUE}    🚀 OpenMesh Node Automated Installer        ${NC}"
@@ -140,6 +165,7 @@ if systemctl is-active --quiet sing-box; then
     echo -e "  🌍 Server IP : ${GREEN}${PUBLIC_IP}${NC}"
     echo -e "  🚪 Port      : ${GREEN}${PORT}${NC}"
     echo -e "  🔑 Password  : ${GREEN}${PASSWORD}${NC}"
+    echo -e "  🔎 Re-check  : ${GREEN}bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --show${NC}"
     echo -e ""
     echo -e "  ✨ Method    : aes-256-gcm"
     echo -e "${GREEN}================================================${NC}"

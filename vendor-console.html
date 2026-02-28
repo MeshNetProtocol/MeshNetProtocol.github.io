@@ -388,6 +388,12 @@
                   <h4>获取连接凭证</h4>
                   <p>安装完成后，终端界面会打印出一个带有绿色 <strong>[SUCCESS]</strong> 的表格，其中包含 <b>服务器 IP</b>、<b>服务端口 (Port)</b> 和 <b>随机密码
                       (Password)</b>。请保管好这三个信息。</p>
+                  <p>如果忘记了端口或密码，可在服务器上再次执行以下命令查看当前配置：</p>
+                  <div class="code-block-wrapper has-copy">
+                    <pre><code id="vps-credential-check">bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --show</code></pre>
+                    <button class="btn-copy-code"
+                      onclick="window.MeshVendor.Private.copyCode(this, 'vps-credential-check')">Copy</button>
+                  </div>
                 </div>
               </div>
             </div>
