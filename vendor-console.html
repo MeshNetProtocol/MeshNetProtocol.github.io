@@ -378,6 +378,12 @@
                     <button class="btn-copy-code"
                       onclick="window.MeshVendor.Private.copyCode(this, 'vps-install-script')">Copy</button>
                   </div>
+                  <p>如果系统已存在 sing-box，脚本会提示并退出。需要强制重装并覆盖配置时执行：</p>
+                  <div class="code-block-wrapper has-copy">
+                    <pre><code id="vps-force-install">bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --force</code></pre>
+                    <button class="btn-copy-code"
+                      onclick="window.MeshVendor.Private.copyCode(this, 'vps-force-install')">Copy</button>
+                  </div>
                 </div>
               </div>
 

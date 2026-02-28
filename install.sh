@@ -11,11 +11,25 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 CONFIG_PATH="/usr/local/etc/sing-box/config.json"
+BIN_PATH="/usr/local/bin/sing-box"
+SERVICE_PATH="/etc/systemd/system/sing-box.service"
+FORCE_INSTALL=false
+if [ "$1" = "--force" ] || [ "$1" = "force" ]; then
+    FORCE_INSTALL=true
+fi
+INSTALLED=false
+if command -v sing-box >/dev/null 2>&1 || [ -f "$BIN_PATH" ] || [ -f "$SERVICE_PATH" ] || [ -f "$CONFIG_PATH" ]; then
+    INSTALLED=true
+fi
 
 if [ "$1" = "--show" ] || [ "$1" = "show" ] || [ "$1" = "--info" ] || [ "$1" = "info" ]; then
     echo -e "${BLUE}================================================${NC}"
     echo -e "${BLUE}    🚀 OpenMesh Node Automated Installer        ${NC}"
     echo -e "${BLUE}================================================${NC}"
+    if [ "$INSTALLED" = false ]; then
+        echo -e "${RED}[ERROR] Sing-box is not installed. Please install first.${NC}"
+        exit 1
+    fi
     if [ ! -f "$CONFIG_PATH" ]; then
         echo -e "${RED}[ERROR] Config not found at ${CONFIG_PATH}${NC}"
         exit 1
@@ -39,6 +53,22 @@ fi
 echo -e "${BLUE}================================================${NC}"
 echo -e "${BLUE}    🚀 OpenMesh Node Automated Installer        ${NC}"
 echo -e "${BLUE}================================================${NC}"
+
+if [ "$INSTALLED" = true ] && [ "$FORCE_INSTALL" = false ]; then
+    echo -e "${YELLOW}[WARN] sing-box is already installed.${NC}"
+    echo -e "Use ${GREEN}--show${NC} to view current credentials."
+    echo -e "Use ${GREEN}--force${NC} to reinstall and overwrite config."
+    exit 0
+fi
+
+if [ "$FORCE_INSTALL" = true ] && [ "$INSTALLED" = true ]; then
+    systemctl stop sing-box >/dev/null 2>&1
+    systemctl disable sing-box >/dev/null 2>&1
+    rm -f "$SERVICE_PATH"
+    rm -f "$BIN_PATH"
+    rm -rf /usr/local/etc/sing-box
+    systemctl daemon-reload >/dev/null 2>&1
+fi
 
 # --- 1. UE Design: Zero-Interaction Generation ---
 # For a novice user, asking for ports or passwords creates friction and security risks.
