@@ -6,7 +6,7 @@
 (function () {
     "use strict";
 
-    const MESH_CONSOLE_VERSION = 17;
+    const MESH_CONSOLE_VERSION = 18;
     console.log(`[MeshNet] Loading Vendor Console v${MESH_CONSOLE_VERSION}...`);
 
     // --- Constants & Configuration ---
@@ -37,69 +37,62 @@
     ];
 
     const SINGBOX_TEMPLATE = {
-        "provider_id": "com.meshnetprotocol.profile",
+        "provider_id": "com.meshnetprotocol.profile.v2.smart",
         "name": "启动种子",
         "description": "官方引导配置文件",
-        "tags": ["Official", "Online", "Bootstrap"],
+        "tags": ["Official", "SmartRouting", "V2"],
         "author": "OpenMesh Team",
         "visibility": "public",
         "status": "active",
         "updated_at": new Date().toISOString(),
-        "package_hash": `v${MESH_CONSOLE_VERSION}`,
+        "package_hash": "seed-v2-smart",
         "source_updated_at": new Date().toISOString(),
         "config": {
+            "log": { "level": "debug" },
             "dns": {
-                "final": "google-dns",
-                "reverse_mapping": true,
-                "rules": [
-                    { "action": "route", "rule_set": "geosite-geolocation-cn", "server": "local-dns", "strategy": "ipv4_only" }
-                ],
                 "servers": [
-                    { "detour": "proxy", "server": "dns.google", "tag": "google-dns", "type": "https" },
-                    { "detour": "direct", "server": "223.5.5.5", "tag": "local-dns", "type": "udp" }
+                    { "tag": "local-dns", "address": "223.5.5.5", "detour": "direct" },
+                    { "tag": "google-dns", "address": "https://dns.google/dns-query", "detour": "proxy" }
                 ],
-                "strategy": "ipv4_only"
+                "rules": [
+                    { "rule_set": "geosite-geolocation-cn", "server": "local-dns" }
+                ],
+                "final": "google-dns",
+                "strategy": "prefer_ipv4"
             },
             "inbounds": [
                 {
-                    "address": ["172.18.0.1/30", "fdfe:dcba:9876::1/126"],
-                    "auto_route": true,
-                    "route_exclude_address": [
-                        "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16",
-                        "223.5.5.5/32", "::1/128", "fc00::/7", "fe80::/10"
-                    ],
-                    "route_exclude_address_set": ["geoip-cn"],
-                    "strict_route": false,
-                    "tag": "tun-in",
                     "type": "tun",
+                    "tag": "tun-in",
+                    "address": ["172.18.0.1/30"],
+                    "auto_route": true,
                     "sniff": true,
                     "sniff_override_destination": true
                 }
             ],
-            "experimental": { "cache_file": { "enabled": true } },
-            "log": { "level": "debug" },
             "outbounds": [],
             "route": {
-                "auto_detect_interface": true,
-                "default_domain_resolver": "google-dns",
+                "rules": [
+                    { "protocol": "dns", "action": "hijack-dns" },
+                    { "action": "sniff" },
+                    // MANUAL PROXY OVERRIDE GOES HERE (Index 2)
+                    { "rule_set": "geosite-geolocation-cn", "outbound": "direct" },
+                    { "rule_set": "geoip-cn", "outbound": "direct" },
+                    { "ip_is_private": true, "outbound": "direct" }
+                ],
                 "final": "proxy",
+                "auto_detect_interface": true,
                 "rule_set": [
                     { "type": "remote", "tag": "geoip-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "proxy", "update_interval": "1d" },
                     { "type": "remote", "tag": "geosite-geolocation-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs", "download_detour": "proxy", "update_interval": "1d" }
-                ],
-                "rules": [
-                    { "action": "hijack-dns", "protocol": "dns" },
-                    { "action": "sniff" },
-                    { "rule_set": "geosite-geolocation-cn", "outbound": "direct" },
-                    { "rule_set": "geoip-cn", "outbound": "direct" }
                 ]
             }
         },
         "routing_rules": {
-            "version": MESH_CONSOLE_VERSION,
+            "version": 2,
             "proxy": {
-                "domain": ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
-                "domain_suffix": ["githubusercontent.com", "workers.dev"]
+                "domain": [],
+                "domain_suffix": []
             }
         }
     };
@@ -165,7 +158,16 @@
             return Boolean(state.chainIdHex) &&
                 state.chainIdHex.toLowerCase() === NETWORKS[state.targetNetwork].chainIdHex;
         },
-        getSessionKey: (address) => `mesh_vendor_session_${address.toLowerCase()}`
+        getSessionKey: (address) => `mesh_vendor_session_${address.toLowerCase()}`,
+        copyCode: (btn, targetId) => {
+            const codeEl = document.getElementById(targetId);
+            if (!codeEl) return;
+            navigator.clipboard.writeText(codeEl.textContent).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = "已复制 Copied!";
+                setTimeout(() => { btn.textContent = originalText; }, 2000);
+            });
+        }
     };
 
     const session = {
@@ -465,7 +467,21 @@
 
                 state.userDomains = [];
                 const mandatory = ["githubusercontent.com", "workers.dev"];
-                let suffixes = (data.routing_rules && data.routing_rules.domain_suffix) || [];
+                let suffixes = [];
+
+                // SmartRouting V2: Detection priority
+                if (data.config && data.config.route && Array.isArray(data.config.route.rules)) {
+                    const proxyRule = data.config.route.rules.find(r => r.domain_suffix && r.outbound === 'proxy');
+                    if (proxyRule && Array.isArray(proxyRule.domain_suffix)) {
+                        suffixes = proxyRule.domain_suffix;
+                    }
+                }
+
+                // Fallback for the old routing_rules format
+                if (suffixes.length === 0 && data.routing_rules && Array.isArray(data.routing_rules.domain_suffix)) {
+                    suffixes = data.routing_rules.domain_suffix;
+                }
+
                 suffixes.forEach(ds => {
                     const clean = ds.startsWith('.') ? ds.slice(1) : ds;
                     if (!mandatory.includes(clean)) state.userDomains.push(clean);
@@ -518,11 +534,19 @@
                 const clean = d.startsWith('.') ? d.slice(1) : d;
                 if (!domains.includes(clean)) domains.push(clean);
             });
+            const manualProxySet = [...new Set(domains)];
+
+            // SmartRouting V2: Inject high-priority proxy override rule at index 2
+            final.config.route.rules.splice(2, 0, {
+                domain_suffix: manualProxySet,
+                outbound: "proxy"
+            });
+
             final.routing_rules = {
-                version: MESH_CONSOLE_VERSION,
+                version: 2,
                 proxy: {
-                    domain: ["openmesh-api.ribencong.workers.dev", "raw.githubusercontent.com"],
-                    domain_suffix: [...new Set(["githubusercontent.com", "workers.dev", ...domains])]
+                    domain: [],
+                    domain_suffix: []
                 }
             };
             switchSubView("advanced", "JSON 预览与导出");
@@ -564,6 +588,17 @@
 
         renderAuthGate();
         window.MESH_CONSOLE_V = MESH_CONSOLE_VERSION;
+
+        // Compatibility for inline HTML handlers
+        window.MeshVendor = window.MeshVendor || {};
+        window.MeshVendor.Private = {
+            copyCode: utils.copyCode,
+            removeDomainChip: window.removeDomainChip,
+            injectDomainPreset: window.injectDomainPreset,
+            validateServerIP: window.validateServerIP,
+            togglePassVisibility: window.togglePassVisibility
+        };
+
         console.log(`[MeshNet] Console v${MESH_CONSOLE_VERSION} ready.`);
     }
 

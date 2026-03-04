@@ -1,7 +1,7 @@
 {
-  "provider_id": "com.mesh.qa4ac.s43k.v1",
-  "name": "最新好用",
-  "description": "",
+  "provider_id": "com.meshnetprotocol.profile.v2.smart",
+  "name": "种子配置",
+  "description": "启动测试专用",
   "tags": [
     "Official",
     "SmartRouting",
@@ -10,9 +10,9 @@
   "author": "OpenMesh Team",
   "visibility": "public",
   "status": "active",
-  "updated_at": "2026-02-28T06:13:41.758Z",
-  "package_hash": "seed-v2-smart",
-  "source_updated_at": "2026-02-28T05:58:04.371Z",
+  "updated_at": "1970-01-01T00:00:00Z",
+  "package_hash": "seed-0",
+  "source_updated_at": "2026-03-04T02:23:26.945Z",
   "config": {
     "log": {
       "level": "debug"
@@ -47,6 +47,21 @@
           "172.18.0.1/30"
         ],
         "auto_route": true,
+        "strict_route": false,
+        "route_exclude_address": [
+          "127.0.0.0/8",
+          "10.0.0.0/8",
+          "172.16.0.0/12",
+          "192.168.0.0/16",
+          "169.254.0.0/16",
+          "223.5.5.5/32",
+          "::1/128",
+          "fc00::/7",
+          "fe80::/10"
+        ],
+        "route_exclude_address_set": [
+          "geoip-cn"
+        ],
         "sniff": true,
         "sniff_override_destination": true
       }
@@ -54,34 +69,33 @@
     "outbounds": [
       {
         "type": "shadowsocks",
-        "tag": "node-1",
-        "server": "216.128.182.150",
+        "tag": "meshflux168",
+        "server": "45.32.115.168",
         "server_port": 10086,
         "method": "aes-256-gcm",
         "password": "yourpassword123"
       },
       {
         "type": "shadowsocks",
-        "tag": "node-2",
-        "server": "64.176.39.224",
-        "server_port": 29809,
+        "tag": "meshflux150",
+        "server": "216.128.182.150",
+        "server_port": 10086,
         "method": "aes-256-gcm",
-        "password": "mMxNObzBIYKEw1qV"
+        "password": "yourpassword123"
       },
       {
-        "tag": "proxy",
         "type": "selector",
+        "tag": "proxy",
         "outbounds": [
-          "node-1",
-          "node-2"
+          "meshflux168",
+          "meshflux150",
+          "meshflux224"
         ],
-        "default": "node-1"
+        "default": "meshflux168"
       },
       {
         "type": "direct",
-        "tag": "direct",
-        "domain_strategy": "ipv4_only",
-        "fallback_delay": "300ms"
+        "tag": "direct"
       }
     ],
     "route": {
@@ -109,9 +123,10 @@
             "app-measurement.com",
             "github.com",
             "githubusercontent.com",
-            "workers.dev",
             "twitter.com",
             "telegram.org",
+            "claude.ai",
+            "openai.com",
             "facebook.com",
             "fbcdn.net",
             "instagram.com",
@@ -119,29 +134,10 @@
             "whatsapp.net",
             "tiktok.com",
             "byteoversea.com",
-            "openai.com",
-            "chatgpt.com",
-            "oaistatic.com",
-            "oaiusercontent.com",
-            "anthropic.com",
-            "claude.ai",
-            "perplexity.ai",
-            "mistral.ai",
-            "deepseek.com",
-            "gemini.google.com",
-            "generativelanguage.googleapis.com",
-            "midjourney.com",
-            "runwayml.com",
-            "pika.art",
-            "luma.ai",
-            "sora.com",
-            "suno.ai",
-            "udio.com",
-            "elevenlabs.io",
-            "deepl.com",
             "netflix.com",
-            "microsoft.com",
-            "bing.com"
+            "bing.com",
+            "perplexity.ai",
+            "deepl.com"
           ],
           "outbound": "proxy"
         },
@@ -151,6 +147,13 @@
         },
         {
           "rule_set": "geoip-cn",
+          "outbound": "direct"
+        },
+        {
+          "domain_suffix": [
+            "localhost",
+            "local"
+          ],
           "outbound": "direct"
         },
         {
