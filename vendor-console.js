@@ -261,11 +261,13 @@
         if (count > 0) notify(`成功注入 ${count} 个核心后缀。`, "注入成功");
     };
 
-    function addServerItem(ip = "", port = "10086", pass = "") {
+    function addServerItem(ip = "", port = "10086", pass = "", name = "", region = "") {
         const div = document.createElement("div");
         div.className = "server-item";
-        div.style.gridTemplateColumns = "1fr 100px 1.2fr auto";
+        div.style.gridTemplateColumns = "120px 80px 1.2fr 80px 1.2fr auto";
         div.innerHTML = `
+      <input type="text" class="form-control" placeholder="名称" value="${name}">
+      <input type="text" class="form-control" placeholder="地区" value="${region}">
       <input type="text" class="form-control" placeholder="IP 地址" value="${ip}" oninput="validateServerIP(this)">
       <input type="number" class="form-control" placeholder="端口" value="${port}">
       <div class="input-group-pass">
@@ -276,7 +278,7 @@
       <div class="server-validation-msg"></div>
     `;
         if (dom.serverList) dom.serverList.appendChild(div);
-        if (ip) validateServerIP(div.querySelector('input'));
+        if (ip) validateServerIP(div.querySelector('input[placeholder="IP 地址"]'));
     }
 
     window.validateServerIP = (el) => {
@@ -463,7 +465,18 @@
                     console.warn("[MeshNet] No servers found in JSON.");
                 }
 
-                rawServers.forEach(s => addServerItem(s.ip || s.server, s.port || s.server_port, s.pass || s.password || s.pass));
+                rawServers.forEach(s => {
+                    let name = s.tag || "";
+                    let region = s._region || "";
+                    if (!region && name.includes("[") && name.includes("]")) {
+                        const match = name.match(/\[(.*?)\]/);
+                        if (match) {
+                            region = match[1];
+                            name = name.replace(` [${region}]`, "").replace(`[${region}]`, "").trim();
+                        }
+                    }
+                    addServerItem(s.ip || s.server, s.port || s.server_port, s.pass || s.password || s.pass || s.password, name, region);
+                });
 
                 state.userDomains = [];
                 const mandatory = ["githubusercontent.com", "workers.dev"];
@@ -516,7 +529,13 @@
             if (!name) return notify("请输入供应商名称", "校验未通过");
             const userServers = Array.from(dom.serverList.children).map(item => {
                 const inputs = item.querySelectorAll("input");
-                return { ip: inputs[0].value.trim(), port: parseInt(inputs[1].value), pass: inputs[2].value.trim() };
+                return {
+                    name: inputs[0].value.trim(),
+                    region: inputs[1].value.trim(),
+                    ip: inputs[2].value.trim(),
+                    port: parseInt(inputs[3].value),
+                    pass: inputs[4].value.trim()
+                };
             }).filter(s => s.ip && s.port);
             if (userServers.length === 0) return notify("尚未配置节点。", "缺少配置");
 
@@ -525,7 +544,19 @@
             final.name = name;
             final.description = document.getElementById("config-desc").value.trim();
             final.updated_at = new Date().toISOString();
-            const nodes = userServers.map((s, i) => ({ type: "shadowsocks", tag: `node-${i + 1}`, server: s.ip, server_port: s.port, method: "aes-256-gcm", password: s.pass }));
+            const nodes = userServers.map((s, i) => {
+                let tag = s.name || `node-${i + 1}`;
+                if (s.region) tag += ` [${s.region}]`;
+                return {
+                    type: "shadowsocks",
+                    tag: tag,
+                    server: s.ip,
+                    server_port: s.port,
+                    method: "aes-256-gcm",
+                    password: s.pass,
+                    _region: s.region
+                };
+            });
             const proxyGroup = { tag: "proxy", type: "selector", outbounds: nodes.map(n => n.tag), default: nodes[0].tag };
             final.config.outbounds = [...nodes, proxyGroup, { type: "direct", tag: "direct", domain_strategy: "ipv4_only", fallback_delay: "300ms" }];
             // 确保后缀不带点，遵循 standard 规范
