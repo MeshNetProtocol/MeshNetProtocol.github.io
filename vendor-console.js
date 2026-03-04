@@ -64,7 +64,7 @@
                 {
                     "type": "tun",
                     "tag": "tun-in",
-                    "address": ["172.18.0.1/30"],
+                    "address": ["172.18.0.1/30", "fd00::1/126"],
                     "auto_route": true,
                     "sniff": true,
                     "sniff_override_destination": true
@@ -553,8 +553,7 @@
                     server: s.ip,
                     server_port: s.port,
                     method: "aes-256-gcm",
-                    password: s.pass,
-                    _region: s.region
+                    password: s.pass
                 };
             });
             const proxyGroup = { tag: "proxy", type: "selector", outbounds: nodes.map(n => n.tag), default: nodes[0].tag };
