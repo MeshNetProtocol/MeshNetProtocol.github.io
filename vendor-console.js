@@ -392,34 +392,87 @@
             await syncChain(); renderAuthGate();
         });
         if (dom.btnConnectSignin) dom.btnConnectSignin.addEventListener("click", connectAndSignIn);
+        // Helper function to get translated title
+        function getPrivateWorkspaceTitle() {
+            const lang = window.i18n && window.i18n.getCurrentLanguage ? window.i18n.getCurrentLanguage() : 'zh';
+            const translations = window.i18n && window.i18n.translations ? window.i18n.translations[lang] : null;
+            const titleKey = 'vendorConsole.privateWorkspace.title';
+            let title = translations && window.i18n.getTranslation ? window.i18n.getTranslation(translations, titleKey) : null;
+            if (!title && lang === 'en') {
+                const enTranslations = window.i18n && window.i18n.translations ? window.i18n.translations.en : null;
+                title = enTranslations && window.i18n.getTranslation ? window.i18n.getTranslation(enTranslations, 'vendorConsoleEn.privateWorkspace.title') : null;
+            }
+            return title || (lang === 'zh' ? '私人工作空间' : 'Private Workspace');
+        }
+
         if (dom.btnEnterPrivate) dom.btnEnterPrivate.addEventListener("click", () => {
             console.log("[MeshNet] Entering Private Workspace...");
             if (dom.entryStage) dom.entryStage.classList.add("hidden");
             if (dom.privateArea) dom.privateArea.classList.remove("hidden");
-            switchSubView("main", "Private Workspace / Menu");
+            switchSubView("main", getPrivateWorkspaceTitle());
         });
         if (dom.btnPrivateBack) dom.btnPrivateBack.addEventListener("click", () => {
             console.log("[MeshNet] Back to entry stage...");
             if (dom.subviews.main && !dom.subviews.main.classList.contains("hidden")) {
                 if (dom.privateArea) dom.privateArea.classList.add("hidden");
                 if (dom.entryStage) dom.entryStage.classList.remove("hidden");
-            } else { switchSubView("main", "Private Workspace / Menu"); }
+            } else { switchSubView("main", getPrivateWorkspaceTitle()); }
         });
-        document.querySelectorAll(".btn-cancel").forEach(btn => btn.addEventListener("click", () => switchSubView("main", "Private Workspace / Menu")));
+        document.querySelectorAll(".btn-cancel").forEach(btn => btn.addEventListener("click", () => switchSubView("main", getPrivateWorkspaceTitle())));
 
         const gotoConfigBtn = document.getElementById("btn-goto-config");
         if (gotoConfigBtn) gotoConfigBtn.addEventListener("click", () => {
-            switchSubView("config", "生成配置文件 (Wizard)");
+            const lang = window.i18n && window.i18n.getCurrentLanguage ? window.i18n.getCurrentLanguage() : 'zh';
+            const translations = window.i18n && window.i18n.translations ? window.i18n.translations[lang] : null;
+            const titleKey = 'vendorConsole.privateWorkspace.modules.config.title';
+            let title = translations && window.i18n.getTranslation ? window.i18n.getTranslation(translations, titleKey) : null;
+            if (!title && lang === 'en') {
+                const enTranslations = window.i18n && window.i18n.translations ? window.i18n.translations.en : null;
+                title = enTranslations && window.i18n.getTranslation ? window.i18n.getTranslation(enTranslations, 'vendorConsoleEn.privateWorkspace.modules.config.title') : null;
+            }
+            if (!title) title = lang === 'zh' ? '生成配置文件 (Wizard)' : 'Generate Configuration (Wizard)';
+            switchSubView("config", title);
             if (dom.serverList) dom.serverList.innerHTML = "";
             state.userDomains = []; renderDomainChips();
         });
         const gotoVpsBtn = document.getElementById("btn-goto-vps");
-        if (gotoVpsBtn) gotoVpsBtn.addEventListener("click", () => switchSubView("vps", "购买与部署指引"));
+        if (gotoVpsBtn) gotoVpsBtn.addEventListener("click", () => {
+            const lang = window.i18n && window.i18n.getCurrentLanguage ? window.i18n.getCurrentLanguage() : 'zh';
+            const translations = window.i18n && window.i18n.translations ? window.i18n.translations[lang] : null;
+            const titleKey = 'vendorConsole.privateWorkspace.modules.vps.title';
+            let title = translations && window.i18n.getTranslation ? window.i18n.getTranslation(translations, titleKey) : null;
+            if (!title && lang === 'en') {
+                const enTranslations = window.i18n && window.i18n.translations ? window.i18n.translations.en : null;
+                title = enTranslations && window.i18n.getTranslation ? window.i18n.getTranslation(enTranslations, 'vendorConsoleEn.privateWorkspace.modules.vps.title') : null;
+            }
+            if (!title) title = lang === 'zh' ? '购买与部署指引' : 'Purchase & Deploy VPS';
+            switchSubView("vps", title);
+        });
         const gotoImportBtn = document.getElementById("btn-goto-import");
-        if (gotoImportBtn) gotoImportBtn.addEventListener("click", () => switchSubView("import", "导入 APP 教程"));
+        if (gotoImportBtn) gotoImportBtn.addEventListener("click", () => {
+            const lang = window.i18n && window.i18n.getCurrentLanguage ? window.i18n.getCurrentLanguage() : 'zh';
+            const translations = window.i18n && window.i18n.translations ? window.i18n.translations[lang] : null;
+            const titleKey = 'vendorConsole.privateWorkspace.modules.import.title';
+            let title = translations && window.i18n.getTranslation ? window.i18n.getTranslation(translations, titleKey) : null;
+            if (!title && lang === 'en') {
+                const enTranslations = window.i18n && window.i18n.translations ? window.i18n.translations.en : null;
+                title = enTranslations && window.i18n.getTranslation ? window.i18n.getTranslation(enTranslations, 'vendorConsoleEn.privateWorkspace.modules.import.title') : null;
+            }
+            if (!title) title = lang === 'zh' ? '导入 APP 教程' : 'Import APP';
+            switchSubView("import", title);
+        });
         const gotoAdvancedBtn = document.getElementById("btn-goto-advanced");
         if (gotoAdvancedBtn) gotoAdvancedBtn.addEventListener("click", () => {
-            switchSubView("advanced", "高级 JSON 编辑器");
+            const lang = window.i18n && window.i18n.getCurrentLanguage ? window.i18n.getCurrentLanguage() : 'zh';
+            const translations = window.i18n && window.i18n.translations ? window.i18n.translations[lang] : null;
+            const titleKey = 'vendorConsole.privateWorkspace.modules.advanced.title';
+            let title = translations && window.i18n.getTranslation ? window.i18n.getTranslation(translations, titleKey) : null;
+            if (!title && lang === 'en') {
+                const enTranslations = window.i18n && window.i18n.translations ? window.i18n.translations.en : null;
+                title = enTranslations && window.i18n.getTranslation ? window.i18n.getTranslation(enTranslations, 'vendorConsoleEn.privateWorkspace.modules.advanced.title') : null;
+            }
+            if (!title) title = lang === 'zh' ? '高级 JSON 编辑器' : 'Advanced JSON Editor';
+            switchSubView("advanced", title);
             if (dom.jsonEditor) dom.jsonEditor.value = JSON.stringify(SINGBOX_TEMPLATE, null, 2);
         });
 

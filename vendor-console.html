@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="vendor-console-prototype.css" />
   <link rel="stylesheet" href="assets/css/vendor-ui.css" />
   <link rel="stylesheet" href="assets/css/vendor-vps-guide.css" />
+  <script src="i18n.js"></script>
 </head>
 
 <body>
@@ -34,64 +35,69 @@
     </a>
 
     <p class="topbar-aside">Private Is Free · Commercial Is Onchain</p>
+    
+    <!-- Language Switcher (Hidden, auto-detect) -->
+    <!-- <div class="language-switcher">
+      <button id="lang-zh" class="lang-btn">中文</button>
+      <button id="lang-en" class="lang-btn">English</button>
+    </div> -->
   </header>
 
   <main class="console-shell">
     <section id="entry-stage" class="entry-stage">
       <article class="entry-card private card-hover">
         <div>
-          <p class="card-kicker">Private Supplier</p>
-          <h1 class="card-title">免费工具入口</h1>
-          <p class="card-desc">无需钱包登录，直接进入私有供应商工具。用于本地创建与维护服务器连接配置，不上链、不公开、不托管任何数据。</p>
+          <p class="card-kicker" data-i18n="vendorConsole.entryPrivate.cardKicker">Private Supplier</p>
+          <h1 class="card-title" data-i18n="vendorConsole.entryPrivate.cardTitle">免费工具入口</h1>
+          <p class="card-desc" data-i18n="vendorConsole.entryPrivate.cardDesc">无需钱包登录，直接进入私有供应商工具。用于本地创建与维护服务器连接配置，不上链、不公开、不托管任何数据。</p>
         </div>
 
         <ul class="benefit-list">
-          <li>Quick Start 教程：从 0 到 1 配置私有供应商。</li>
-          <li>本地生成连接配置：所有数据仅在本地浏览器处理。</li>
-          <li>免费使用，无手续费，无链上写入。</li>
+          <li data-i18n="vendorConsole.entryPrivate.benefits.quickStart">Quick Start 教程：从 0 到 1 配置私有供应商。</li>
+          <li data-i18n="vendorConsole.entryPrivate.benefits.local">本地生成连接配置：所有数据仅在本地浏览器处理。</li>
+          <li data-i18n="vendorConsole.entryPrivate.benefits.free">免费使用，无手续费，无链上写入。</li>
         </ul>
 
-        <button id="btn-enter-private" class="btn btn-hero private-entry" type="button">Enter Private Workspace</button>
+        <button id="btn-enter-private" class="btn btn-hero private-entry" type="button" data-i18n="vendorConsole.entryPrivate.enterButton">Enter Private Workspace</button>
       </article>
 
       <article class="entry-card commercial card-hover" aria-live="polite">
         <div>
-          <p class="card-kicker">Commercial Supplier</p>
-          <h2 class="card-title">链上商业入口</h2>
-          <p id="gate-desc" class="card-desc">连接 MetaMask 并签名登录。商业供应商需要选择正确 Base 网络后，才能执行注册、续费与提现操作。</p>
+          <p class="card-kicker" data-i18n="vendorConsole.entryCommercial.cardKicker">Commercial Supplier</p>
+          <h2 class="card-title" data-i18n="vendorConsole.entryCommercial.cardTitle">链上商业入口</h2>
+          <p id="gate-desc" class="card-desc" data-i18n="vendorConsole.entryCommercial.cardDesc">连接 MetaMask 并签名登录。商业供应商需要选择正确 Base 网络后，才能执行注册、续费与提现操作。</p>
         </div>
 
         <ul class="benefit-list">
-          <li>链上权属校验：通过签名的供应商在 Base 上具唯一性。</li>
-          <li>USDC 收益结算：所有商业交易均通过 USDC 在 Base 结算。</li>
-          <li>协议市场入口：一旦上线，您的节点将进入 MeshNet 索引。</li>
+          <li data-i18n="vendorConsole.entryCommercial.benefits.ownership">链上权属校验：通过签名的供应商在 Base 上具唯一性。</li>
+          <li data-i18n="vendorConsole.entryCommercial.benefits.settlement">USDC 收益结算：所有商业交易均通过 USDC 在 Base 结算。</li>
+          <li data-i18n="vendorConsole.entryCommercial.benefits.market">协议市场入口：一旦上线，您的节点将进入 MeshNet 索引。</li>
         </ul>
 
         <div class="commercial-meta">
           <div class="auth-gate-wrap">
-            <button id="btn-connect-signin" class="btn primary btn-hero hidden" type="button">Sign In By
-              MetaMask</button>
+            <button id="btn-connect-signin" class="btn primary btn-hero hidden" type="button" data-i18n="vendorConsole.entryCommercial.signInButton">Sign In By MetaMask</button>
             <a id="btn-install-metamask" class="btn secondary btn-hero hidden" href="https://metamask.io/download/"
-              target="_blank" rel="noopener noreferrer">Install MetaMask</a>
+              target="_blank" rel="noopener noreferrer" data-i18n="vendorConsole.entryCommercial.installMetaMask">Install MetaMask</a>
 
             <div class="network-row-compact">
               <select id="select-target-network" aria-label="Select network">
-                <option value="base-mainnet">Mainnet</option>
-                <option value="base-sepolia">Sepolia</option>
+                <option value="base-mainnet" data-i18n="vendorConsole.entryCommercial.mainnet">Mainnet</option>
+                <option value="base-sepolia" data-i18n="vendorConsole.entryCommercial.sepolia">Sepolia</option>
               </select>
               <span id="network-dot" class="network-ready-dot not-ready" aria-label="Network readiness"></span>
             </div>
           </div>
 
-          <p id="text-auth-status" class="status-block">Checking wallet environment...</p>
+          <p id="text-auth-status" class="status-block" data-i18n="vendorConsole.entryCommercial.statusChecking">Checking wallet environment...</p>
         </div>
       </article>
     </section>
 
     <section id="private-operation-area" class="private-operation-area hidden">
       <div class="operation-header">
-        <button id="btn-private-back" class="btn ghost">Back</button>
-        <h2 id="private-view-title">Private Workspace</h2>
+        <button id="btn-private-back" class="btn ghost" data-i18n="vendorConsole.privateWorkspace.backButton">Back</button>
+        <h2 id="private-view-title" data-i18n="vendorConsole.privateWorkspace.title">Private Workspace</h2>
       </div>
 
       <div class="operation-content">
@@ -104,21 +110,21 @@
                 <div class="module-header-wrap">
                   <div class="module-icon-box">☁️</div>
                   <div class="module-title-box">
-                    <h3>购买与部署 VPS (Server Setup)</h3>
+                    <h3 data-i18n="vendorConsole.privateWorkspace.modules.vps.title">购买与部署 VPS (Server Setup)</h3>
                   </div>
                 </div>
-                <p class="module-summary">
+                <p class="module-summary" data-i18n="vendorConsole.privateWorkspace.modules.vps.summary">
                   连接全球算力底座。选择合适的 VPS 服务商是建立高性能供应节点的开端，配合我们的自动化脚本即可一键变身运营商。
                 </p>
                 <ul class="module-features">
-                  <li><strong>厂商精选</strong>：推荐 DigitalOcean(易用)、Vultr(全球)、Hetzner(极致性价比) 等节点。</li>
-                  <li><strong>自动化脚本</strong>：提供 sudo bash install.sh 一键安装包，自动配置内核转发与 BBR。</li>
-                  <li><strong>运行环境</strong>：支持 Ubuntu 22.04+ 及 Debian 11+，最小仅需 512MB 内存即可流畅运行。</li>
-                  <li><strong>安全性增强</strong>：脚本自动配置基础防火墙与 SSH 密钥校验，保护您的服务器不被扫描攻击。</li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.vps.features.vendors">厂商精选：推荐 DigitalOcean(易用)、Vultr(全球)、Hetzner(极致性价比) 等节点。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.vps.features.script">自动化脚本：提供 sudo bash install.sh 一键安装包，自动配置内核转发与 BBR。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.vps.features.env">运行环境：支持 Ubuntu 22.04+ 及 Debian 11+，最小仅需 512MB 内存即可流畅运行。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.vps.features.security">安全性增强：脚本自动配置基础防火墙与 SSH 密钥校验，保护您的服务器不被扫描攻击。</strong></li>
                 </ul>
               </div>
               <div class="module-action">
-                <button id="btn-goto-vps" class="btn-module">部署指引 (Deploy)</button>
+                <button id="btn-goto-vps" class="btn-module" data-i18n="vendorConsole.privateWorkspace.modules.vps.actionButton">部署指引 (Deploy)</button>
               </div>
             </article>
 
@@ -128,21 +134,21 @@
                 <div class="module-header-wrap">
                   <div class="module-icon-box">⚙️</div>
                   <div class="module-title-box">
-                    <h3>生成配置文件 (Profile Builder)</h3>
+                    <h3 data-i18n="vendorConsole.privateWorkspace.modules.config.title">生成配置文件 (Profile Builder)</h3>
                   </div>
                 </div>
-                <p class="module-summary">
+                <p class="module-summary" data-i18n="vendorConsole.privateWorkspace.modules.config.summary">
                   为个人或特定圈子定制去中心化供应节点配置。生成的 JSON 包含加密基座与 x402 支付元数据，支持多服务器聚合。
                 </p>
                 <ul class="module-features">
-                  <li><strong>零门槛配置</strong>：傻瓜式输入 IP、端口、密码，自动生成标准 sing-box 核心配置。</li>
-                  <li><strong>私密共享</strong>：配置仅存本地或由您托管在公网 Gist，通过 URL 拉取即可同步给好友。</li>
-                  <li><strong>无中间商</strong>：流量不经过 MeshNet 公共市场检索，完全属于您的私有地下网络。</li>
-                  <li><strong>多端兼容</strong>：一键生成符合全平台 MeshNet App 规范的统一数据结构。</li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.config.features.easy">零门槛配置：傻瓜式输入 IP、端口、密码，自动生成标准 sing-box 核心配置。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.config.features.private">私密共享：配置仅存本地或由您托管在公网 Gist，通过 URL 拉取即可同步给好友。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.config.features.direct">无中间商：流量不经过 MeshNet 公共市场检索，完全属于您的私有地下网络。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.config.features.compatible">多端兼容：一键生成符合全平台 MeshNet App 规范的统一数据结构。</strong></li>
                 </ul>
               </div>
               <div class="module-action">
-                <button id="btn-goto-config" class="btn-module">开始配置 (Build)</button>
+                <button id="btn-goto-config" class="btn-module" data-i18n="vendorConsole.privateWorkspace.modules.config.actionButton">开始配置 (Build)</button>
               </div>
             </article>
 
@@ -152,21 +158,21 @@
                 <div class="module-header-wrap">
                   <div class="module-icon-box">📲</div>
                   <div class="module-title-box">
-                    <h3>导入 APP (Client Connect)</h3>
+                    <h3 data-i18n="vendorConsole.privateWorkspace.modules.import.title">导入 APP (Client Connect)</h3>
                   </div>
                 </div>
-                <p class="module-summary">
+                <p class="module-summary" data-i18n="vendorConsole.privateWorkspace.modules.import.summary">
                   将配置映射到最终物理设备。支持 Windows, macOS, iOS 和 Android 全平台 MeshNet 客户端的快速接入方案。
                 </p>
                 <ul class="module-features">
-                  <li><strong>多平台指引</strong>：覆盖桌面端与移动端的详细安装、导入、连接与切换视频/图文教程。</li>
-                  <li><strong>URL 订阅模式</strong>：演示如何将 JSON 托管后，在客户端输入一个 URL 实现永久配置同步。</li>
-                  <li><strong>状态实时监控</strong>：教你如何在 App 中查看节点延迟、流量负荷以及 x402 支付结算状态。</li>
-                  <li><strong>二维码快速共享</strong>：生成一次性或持久化的配置二维码，手机一扫即连。</li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.import.features.multi">多平台指引：覆盖桌面端与移动端的详细安装、导入、连接与切换视频/图文教程。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.import.features.url">URL 订阅模式：演示如何将 JSON 托管后，在客户端输入一个 URL 实现永久配置同步。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.import.features.monitor">状态实时监控：教你如何在 App 中查看节点延迟、流量负荷以及 x402 支付结算状态。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.import.features.qrcode">二维码快速共享：生成一次性或持久化的配置二维码，手机一扫即连。</strong></li>
                 </ul>
               </div>
               <div class="module-action">
-                <button id="btn-goto-import" class="btn-module">查看教程 (Tutorial)</button>
+                <button id="btn-goto-import" class="btn-module" data-i18n="vendorConsole.privateWorkspace.modules.import.actionButton">查看教程 (Tutorial)</button>
               </div>
             </article>
 
@@ -176,21 +182,21 @@
                 <div class="module-header-wrap">
                   <div class="module-icon-box">⚡</div>
                   <div class="module-title-box">
-                    <h3>高级实验室 (Advanced Labs)</h3>
+                    <h3 data-i18n="vendorConsole.privateWorkspace.modules.advanced.title">高级实验室 (Advanced Labs)</h3>
                   </div>
                 </div>
-                <p class="module-summary">
+                <p class="module-summary" data-i18n="vendorConsole.privateWorkspace.modules.advanced.summary">
                   MeshNet 开发者乐园。如果您精通 sing-box 协议，可以在此手动编写极其复杂的路由规则与分流逻辑。
                 </p>
                 <ul class="module-features">
-                  <li><strong>协议深钻</strong>：在 sing-box 基础上原生注入 x402 支付协议，支持按量、按时、按次等复杂结算。</li>
-                  <li><strong>路由自定义</strong>：精准控制哪些流量走代理、哪些直连，甚至实现负载均衡与故障切换。</li>
-                  <li><strong>模板库</strong>：内置常用的全平台通用加速模板、流媒体解锁模板等进阶 JSON 片段。</li>
-                  <li><strong>JSON 语法加固</strong>：内置校验引擎，确保您的每一行配置都符合 sing-box / MeshNet 标准。</li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.protocol">协议深钻：在 sing-box 基础上原生注入 x402 支付协议，支持按量、按时、按次等复杂结算。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.routing">路由自定义：精准控制哪些流量走代理、哪些直连，甚至实现负载均衡与故障切换。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.templates">模板库：内置常用的全平台通用加速模板、流媒体解锁模板等进阶 JSON 片段。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.validation">JSON 语法加固：内置校验引擎，确保您的每一行配置都符合 sing-box / MeshNet 标准。</strong></li>
                 </ul>
               </div>
               <div class="module-action">
-                <button id="btn-goto-advanced" class="btn-module">前往实验室 (Labs)</button>
+                <button id="btn-goto-advanced" class="btn-module" data-i18n="vendorConsole.privateWorkspace.modules.advanced.actionButton">前往实验室 (Labs)</button>
               </div>
             </article>
           </div>
@@ -199,83 +205,82 @@
         <!-- Wizard Config sub-view -->
         <div id="subview-private-config" class="sub-view hidden">
           <div class="wizard-actions-top">
-            <button id="btn-open-parser" class="btn ghost">📥 解析已有 JSON</button>
+            <button id="btn-open-parser" class="btn ghost" data-i18n="vendorConsole.privateWorkspace.config.parseButton">📥 解析已有 JSON</button>
           </div>
-
+        
           <div class="wizard-form">
             <div class="form-group">
-              <label>唯一标识符 (Profile ID - 按量商业格式)</label>
+              <label data-i18n="vendorConsole.privateWorkspace.config.profileId">唯一标识符 (Profile ID - 按量商业格式)</label>
               <div class="id-gen-row">
-                <input id="config-id" type="text" class="form-control readonly-input" placeholder="请点击右侧生成按钮" readonly>
-                <button id="btn-gen-id" class="btn btn-secondary">生成 ID</button>
+                <input id="config-id" type="text" class="form-control readonly-input" placeholder="请点击右侧生成按钮" readonly data-i18n-placeholder="vendorConsole.privateWorkspace.config.idPlaceholder">
+                <button id="btn-gen-id" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.config.generateId">生成 ID</button>
               </div>
-              <p style="font-size:0.75rem; color:#64748b; margin-top:0.3rem;">格式: com.mesh.[unique].[version]</p>
+              <p style="font-size:0.75rem; color:#64748b; margin-top:0.3rem;" data-i18n="vendorConsole.privateWorkspace.config.idFormat">格式：com.mesh.[unique].[version]</p>
             </div>
-
+        
             <div id="wizard-main-fields" class="config-lock-mask">
               <div class="form-group" style="margin-bottom:1.5rem;">
-                <label>供应商名称 (Name) *</label>
-                <input id="config-name" type="text" class="form-control" placeholder="例如: MyPrivateNode">
+                <label data-i18n="vendorConsole.privateWorkspace.config.name">供应商名称 (Name) *</label>
+                <input id="config-name" type="text" class="form-control" placeholder="例如：MyPrivateNode" data-i18n-placeholder="vendorConsole.privateWorkspace.config.namePlaceholder">
               </div>
               <div class="form-group" style="margin-bottom:1.5rem;">
-                <label>简介 (Description)</label>
-                <input id="config-desc" type="text" class="form-control" placeholder="这个节点的简短描述 (可选)">
+                <label data-i18n="vendorConsole.privateWorkspace.config.description">简介 (Description)</label>
+                <input id="config-desc" type="text" class="form-control" placeholder="这个节点的简短描述 (可选)" data-i18n-placeholder="vendorConsole.privateWorkspace.config.descPlaceholder">
               </div>
-
+        
               <div class="wizard-section">
-                <div class="wizard-section-title"><span>📡</span> 节点服务器配置 (Server Nodes)</div>
+                <div class="wizard-section-title"><span>📡</span> <span data-i18n="vendorConsole.privateWorkspace.config.servers">节点服务器配置 (Server Nodes)</span></div>
                 <div id="server-list-container" style="display:grid; gap:0.8rem;">
                   <!-- dynamic server items -->
                 </div>
                 <div style="display:flex; gap:1rem; margin-top:1.2rem;">
-                  <button id="btn-add-server" class="btn btn-secondary">+ 增加服务器</button>
-                  <button id="btn-goto-vps-direct" class="btn ghost">☁️ 去购买 VPS</button>
+                  <button id="btn-add-server" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.config.addServer">+ 增加服务器</button>
+                  <button id="btn-goto-vps-direct" class="btn ghost" data-i18n="vendorConsole.privateWorkspace.config.buyVps">☁️ 去购买 VPS</button>
                 </div>
               </div>
-
+        
               <div class="wizard-section">
-                <div class="wizard-section-title"><span>🌐</span> 代理域名后缀 (Domain Suffixes)</div>
+                <div class="wizard-section-title"><span>🌐</span> <span data-i18n="vendorConsole.privateWorkspace.config.domains">代理域名后缀 (Domain Suffixes)</span></div>
                 <div class="domain-mgmt-section" style="background:transparent; border:none; padding:0;">
                   <!-- Preset Selection Rail -->
                   <div class="preset-rail">
                     <div class="preset-card ai" onclick="injectDomainPreset('ai')">
-                      <div class="preset-icon">🧠</div>
+                      <div class="preset-icon" data-i18n="vendorConsole.privateWorkspace.domainPresets.ai.icon">🧠</div>
                       <div style="text-align:left;">
-                        <div style="font-weight:600; font-size:0.9rem;">AI 实验室增强</div>
-                        <div style="font-size:0.75rem; color:#64748b;">支持 OpenAI, Claude, 谷歌/GitHub 登录</div>
+                        <div style="font-weight:600; font-size:0.9rem;" data-i18n="vendorConsole.privateWorkspace.domainPresets.ai.title">AI 实验室增强</div>
+                        <div style="font-size:0.75rem; color:#64748b;" data-i18n="vendorConsole.privateWorkspace.domainPresets.ai.desc">支持 OpenAI, Claude, 谷歌/GitHub 登录</div>
                       </div>
                     </div>
                     <div class="preset-card shop" onclick="injectDomainPreset('shop')">
-                      <div class="preset-icon">🛍️</div>
+                      <div class="preset-icon" data-i18n="vendorConsole.privateWorkspace.domainPresets.shop.icon">🛍️</div>
                       <div style="text-align:left;">
-                        <div style="font-weight:600; font-size:0.9rem;">全球电商加速</div>
-                        <div style="font-size:0.75rem; color:#64748b;">支持 Amazon, Temu...</div>
+                        <div style="font-weight:600; font-size:0.9rem;" data-i18n="vendorConsole.privateWorkspace.domainPresets.shop.title">全球电商加速</div>
+                        <div style="font-size:0.75rem; color:#64748b;" data-i18n="vendorConsole.privateWorkspace.domainPresets.shop.desc">支持 Amazon, Temu...</div>
                       </div>
                     </div>
                   </div>
-
+        
                   <!-- Quick Add Row -->
                   <div class="id-gen-row" style="margin: 0.5rem 0;">
                     <input id="input-quick-add-domain" type="text" class="form-control"
-                      placeholder="输入域名或 URL，如 google.com">
-                    <button id="btn-do-add-domain" class="btn btn-secondary">添加</button>
+                      placeholder="输入域名或 URL，如 google.com" data-i18n-placeholder="vendorConsole.privateWorkspace.config.domainPlaceholder">
+                    <button id="btn-do-add-domain" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.config.addDomain">添加</button>
                   </div>
-
+        
                   <!-- Chips Display -->
                   <div id="domain-chip-grid" class="chip-grid">
                     <!-- chips injected via JS -->
                   </div>
                 </div>
-                <p style="font-size:0.75rem; color:#64748b; margin-top:0.8rem;">
+                <p style="font-size:0.75rem; color:#64748b; margin-top:0.8rem;" data-i18n="vendorConsole.privateWorkspace.config.domainTip">
                   提示：系统已强制包含官方基础域名。您可以手动添加或使用上方预设。
                 </p>
               </div>
-
+        
               <div
                 style="margin-top:3rem; display:flex; gap:1.2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top:2rem;">
-                <button id="btn-generate-json" class="btn-module" style="width:240px; --module-color: #2dd4bf;">生成并预览
-                  JSON</button>
-                <button class="btn-cancel btn ghost">取消并返回列表</button>
+                <button id="btn-generate-json" class="btn-module" style="width:240px; --module-color: #2dd4bf;" data-i18n="vendorConsole.privateWorkspace.config.generatePreview">生成并预览 JSON</button>
+                <button class="btn-cancel btn ghost" data-i18n="vendorConsole.privateWorkspace.config.cancelButton">取消并返回列表</button>
               </div>
             </div>
           </div>
@@ -284,13 +289,13 @@
         <!-- JSON Parser Modal (sub-view) -->
         <div id="subview-private-parse" class="modal-backdrop">
           <div class="modal-content">
-            <h3 style="margin-top:0;">解析 JSON 配置</h3>
-            <p style="font-size:0.9rem; color:#94a3b8;">粘贴您已有的 JSON 文本，系统将尝试自动回填關鍵字段。</p>
+            <h3 style="margin-top:0;" data-i18n="vendorConsole.privateWorkspace.parserModal.title">解析 JSON 配置</h3>
+            <p style="font-size:0.9rem; color:#94a3b8;" data-i18n="vendorConsole.privateWorkspace.parserModal.desc">粘贴您已有的 JSON 文本，系统将尝试自动回填关键字段。</p>
             <textarea id="import-json-textarea" class="json-textarea" style="height:250px;"
               placeholder='{ "id": "com.mesh.xyz.v1", ... }'></textarea>
             <div style="display:flex; gap:1rem; justify-content:flex-end;">
-              <button id="btn-do-parse" class="btn btn-primary">立即解析</button>
-              <button id="btn-close-parser" class="btn ghost">关闭</button>
+              <button id="btn-do-parse" class="btn btn-primary" data-i18n="vendorConsole.privateWorkspace.parserModal.parseButton">立即解析</button>
+              <button id="btn-close-parser" class="btn ghost" data-i18n="vendorConsole.privateWorkspace.parserModal.closeButton">关闭</button>
             </div>
           </div>
         </div>
@@ -299,8 +304,8 @@
         <div id="subview-private-vps" class="sub-view hidden">
           <div class="vps-guide-container">
             <div class="vps-help-header">
-              <h3>Deploy Your Node</h3>
-              <p>只需简单的 4 步，一键自动化构建您的私有供应节点。</p>
+              <h3 data-i18n="vendorConsole.privateWorkspace.vpsGuide.title">Deploy Your Node</h3>
+              <p data-i18n="vendorConsole.privateWorkspace.vpsGuide.subtitle">只需简单的 4 步，一键自动化构建您的私有供应节点。</p>
             </div>
 
             <div class="vps-timeline">
@@ -308,40 +313,39 @@
               <div class="vps-step">
                 <div class="step-marker">1</div>
                 <div class="step-content">
-                  <h4>选择并购买 VPS (Purchase VPS)</h4>
-                  <p>前往您喜欢的云服务商注册并部署一台新实例。如果没有偏好，可以从下方选择我们推荐的厂商：</p>
+                  <h4 data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.title">选择并购买 VPS (Purchase VPS)</h4>
+                  <p data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.desc">前往您喜欢的云服务商注册并部署一台新实例。如果没有偏好，可以从下方选择我们推荐的厂商：</p>
 
                   <div class="provider-grid">
                     <a href="https://www.digitalocean.com/" target="_blank" class="provider-card do">
-                      <div class="name">DigitalOcean</div>
-                      <div class="tag">最易用的入门级 VPS</div>
+                      <div class="name" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.providers.digitalocean">DigitalOcean</div>
+                      <div class="tag" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.providers.digitaloceanTag">最易用的入门级 VPS</div>
                     </a>
                     <a href="https://www.vultr.com/" target="_blank" class="provider-card vultr">
-                      <div class="name">Vultr</div>
-                      <div class="tag">全球机房 · 小时计费</div>
+                      <div class="name" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.providers.vultr">Vultr</div>
+                      <div class="tag" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.providers.vultrTag">全球机房 · 小时计费</div>
                     </a>
                     <a href="https://www.hetzner.com/" target="_blank" class="provider-card hetzner">
-                      <div class="name">Hetzner</div>
-                      <div class="tag">欧洲性价比之王</div>
+                      <div class="name" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.providers.hetzner">Hetzner</div>
+                      <div class="tag" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.providers.hetznerTag">欧洲性价比之王</div>
                     </a>
                   </div>
 
-                  <p>购买时**推荐**参考以下系统与配置（因为我们底层的 <strong>sing-box</strong> 内核拥有极强的跨平台兼容性，只要是主流 Linux 发行版均能完美运行）：</p>
+                  <p data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.recommendations">购买时**推荐**参考以下系统与配置（因为我们底层的 <strong>sing-box</strong> 内核拥有极强的跨平台兼容性，只要是主流 Linux 发行版均能完美运行）：</p>
                   <ul class="vps-recommendations">
-                    <li><strong>OS (操作系统):</strong> 推荐 <strong>Debian 11/12</strong> 或 <strong>Ubuntu
-                        22.04/24.04</strong> （同时也全面支持 CentOS 8+ 等 RPM 系系统）</li>
-                    <li><strong>Plan:</strong> 基础云计算 (Basic / Regular Performance 即可)</li>
-                    <li><strong>Size:</strong> 512MB 内存或 1GB 内存 (约 $2.5 - $5/月)</li>
+                    <li data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.os">OS (操作系统): 推荐 <strong>Debian 11/12</strong> 或 <strong>Ubuntu 22.04/24.04</strong> （同时也全面支持 CentOS 8+ 等 RPM 系系统）</li>
+                    <li data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.plan">Plan: 基础云计算 (Basic / Regular Performance 即可)</li>
+                    <li data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.size">Size: 512MB 内存或 1GB 内存 (约 $2.5 - $5/月)</li>
                   </ul>
                   <div class="ai-prompt-box">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <div class="prompt-title">💡 遇到困难？尝试复制以下提示词问 AI：</div>
+                      <div class="prompt-title" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.aiPrompt">💡 遇到困难？尝试复制以下提示词问 AI：</div>
                       <button class="btn-copy-prompt"
                         onclick="window.MeshVendor.Private.copyCode(this, 'ai-prompt-1')">Copy</button>
                     </div>
-                    <div class="prompt-text" id="ai-prompt-1">“我需要购买一台用于搭建 sing-box 节点的 VPS。请帮我对比 DigitalOcean, Vultr 和
+                    <div class="prompt-text" id="ai-prompt-1" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step1.promptText">"我需要购买一台用于搭建 sing-box 节点的 VPS。请帮我对比 DigitalOcean, Vultr 和
                       Hetzner
-                      的基础套餐价格。我希望系统用 Debian 12，内存 1GB。请给我一份具体的新手购买图文步骤指南。”</div>
+                      的基础套餐价格。我希望系统用 Debian 12，内存 1GB。请给我一份具体的新手购买图文步骤指南。"</div>
                   </div>
                 </div>
               </div>
@@ -350,23 +354,22 @@
               <div class="vps-step">
                 <div class="step-marker">2</div>
                 <div class="step-content">
-                  <h4>通过 SSH 连接服务器</h4>
-                  <p>购买成功后，在 VPS 控制台后台可以找到新服务器的 <strong>IP 地址</strong> 和 <strong>Root 密码</strong>。打开你电脑上的终端 (Terminal) /
+                  <h4 data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step2.title">通过 SSH 连接服务器</h4>
+                  <p data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step2.desc">购买成功后，在 VPS 控制台后台可以找到新服务器的 <strong>IP 地址</strong> 和 <strong>Root 密码</strong>。打开你电脑上的终端 (Terminal) /
                     PowerShell，输入以下命令并回车，按提示输入密码进行连接：</p>
                   <div class="code-block-wrapper has-copy">
-                    <pre><code id="ssh-command">ssh root@你的服务器IP</code></pre>
+                    <pre><code id="ssh-command" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step2.sshCommand">ssh root@你的服务器 IP</code></pre>
                     <button class="btn-copy-code"
                       onclick="window.MeshVendor.Private.copyCode(this, 'ssh-command')">Copy</button>
                   </div>
                   <div class="ai-prompt-box">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
-                      <div class="prompt-title">💡 不知道终端在哪里？尝试复制以下提示词问 AI：</div>
+                      <div class="prompt-title" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step2.aiPrompt">💡 不知道终端在哪里？尝试复制以下提示词问 AI：</div>
                       <button class="btn-copy-prompt"
                         onclick="window.MeshVendor.Private.copyCode(this, 'ai-prompt-2')">Copy</button>
                     </div>
-                    <div class="prompt-text" id="ai-prompt-2">“我是一个纯粹的新手小白，我使用的是 [Windows 11 / macOS] 系统。我现在有了一台 VPS，IP
-                      是 1.1.1.1，并且有了
-                      root 密码。请一步步教我如何使用自带的 [PowerShell / 终端] 通过 SSH 登录上这台服务器，请告诉我每一步该点哪里、输入什么，详细到回车键。”</div>
+                    <div class="prompt-text" id="ai-prompt-2" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step2.promptText">"我是一个纯粹的新手小白，我使用的是 [Windows 11 / macOS] 系统。我现在有了一台 VPS，IP 是 1.1.1.1，并且有了
+                      root 密码。请一步步教我如何使用自带的 [PowerShell / 终端] 通过 SSH 登录上这台服务器，请告诉我每一步该点哪里、输入什么，详细到回车键。"</div>
                   </div>
                 </div>
               </div>
@@ -375,16 +378,16 @@
               <div class="vps-step">
                 <div class="step-marker">3</div>
                 <div class="step-content">
-                  <h4>运行一键安装脚本</h4>
-                  <p>成功登录服务器后，复制并粘贴下面的全自动安装脚本到终端中执行。脚本会自动安装内核增强(BBR)、配置防火墙规则，并部署 sing-box。整个过程大约需要 1-2 分钟。</p>
+                  <h4 data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step3.title">运行一键安装脚本</h4>
+                  <p data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step3.desc">成功登录服务器后，复制并粘贴下面的全自动安装脚本到终端中执行。脚本会自动安装内核增强 (BBR)、配置防火墙规则，并部署 sing-box。整个过程大约需要 1-2 分钟。</p>
                   <div class="code-block-wrapper has-copy">
-                    <pre><code id="vps-install-script">bash <(curl -sL https://meshnetprotocol.github.io/install.sh)</code></pre>
+                    <pre><code id="vps-install-script" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step3.installScript">bash <(curl -sL https://meshnetprotocol.github.io/install.sh)</code></pre>
                     <button class="btn-copy-code"
                       onclick="window.MeshVendor.Private.copyCode(this, 'vps-install-script')">Copy</button>
                   </div>
-                  <p>如果系统已存在 sing-box，脚本会提示并退出。需要强制重装并覆盖配置时执行：</p>
+                  <p data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step3.forceInstallDesc">如果系统已存在 sing-box，脚本会提示并退出。需要强制重装并覆盖配置时执行：</p>
                   <div class="code-block-wrapper has-copy">
-                    <pre><code id="vps-force-install">bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --force</code></pre>
+                    <pre><code id="vps-force-install" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step3.forceInstall">bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --force</code></pre>
                     <button class="btn-copy-code"
                       onclick="window.MeshVendor.Private.copyCode(this, 'vps-force-install')">Copy</button>
                   </div>
@@ -395,12 +398,12 @@
               <div class="vps-step">
                 <div class="step-marker">4</div>
                 <div class="step-content">
-                  <h4>获取连接凭证</h4>
-                  <p>安装完成后，终端界面会打印出一个带有绿色 <strong>[SUCCESS]</strong> 的表格，其中包含 <b>服务器 IP</b>、<b>服务端口 (Port)</b> 和 <b>随机密码
+                  <h4 data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step4.title">获取连接凭证</h4>
+                  <p data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step4.desc">安装完成后，终端界面会打印出一个带有绿色 <strong>[SUCCESS]</strong> 的表格，其中包含 <b>服务器 IP</b>、<b>服务端口 (Port)</b> 和 <b>随机密码
                       (Password)</b>。请保管好这三个信息。</p>
-                  <p>如果忘记了端口或密码，可在服务器上再次执行以下命令查看当前配置：</p>
+                  <p data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step4.desc2">如果忘记了端口或密码，可在服务器上再次执行以下命令查看当前配置：</p>
                   <div class="code-block-wrapper has-copy">
-                    <pre><code id="vps-credential-check">bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --show</code></pre>
+                    <pre><code id="vps-credential-check" data-i18n="vendorConsole.privateWorkspace.vpsGuide.steps.step4.checkCommand">bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --show</code></pre>
                     <button class="btn-copy-code"
                       onclick="window.MeshVendor.Private.copyCode(this, 'vps-credential-check')">Copy</button>
                   </div>
@@ -409,8 +412,8 @@
             </div>
 
             <div class="vps-guide-footer">
-              <button id="btn-vps-to-config" class="btn btn-primary">我已经拿到了连接凭证，去生成 JSON →</button>
-              <button class="btn-cancel btn ghost">返回列表</button>
+              <button id="btn-vps-to-config" class="btn btn-primary" data-i18n="vendorConsole.privateWorkspace.vpsGuide.footer.toConfig">我已经拿到了连接凭证，去生成 JSON →</button>
+              <button class="btn-cancel btn ghost" data-i18n="vendorConsole.privateWorkspace.vpsGuide.footer.back">返回列表</button>
             </div>
           </div>
         </div>
@@ -418,43 +421,43 @@
         <!-- Import Guide sub-view -->
         <div id="subview-private-import" class="sub-view hidden">
           <div class="tab-nav">
-            <div class="tab-btn active" data-tab="win">Windows</div>
-            <div class="tab-btn" data-tab="mac">macOS</div>
-            <div class="tab-btn" data-tab="ios">iOS</div>
-            <div class="tab-btn" data-tab="android">Android</div>
+            <div class="tab-btn active" data-tab="win" data-i18n="vendorConsole.privateWorkspace.importGuide.win">Windows</div>
+            <div class="tab-btn" data-tab="mac" data-i18n="vendorConsole.privateWorkspace.importGuide.mac">macOS</div>
+            <div class="tab-btn" data-tab="ios" data-i18n="vendorConsole.privateWorkspace.importGuide.ios">iOS</div>
+            <div class="tab-btn" data-tab="android" data-i18n="vendorConsole.privateWorkspace.importGuide.android">Android</div>
           </div>
           <div class="tab-content" id="import-docs">
-            <p>请选择对应的平台查看导入说明。</p>
+            <p data-i18n="vendorConsole.privateWorkspace.importGuide.selectPlatform">请选择对应的平台查看导入说明。</p>
           </div>
           <div style="border-top:1px solid rgba(255,255,255,0.1); padding-top:1.5rem; margin-top:1rem;">
-            <h3>进阶：通过 URL 托管配置</h3>
-            <p style="color:#94a3b8; font-size:0.9rem;">您可以将生成的 JSON 文件上传至 GitHub Gist、Pastebin 或任何公网对象存储（OSS），然后在 APP
-              中直接输入该 URL 即可实现多端同步更新。</p>
+            <h3 data-i18n="vendorConsole.privateWorkspace.importGuide.hosting">进阶：通过 URL 托管配置</h3>
+            <p style="color:#94a3b8; font-size:0.9rem;" data-i18n="vendorConsole.privateWorkspace.importGuide.hostingDesc">您可以将生成的 JSON 文件上传至 GitHub Gist、Pastebin 或任何公网对象存储（OSS），然后在 APP 中直接输入该 URL 即可实现多端同步更新。</p>
           </div>
-          <button class="btn-cancel btn ghost" style="margin-top:1rem;">返回</button>
+          <button class="btn-cancel btn ghost" style="margin-top:1rem;" data-i18n="vendorConsole.privateWorkspace.importGuide.backButton">返回</button>
         </div>
 
         <!-- Global Prompt Modal -->
         <div id="global-prompt-modal" class="modal-backdrop">
           <div class="modal-content">
-            <h3 id="prompt-title" class="modal-title">Notification</h3>
+            <h3 id="prompt-title" class="modal-title" data-i18n="vendorConsole.privateWorkspace.modal.notification">Notification</h3>
             <p id="prompt-message" class="modal-message">Content goes here...</p>
             <div id="prompt-actions" style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1rem;">
               <!-- buttons injected via JS -->
             </div>
           </div>
         </div>
+
         <!-- Advanced Editor sub-view -->
         <div id="subview-private-advanced" class="sub-view hidden">
           <div class="json-editor-wrap">
-            <p style="font-size:0.85rem; color:#94a3b8;">基于 <a href="https://sing-box.sagernet.org/" target="_blank"
+            <p style="font-size:0.85rem; color:#94a3b8;" data-i18n="vendorConsole.privateWorkspace.advanced.desc">基于 <a href="https://sing-box.sagernet.org/" target="_blank"
                 style="color:#6ee7d2;">sing-box</a> 协议，内置 x402 结算模块。请在下方编辑器修改您的原始 JSON 配置。</p>
             <textarea id="advanced-json-editor" class="json-textarea" spellcheck="false"></textarea>
             <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
-              <button id="btn-check-json" class="btn btn-secondary">检查 JSON</button>
-              <button id="btn-copy-json" class="btn btn-secondary">复制 JSON 数据</button>
-              <button id="btn-save-file" class="btn btn-secondary">另存为 JSON 文件</button>
-              <button class="btn-cancel btn ghost">返回</button>
+              <button id="btn-check-json" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.advanced.checkButton">检查 JSON</button>
+              <button id="btn-copy-json" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.advanced.copyButton">复制 JSON 数据</button>
+              <button id="btn-save-file" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.advanced.saveButton">另存为 JSON 文件</button>
+              <button class="btn-cancel btn ghost" data-i18n="vendorConsole.privateWorkspace.advanced.backButton">返回</button>
             </div>
           </div>
         </div>

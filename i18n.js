@@ -416,6 +416,203 @@ const i18n = {
             activityDisconnected: "Disconnected local session.",
             yes: "Yes",
             no: "No"
+        },
+        vendorConsoleEn: {
+            // Entry Stage
+            entryPrivate: {
+                cardKicker: "Private Supplier",
+                cardTitle: "Free Tool Access",
+                cardDesc: "No wallet login required, directly enter private supplier tools. Used for locally creating and maintaining server connection configurations, without blockchain, public sharing, or data custody.",
+                benefits: {
+                    quickStart: "Quick Start Tutorial: Configure private supplier from 0 to 1.",
+                    local: "Local Configuration Generation: All data processed only in your local browser.",
+                    free: "Free to Use: No fees, no on-chain transactions."
+                },
+                enterButton: "Enter Private Workspace"
+            },
+            entryCommercial: {
+                cardKicker: "Commercial Supplier",
+                cardTitle: "On-chain Commercial Access",
+                cardDesc: "Connect MetaMask and sign in to authenticate. Commercial suppliers need to select the correct Base network before executing registration, renewal, and withdrawal operations.",
+                benefits: {
+                    ownership: "On-chain Ownership Verification: Signed supplier profile uniqueness on Base.",
+                    settlement: "USDC Revenue Settlement: All commercial transactions settled via USDC on Base.",
+                    market: "Protocol Market Access: Once live, your node enters MeshNet index."
+                },
+                signInButton: "Sign In By MetaMask",
+                installMetaMask: "Install MetaMask",
+                networkSelect: "Select Network",
+                mainnet: "Mainnet",
+                sepolia: "Sepolia",
+                statusChecking: "Checking wallet environment..."
+            },
+            // Private Workspace
+            privateWorkspace: {
+                backButton: "Back",
+                title: "Private Workspace",
+                modules: {
+                    vps: {
+                        title: "Purchase & Deploy VPS (Server Setup)",
+                        summary: "Connect global computing infrastructure. Choosing the right VPS provider is the beginning of building a high-performance supply node, and with our automation scripts you can become an operator with one click.",
+                        features: {
+                            vendors: "Vendor Selection: Recommended providers including DigitalOcean (easy), Vultr (global), Hetzner (extreme cost-performance).",
+                            script: "Automation Script: Provide sudo bash install.sh one-click installation package, automatically configures kernel forwarding and BBR.",
+                            env: "Runtime Environment: Supports Ubuntu 22.04+ and Debian 11+, minimum 512MB RAM for smooth operation.",
+                            security: "Security Enhancement: Scripts automatically configure basic firewall and SSH key verification to protect your server from scanning attacks."
+                        },
+                        actionButton: "Deployment Guide (Deploy)"
+                    },
+                    config: {
+                        title: "Generate Configuration File (Profile Builder)",
+                        summary: "Customize decentralized supply node configuration for personal or specific circle use. Generated JSON contains encryption base and x402 payment metadata, supports multi-server aggregation.",
+                        features: {
+                            easy: "Zero-Threshold Configuration: Simple input of IP, port, password, automatically generates standard sing-box core configuration.",
+                            private: "Private Sharing: Configuration stored locally or hosted by you on public Gist, synchronized to friends via URL pull.",
+                            direct: "No Intermediaries: Traffic not searched through MeshNet public market, completely your private underground network.",
+                            compatible: "Multi-Platform Compatible: One-click generation of unified data structure compliant with full-platform MeshNet App specifications."
+                        },
+                        actionButton: "Start Configuration (Build)"
+                    },
+                    import: {
+                        title: "Import APP (Client Connect)",
+                        summary: "Map configuration to final physical devices. Support Windows, macOS, iOS and Android full-platform MeshNet client quick access solutions.",
+                        features: {
+                            multi: "Multi-Platform Guide: Detailed installation, import, connection and switching video/illustrated tutorials covering desktop and mobile.",
+                            url: "URL Subscription Mode: Demonstration of how to host JSON and achieve permanent configuration synchronization by entering a URL in the client.",
+                            monitor: "Real-Time Monitoring: Teach you how to check node latency, traffic load and x402 payment settlement status in the App.",
+                            qrcode: "QR Code Quick Share: Generate one-time or persistent configuration QR codes, connect with one scan."
+                        },
+                        actionButton: "View Tutorial (Tutorial)"
+                    },
+                    advanced: {
+                        title: "Advanced Laboratory (Advanced Labs)",
+                        summary: "MeshNet Developer Paradise. If you are proficient in sing-box protocol, you can manually write extremely complex routing rules and traffic splitting logic here.",
+                        features: {
+                            protocol: "Protocol Deep Dive: Natively inject x402 payment protocol on top of sing-box, supporting complex settlements such as pay-per-use, pay-per-time, pay-per-session.",
+                            routing: "Route Customization: Precisely control which traffic goes through proxy and which goes direct, even achieve load balancing and failover.",
+                            templates: "Template Library: Built-in common full-platform acceleration templates, streaming media unlock templates and other advanced JSON fragments.",
+                            validation: "JSON Syntax Reinforcement: Built-in validation engine to ensure every line of your configuration complies with sing-box / MeshNet standards."
+                        },
+                        actionButton: "Go to Laboratory (Labs)"
+                    }
+                },
+                // Config Wizard
+                config: {
+                    parseButton: "📥 Parse Existing JSON",
+                    profileId: "Unique Identifier (Profile ID - Pay-Per-Use Commercial Format)",
+                    idPlaceholder: "Click generate button on the right",
+                    idFormat: "Format: com.mesh.[unique].[version]",
+                    generateId: "Generate ID",
+                    name: "Supplier Name (Name) *",
+                    namePlaceholder: "e.g., MyPrivateNode",
+                    description: "Description",
+                    descPlaceholder: "Brief description of this node (optional)",
+                    servers: "📡 Node Server Configuration (Server Nodes)",
+                    addServer: "+ Add Server",
+                    buyVps: "☁️ Buy VPS",
+                    domains: "🌐 Proxy Domain Suffixes (Domain Suffixes)",
+                    domainPlaceholder: "Enter domain or URL, e.g., google.com",
+                    addDomain: "Add",
+                    domainTip: "Tip: System has forced included official base domains. You can manually add or use presets above.",
+                    generatePreview: "Generate and Preview JSON",
+                    cancelButton: "Cancel and Return to List"
+                },
+                // Domain Presets
+                domainPresets: {
+                    ai: {
+                        title: "AI Lab Enhancement",
+                        desc: "Support OpenAI, Claude, Google/GitHub Login",
+                        icon: "🧠"
+                    },
+                    shop: {
+                        title: "Global E-commerce Acceleration",
+                        desc: "Support Amazon, Temu...",
+                        icon: "🛍️"
+                    }
+                },
+                // JSON Parser Modal
+                parserModal: {
+                    title: "Parse JSON Configuration",
+                    desc: "Paste your existing JSON text, system will attempt to auto-fill key fields.",
+                    placeholder: '{ "id": "com.mesh.xyz.v1", ... }',
+                    parseButton: "Parse Now",
+                    closeButton: "Close"
+                },
+                // VPS Guide
+                vpsGuide: {
+                    title: "Deploy Your Node",
+                    subtitle: "Just 4 simple steps, one-click automated construction of your private supply node.",
+                    steps: {
+                        step1: {
+                            title: "Select and Purchase VPS (Purchase VPS)",
+                            desc: "Go to your preferred cloud provider to register and deploy a new instance. If no preference, you can choose from our recommended providers below:",
+                            providers: {
+                                digitalocean: "DigitalOcean",
+                                digitaloceanTag: "Easiest Entry-Level VPS",
+                                vultr: "Vultr",
+                                vultrTag: "Global Data Centers · Hourly Billing",
+                                hetzner: "Hetzner",
+                                hetznerTag: "Europe's Cost-Performance King"
+                            },
+                            recommendations: "When purchasing, **recommended** to refer to the following systems and configurations (because our underlying <strong>sing-box</strong> kernel has extremely strong cross-platform compatibility, any mainstream Linux distribution can run perfectly):",
+                            os: "OS: Recommended <strong>Debian 11/12</strong> or <strong>Ubuntu 22.04/24.04</strong> (also fully supports CentOS 8+ and other RPM-based systems)",
+                            plan: "Plan: Basic Cloud Computing (Basic / Regular Performance is fine)",
+                            size: "Size: 512MB RAM or 1GB RAM (about $2.5 - $5/month)",
+                            aiPrompt: "💡 Having trouble? Try copying the following prompt to ask AI:",
+                            promptText: "\"I need to purchase a VPS for building sing-box nodes. Please help me compare basic plans from DigitalOcean, Vultr and Hetzner. I want Debian 12 system with 1GB RAM. Please give me a detailed beginner-friendly illustrated purchase guide.\""
+                        },
+                        step2: {
+                            title: "Connect to Server via SSH",
+                            desc: "After successful purchase, you can find the new server's <strong>IP address</strong> and <strong>Root password</strong> in the VPS console backend. Open Terminal / PowerShell on your computer, enter the following command and press Enter, follow prompts to enter password to connect:",
+                            sshCommand: "ssh root@your_server_IP",
+                            aiPrompt: "💡 Don't know where Terminal is? Try copying the following prompt to ask AI:",
+                            promptText: "\"I'm a complete newbie, I use [Windows 11 / macOS]. I now have a VPS with IP 1.1.1.1 and root password. Please teach me step-by-step how to use built-in [PowerShell / Terminal] to SSH into the server, tell me exactly where to click, what to input, down to every Enter key press.\""
+                        },
+                        step3: {
+                            title: "Run One-Click Installation Script",
+                            desc: "After successfully logging into the server, copy and paste the following fully automated installation script to terminal for execution. The script will automatically install kernel enhancements (BBR), configure firewall rules, and deploy sing-box. The entire process takes about 1-2 minutes.",
+                            installScript: "bash <(curl -sL https://meshnetprotocol.github.io/install.sh)",
+                            forceInstall: "bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --force",
+                            forceInstallDesc: "If sing-box already exists on the system, the script will prompt and exit. Execute when needing to force reinstall and overwrite configuration:"
+                        },
+                        step4: {
+                            title: "Get Connection Credentials",
+                            desc: "After installation completes, the terminal interface will print a table with green <strong>[SUCCESS]</strong>, containing <b>Server IP</b>, <b>Service Port</b> and <b>Random Password</b>. Please keep these three pieces of information safe.",
+                            desc2: "If you forget the port or password, you can execute the following command on the server to view current configuration:",
+                            checkCommand: "bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --show"
+                        }
+                    },
+                    footer: {
+                        toConfig: "I have the connection credentials, go generate JSON →",
+                        back: "Return to List"
+                    }
+                },
+                // Import Guide
+                importGuide: {
+                    win: "Windows",
+                    mac: "macOS",
+                    ios: "iOS",
+                    android: "Android",
+                    selectPlatform: "Please select the corresponding platform to view import instructions.",
+                    hosting: "Advanced: Host Configuration via URL",
+                    hostingDesc: "You can upload the generated JSON file to GitHub Gist, Pastebin or any public internet object storage (OSS), then directly enter the URL in the APP to achieve multi-terminal synchronous updates.",
+                    backButton: "Back"
+                },
+                // Advanced Editor
+                advanced: {
+                    desc: "Based on <a href=\"https://sing-box.sagernet.org/\" target=\"_blank\" style=\"color:#6ee7d2;\">sing-box</a> protocol, built-in x402 settlement module. Please modify your original JSON configuration in the editor below.",
+                    checkButton: "Check JSON",
+                    copyButton: "Copy JSON Data",
+                    saveButton: "Save as JSON File",
+                    backButton: "Back"
+                },
+                // Global Prompt Modal
+                modal: {
+                    notification: "Notification",
+                    confirm: "Confirm",
+                    cancel: "Cancel"
+                }
+            }
         }
     },
     zh: {
@@ -834,6 +1031,203 @@ const i18n = {
             activityDisconnected: "本地会话已断开。",
             yes: "是",
             no: "否"
+        },
+        vendorConsole: {
+            // Entry Stage
+            entryPrivate: {
+                cardKicker: "私人供应商",
+                cardTitle: "免费工具入口",
+                cardDesc: "无需钱包登录，直接进入私有供应商工具。用于本地创建与维护服务器连接配置，不上链、不公开、不托管任何数据。",
+                benefits: {
+                    quickStart: "Quick Start 教程：从 0 到 1 配置私有供应商。",
+                    local: "本地生成连接配置：所有数据仅在本地浏览器处理。",
+                    free: "免费使用，无手续费，无链上写入。"
+                },
+                enterButton: "进入私人工作空间"
+            },
+            entryCommercial: {
+                cardKicker: "商业供应商",
+                cardTitle: "链上商业入口",
+                cardDesc: "连接 MetaMask 并签名登录。商业供应商需要选择正确 Base 网络后，才能执行注册、续费与提现操作。",
+                benefits: {
+                    ownership: "链上权属校验：通过签名的供应商在 Base 上具唯一性。",
+                    settlement: "USDC 收益结算：所有商业交易均通过 USDC 在 Base 结算。",
+                    market: "协议市场入口：一旦上线，您的节点将进入 MeshNet 索引。"
+                },
+                signInButton: "通过 MetaMask 登录",
+                installMetaMask: "安装 MetaMask",
+                networkSelect: "选择网络",
+                mainnet: "主网",
+                sepolia: "Sepolia 测试网",
+                statusChecking: "正在检查钱包环境..."
+            },
+            // Private Workspace
+            privateWorkspace: {
+                backButton: "返回",
+                title: "私人工作空间",
+                modules: {
+                    vps: {
+                        title: "购买与部署 VPS (Server Setup)",
+                        summary: "连接全球算力底座。选择合适的 VPS 服务商是建立高性能供应节点的开端，配合我们的自动化脚本即可一键变身运营商。",
+                        features: {
+                            vendors: "厂商精选：推荐 DigitalOcean(易用)、Vultr(全球)、Hetzner(极致性价比) 等节点。",
+                            script: "自动化脚本：提供 sudo bash install.sh 一键安装包，自动配置内核转发与 BBR。",
+                            env: "运行环境：支持 Ubuntu 22.04+ 及 Debian 11+，最小仅需 512MB 内存即可流畅运行。",
+                            security: "安全性增强：脚本自动配置基础防火墙与 SSH 密钥校验，保护您的服务器不被扫描攻击。"
+                        },
+                        actionButton: "部署指引 (Deploy)"
+                    },
+                    config: {
+                        title: "生成配置文件 (Profile Builder)",
+                        summary: "为个人或特定圈子定制去中心化供应节点配置。生成的 JSON 包含加密基座与 x402 支付元数据，支持多服务器聚合。",
+                        features: {
+                            easy: "零门槛配置：傻瓜式输入 IP、端口、密码，自动生成标准 sing-box 核心配置。",
+                            private: "私密共享：配置仅存本地或由您托管在公网 Gist，通过 URL 拉取即可同步给好友。",
+                            direct: "无中间商：流量不经过 MeshNet 公共市场检索，完全属于您的私有地下网络。",
+                            compatible: "多端兼容：一键生成符合全平台 MeshNet App 规范的统一数据结构。"
+                        },
+                        actionButton: "开始配置 (Build)"
+                    },
+                    import: {
+                        title: "导入 APP (Client Connect)",
+                        summary: "将配置映射到最终物理设备。支持 Windows, macOS, iOS 和 Android 全平台 MeshNet 客户端的快速接入方案。",
+                        features: {
+                            multi: "多平台指引：覆盖桌面端与移动端的详细安装、导入、连接与切换视频/图文教程。",
+                            url: "URL 订阅模式：演示如何将 JSON 托管后，在客户端输入一个 URL 实现永久配置同步。",
+                            monitor: "状态实时监控：教你如何在 App 中查看节点延迟、流量负荷以及 x402 支付结算状态。",
+                            qrcode: "二维码快速共享：生成一次性或持久化的配置二维码，手机一扫即连。"
+                        },
+                        actionButton: "查看教程 (Tutorial)"
+                    },
+                    advanced: {
+                        title: "高级实验室 (Advanced Labs)",
+                        summary: "MeshNet 开发者乐园。如果您精通 sing-box 协议，可以在此手动编写极其复杂的路由规则与分流逻辑。",
+                        features: {
+                            protocol: "协议深钻：在 sing-box 基础上原生注入 x402 支付协议，支持按量、按时、按次等复杂结算。",
+                            routing: "路由自定义：精准控制哪些流量走代理、哪些直连，甚至实现负载均衡与故障切换。",
+                            templates: "模板库：内置常用的全平台通用加速模板、流媒体解锁模板等进阶 JSON 片段。",
+                            validation: "JSON 语法加固：内置校验引擎，确保您的每一行配置都符合 sing-box / MeshNet 标准。"
+                        },
+                        actionButton: "前往实验室 (Labs)"
+                    }
+                },
+                // Config Wizard
+                config: {
+                    parseButton: "📥 解析已有 JSON",
+                    profileId: "唯一标识符 (Profile ID - 按量商业格式)",
+                    idPlaceholder: "请点击右侧生成按钮",
+                    idFormat: "格式：com.mesh.[unique].[version]",
+                    generateId: "生成 ID",
+                    name: "供应商名称 (Name) *",
+                    namePlaceholder: "例如：MyPrivateNode",
+                    description: "简介 (Description)",
+                    descPlaceholder: "这个节点的简短描述 (可选)",
+                    servers: "📡 节点服务器配置 (Server Nodes)",
+                    addServer: "+ 增加服务器",
+                    buyVps: "☁️ 去购买 VPS",
+                    domains: "🌐 代理域名后缀 (Domain Suffixes)",
+                    domainPlaceholder: "输入域名或 URL，如 google.com",
+                    addDomain: "添加",
+                    domainTip: "提示：系统已强制包含官方基础域名。您可以手动添加或使用上方预设。",
+                    generatePreview: "生成并预览 JSON",
+                    cancelButton: "取消并返回列表"
+                },
+                // Domain Presets
+                domainPresets: {
+                    ai: {
+                        title: "AI 实验室增强",
+                        desc: "支持 OpenAI, Claude, 谷歌/GitHub 登录",
+                        icon: "🧠"
+                    },
+                    shop: {
+                        title: "全球电商加速",
+                        desc: "支持 Amazon, Temu...",
+                        icon: "🛍️"
+                    }
+                },
+                // JSON Parser Modal
+                parserModal: {
+                    title: "解析 JSON 配置",
+                    desc: "粘贴您已有的 JSON 文本，系统将尝试自动回填关键字段。",
+                    placeholder: '{ "id": "com.mesh.xyz.v1", ... }',
+                    parseButton: "立即解析",
+                    closeButton: "关闭"
+                },
+                // VPS Guide
+                vpsGuide: {
+                    title: "部署您的节点",
+                    subtitle: "只需简单的 4 步，一键自动化构建您的私有供应节点。",
+                    steps: {
+                        step1: {
+                            title: "选择并购买 VPS (Purchase VPS)",
+                            desc: "前往您喜欢的云服务商注册并部署一台新实例。如果没有偏好，可以从下方选择我们推荐的厂商：",
+                            providers: {
+                                digitalocean: "DigitalOcean",
+                                digitaloceanTag: "最易用的入门级 VPS",
+                                vultr: "Vultr",
+                                vultrTag: "全球机房 · 小时计费",
+                                hetzner: "Hetzner",
+                                hetznerTag: "欧洲性价比之王"
+                            },
+                            recommendations: "购买时**推荐**参考以下系统与配置（因为我们底层的 <strong>sing-box</strong> 内核拥有极强的跨平台兼容性，只要是主流 Linux 发行版均能完美运行）：",
+                            os: "OS (操作系统): 推荐 <strong>Debian 11/12</strong> 或 <strong>Ubuntu 22.04/24.04</strong> （同时也全面支持 CentOS 8+ 等 RPM 系系统）",
+                            plan: "Plan: 基础云计算 (Basic / Regular Performance 即可)",
+                            size: "Size: 512MB 内存或 1GB 内存 (约 $2.5 - $5/月)",
+                            aiPrompt: "💡 遇到困难？尝试复制以下提示词问 AI：",
+                            promptText: "\"我需要购买一台用于搭建 sing-box 节点的 VPS。请帮我对比 DigitalOcean, Vultr 和 Hetzner 的基础套餐价格。我希望系统用 Debian 12，内存 1GB。请给我一份具体的新手购买图文步骤指南。\""
+                        },
+                        step2: {
+                            title: "通过 SSH 连接服务器",
+                            desc: "购买成功后，在 VPS 控制台后台可以找到新服务器的 <strong>IP 地址</strong> 和 <strong>Root 密码</strong>。打开你电脑上的终端 (Terminal) / PowerShell，输入以下命令并回车，按提示输入密码进行连接：",
+                            sshCommand: "ssh root@你的服务器 IP",
+                            aiPrompt: "💡 不知道终端在哪里？尝试复制以下提示词问 AI：",
+                            promptText: "\"我是一个纯粹的新手小白，我使用的是 [Windows 11 / macOS] 系统。我现在有了一台 VPS，IP 是 1.1.1.1，并且有了 root 密码。请一步步教我如何使用自带的 [PowerShell / 终端] 通过 SSH 登录上这台服务器，请告诉我每一步该点哪里、输入什么，详细到回车键。\""
+                        },
+                        step3: {
+                            title: "运行一键安装脚本",
+                            desc: "成功登录服务器后，复制并粘贴下面的全自动安装脚本到终端中执行。脚本会自动安装内核增强 (BBR)、配置防火墙规则，并部署 sing-box。整个过程大约需要 1-2 分钟。",
+                            installScript: "bash <(curl -sL https://meshnetprotocol.github.io/install.sh)",
+                            forceInstall: "bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --force",
+                            forceInstallDesc: "如果系统已存在 sing-box，脚本会提示并退出。需要强制重装并覆盖配置时执行："
+                        },
+                        step4: {
+                            title: "获取连接凭证",
+                            desc: "安装完成后，终端界面会打印出一个带有绿色 <strong>[SUCCESS]</strong> 的表格，其中包含 <b>服务器 IP</b>、<b>服务端口 (Port)</b> 和 <b>随机密码 (Password)</b>。请保管好这三个信息。",
+                            desc2: "如果忘记了端口或密码，可在服务器上再次执行以下命令查看当前配置：",
+                            checkCommand: "bash <(curl -sL https://meshnetprotocol.github.io/install.sh) --show"
+                        }
+                    },
+                    footer: {
+                        toConfig: "我已经拿到了连接凭证，去生成 JSON →",
+                        back: "返回列表"
+                    }
+                },
+                // Import Guide
+                importGuide: {
+                    win: "Windows",
+                    mac: "macOS",
+                    ios: "iOS",
+                    android: "Android",
+                    selectPlatform: "请选择对应的平台查看导入说明。",
+                    hosting: "进阶：通过 URL 托管配置",
+                    hostingDesc: "您可以将生成的 JSON 文件上传至 GitHub Gist、Pastebin 或任何公网对象存储（OSS），然后在 APP 中直接输入该 URL 即可实现多端同步更新。",
+                    backButton: "返回"
+                },
+                // Advanced Editor
+                advanced: {
+                    desc: "基于 <a href=\"https://sing-box.sagernet.org/\" target=\"_blank\" style=\"color:#6ee7d2;\">sing-box</a> 协议，内置 x402 结算模块。请在下方编辑器修改您的原始 JSON 配置。",
+                    checkButton: "检查 JSON",
+                    copyButton: "复制 JSON 数据",
+                    saveButton: "另存为 JSON 文件",
+                    backButton: "返回"
+                },
+                // Global Prompt Modal
+                modal: {
+                    notification: "Notification",
+                    confirm: "确定",
+                    cancel: "取消"
+                }
+            }
         }
     }
 };
@@ -880,15 +1274,37 @@ function setLanguage(lang) {
  * 更新整个页面的语言
  */
 function updatePageLanguage(lang) {
+    console.log('[i18n] Switching to language:', lang);
     const translations = i18n[lang];
+    console.log('[i18n] Translations object loaded:', !!translations);
+    
+    // 检查正确的翻译对象
+    const vendorConsoleKey = lang === 'en' ? 'vendorConsoleEn' : 'vendorConsole';
+    console.log('[i18n] Using translation key:', vendorConsoleKey, 'exists:', !!translations?.[vendorConsoleKey]);
     
     // 更新 HTML lang 属性
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
     
     // 更新所有带 data-i18n 属性的元素
-    document.querySelectorAll('[data-i18n]').forEach(element => {
+    const elements = document.querySelectorAll('[data-i18n]');
+    console.log('[i18n] Found', elements.length, 'elements with data-i18n');
+    
+    elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
-        const text = getTranslation(translations, key);
+        let text = getTranslation(translations, key);
+        
+        // 如果找不到翻译，且是英文模式，尝试使用 vendorConsoleEn
+        if (!text && lang === 'en' && key.startsWith('vendorConsole.')) {
+            const enKey = key.replace('vendorConsole.', 'vendorConsoleEn.');
+            console.log('[i18n] Trying English key:', enKey);
+            text = getTranslation(translations, enKey);
+            if (text) {
+                console.log('[i18n] Found translation for:', enKey);
+            } else {
+                console.warn('[i18n] Still no translation for:', enKey);
+            }
+        }
+        
         if (text) {
             // 对于 input 和 button 标签，需要同时设置 value 和 textContent
             if (element.tagName === 'INPUT' || element.tagName === 'BUTTON') {
@@ -898,6 +1314,8 @@ function updatePageLanguage(lang) {
                 // 对于其他标签，设置 textContent
                 element.textContent = text;
             }
+        } else {
+            console.warn('[i18n] Missing translation for key:', key, 'in language:', lang);
         }
     });
     
@@ -916,6 +1334,14 @@ function updatePageLanguage(lang) {
         const text = getTranslation(translations, key);
         if (text) {
             element.setAttribute('placeholder', text);
+        }
+    });
+    
+    // 更新语言切换器按钮的激活状态
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.id === `lang-${lang}`) {
+            btn.classList.add('active');
         }
     });
     
@@ -938,6 +1364,20 @@ function getTranslation(translations, path) {
 document.addEventListener('DOMContentLoaded', function() {
     const currentLang = getCurrentLanguage();
     updatePageLanguage(currentLang);
+    
+    // 初始化语言切换器按钮事件监听
+    const langZhBtn = document.getElementById('lang-zh');
+    const langEnBtn = document.getElementById('lang-en');
+    
+    console.log('[i18n] Language buttons found:', { zh: !!langZhBtn, en: !!langEnBtn });
+    
+    if (langZhBtn) {
+        langZhBtn.addEventListener('click', () => setLanguage('zh'));
+    }
+    
+    if (langEnBtn) {
+        langEnBtn.addEventListener('click', () => setLanguage('en'));
+    }
 });
 
 /**
@@ -947,5 +1387,7 @@ window.i18n = {
     setLanguage,
     getCurrentLanguage,
     detectLanguage,
+    getTranslation,  // 暴露 getTranslation 函数
+    updatePageLanguage,  // 暴露 updatePageLanguage 函数
     translations: i18n
 };

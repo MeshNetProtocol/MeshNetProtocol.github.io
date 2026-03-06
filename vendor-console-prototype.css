@@ -44,6 +44,44 @@ body {
     linear-gradient(160deg, var(--bg-0), var(--bg-1) 58%, var(--bg-2));
 }
 
+/* Language Switcher */
+.language-switcher {
+  position: absolute;
+  top: 1.2rem;
+  right: 2rem;
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(12, 26, 49, 0.6);
+  border: 1px solid rgba(104, 149, 220, 0.25);
+  border-radius: 8px;
+  padding: 0.4rem;
+  backdrop-filter: blur(8px);
+}
+
+.lang-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: var(--font-ui);
+  color: var(--ink-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--ink-primary);
+}
+
+.lang-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  color: var(--ink-primary);
+  border-color: rgba(59, 130, 246, 0.5);
+  font-weight: 600;
+}
+
 .bg-layer {
   position: fixed;
   inset: 0;
