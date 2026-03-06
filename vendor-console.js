@@ -423,6 +423,13 @@
             if (dom.jsonEditor) dom.jsonEditor.value = JSON.stringify(SINGBOX_TEMPLATE, null, 2);
         });
 
+        // VPS Guide specific - Navigate to config after getting credentials
+        const btnVpsToConfig = document.getElementById("btn-vps-to-config");
+        if (btnVpsToConfig) btnVpsToConfig.addEventListener("click", () => {
+            console.log("[MeshNet] VPS to Config navigation triggered");
+            gotoConfigBtn.click();
+        });
+
         const genIdBtn = document.getElementById("btn-gen-id");
         if (genIdBtn) genIdBtn.addEventListener("click", () => {
             const idInput = document.getElementById("config-id");
