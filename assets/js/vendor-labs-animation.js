@@ -22,12 +22,12 @@
         }
     };
 
-    // Traffic colors
+    // Traffic colors - Figma Design
     const COLORS = {
-        local: '#3b82f6',   // Blue - Local config
-        proxy: '#22c55e',   // Green - Proxy route
-        direct: '#ef4444',  // Red - Direct route
-        inactive: '#475569' // Gray - Inactive
+        direct: '#00ff88',   // Green - Direct connection
+        proxy: '#00d9ff',    // Cyan - VPN/Proxy
+        blocked: '#ff4757',  // Red - Blocked
+        inactive: '#475569'  // Gray - Inactive
     };
 
     /**
@@ -47,7 +47,7 @@
         
         // Initial empty state
         state.config = null;
-        state.trafficStats = { local: 0, proxy: 0, direct: 0 };
+        state.trafficStats = { direct: 0, proxy: 0, blocked: 0 };
         
         // Start animation loop
         animate();
@@ -72,34 +72,34 @@
      */
     function analyzeTraffic(config) {
         if (!config || !config.route || !config.route.rules) {
-            state.trafficStats = { local: 0, proxy: 0, direct: 0 };
+            state.trafficStats = { direct: 0, proxy: 0, blocked: 0 };
             return;
         }
 
         const rules = config.route.rules;
         
         // Count rules by outbound type
-        let localCount = 0;
-        let proxyCount = 0;
         let directCount = 0;
+        let proxyCount = 0;
+        let blockedCount = 0;
 
         rules.forEach(rule => {
             const outbound = rule.outbound || '';
-            if (outbound === 'local' || outbound === 'block') {
-                localCount++;
+            if (outbound === 'direct' || outbound === 'local') {
+                directCount++;
             } else if (outbound === 'proxy' || outbound.includes('proxy')) {
                 proxyCount++;
-            } else if (outbound === 'direct') {
-                directCount++;
+            } else if (outbound === 'block' || outbound === 'reject') {
+                blockedCount++;
             }
         });
 
         // Calculate percentages
-        const total = localCount + proxyCount + directCount || 1;
+        const total = directCount + proxyCount + blockedCount || 1;
         state.trafficStats = {
-            local: Math.round((localCount / total) * 100),
+            direct: Math.round((directCount / total) * 100),
             proxy: Math.round((proxyCount / total) * 100),
-            direct: Math.round((directCount / total) * 100)
+            blocked: Math.round((blockedCount / total) * 100)
         };
     }
 

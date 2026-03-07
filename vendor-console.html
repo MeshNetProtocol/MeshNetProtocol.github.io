@@ -463,33 +463,46 @@
             </div>
           </div>
 
-          <!-- New Professional Dashboard Layout: Tree (Left) + Animation (Right) -->
-          <div class="labs-dashboard-grid">
+          <!-- New Professional Dashboard Layout (Figma Design) -->
+          <!-- Layout: Left Tree (1/3) + Right Top Animation (2/3) + Right Bottom JSON (2/3) -->
+          <div class="labs-figma-grid">
             
             <!-- Left Panel: Configuration Tree -->
-            <div class="labs-tree-panel">
-              <div class="panel-header">
-                <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">🌳 配置结构树</h3>
-                <p style="color: #94a3b8; font-size: 0.75rem; margin: 0;">Click to edit | Real-time structure</p>
+            <div class="labs-tree-panel-figma">
+              <div class="panel-header-figma">
+                <h3 style="color: #00d9ff; font-size: 1rem; margin: 0;">🌳 配置结构</h3>
+                <p style="color: #94a3b8; font-size: 0.75rem; margin: 0;">Click to edit nodes</p>
               </div>
-              <div id="config-tree-container" class="config-tree">
-                <!-- Tree structure will be dynamically generated -->
+              <div id="config-tree-container" class="config-tree"></div>
+            </div>
+            
+            <!-- Right Top: Network Flow Animation -->
+            <div class="labs-animation-panel-figma">
+              <div class="panel-header-figma">
+                <h3 style="color: #00d9ff; font-size: 1rem; margin: 0;">🌊 数据流向动画</h3>
+                <p style="color: #94a3b8; font-size: 0.75rem; margin: 0;">实时展示网络数据的流动路径</p>
+              </div>
+              <div class="animation-wrapper-figma">
+                <!-- Network flow will be rendered here by JS -->
               </div>
             </div>
             
-            <!-- Right Panel: Traffic Flow Animation -->
-            <div class="labs-animation-panel">
-              <div class="panel-header">
-                <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">🌊 流量可视化</h3>
-                <span class="live-badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.35rem 0.85rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; animation: pulse 2s ease-in-out infinite; box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">🔴 LIVE</span>
-              </div>
-              <div class="animation-wrapper">
-                <canvas id="flow-animation-canvas"></canvas>
-                <div class="flow-legend">
-                  <span class="legend-item local">🟦 本地配置</span>
-                  <span class="legend-item proxy">🟩 代理路由</span>
-                  <span class="legend-item direct">🟥 直连路由</span>
+            <!-- Right Bottom: JSON Preview -->
+            <div class="labs-json-panel-figma">
+              <div class="panel-header-figma">
+                <h3 style="color: #00d9ff; font-size: 1rem; margin: 0;">📄 JSON 配置预览</h3>
+                <div class="json-actions-figma">
+                  <button id="btn-copy-json" class="btn-action-figma">📋 复制</button>
+                  <button id="btn-download-json" class="btn-action-figma">💾 下载</button>
                 </div>
+              </div>
+              <div class="json-content-figma">
+                <pre id="json-preview"></pre>
+              </div>
+              <div class="json-stats-figma">
+                <span>大小：<span id="json-size">0</span> bytes</span>
+                <span>行数：<span id="json-lines">0</span></span>
+                <span>节点数：<span id="json-nodes">0</span></span>
               </div>
             </div>
             
@@ -503,9 +516,13 @@
 
   <!-- Lab Scripts -->
   <link rel="stylesheet" href="assets/css/vendor-labs-enhanced.css">
-  <link rel="stylesheet" href="assets/css/vendor-labs-dashboard.css">
-  <script src="assets/js/vendor-labs-tree.js"></script>
-  <script src="assets/js/vendor-labs-animation.js"></script>
+  <link rel="stylesheet" href="assets/css/vendor-labs-figma.css">
+  <link rel="stylesheet" href="assets/css/vendor-labs-tree-figma.css">
+  <link rel="stylesheet" href="assets/css/vendor-labs-network-flow.css">
+  <script src="assets/js/vendor-labs-tree-figma.js"></script>
+  <script src="assets/js/vendor-labs-network-flow.js"></script>
+  <!-- Removed old animation module - replaced by network-flow -->
+  <!-- <script src="assets/js/vendor-labs-animation.js"></script> -->
   <script src="assets/js/vendor-labs-json.js"></script>
   <script>
     // Initialize the lab when DOM is ready
@@ -515,10 +532,15 @@
         window.LabsTree.init();
       }
       
-      // Initialize Animation
-      if (window.LabsAnimation) {
-        window.LabsAnimation.init();
+      // Initialize Network Flow (replaces old Animation module)
+      if (window.LabsNetworkFlow) {
+        window.LabsNetworkFlow.init();
       }
+      
+      // Skip old Animation module - using network-flow instead
+      // if (window.LabsAnimation) {
+      //   window.LabsAnimation.init();
+      // }
       
       // Initialize JSON Display
       if (window.LabsJson) {
@@ -534,15 +556,14 @@
       // Listen for config changes
       window.addEventListener('config-updated', (e) => {
         const config = e.detail;
-        if (window.LabsAnimation) {
-          window.LabsAnimation.updateConfig(config);
+        // Update Network Flow (replaces old Animation module)
+        if (window.LabsNetworkFlow && window.LabsNetworkFlow.setConfig) {
+          window.LabsNetworkFlow.setConfig(config);
         }
         if (window.LabsJson) {
           window.LabsJson.render(config);
         }
-        if (window.LabsTree) {
-          window.LabsTree.update(config);
-        }
+        // Tree updates automatically via event listener
       });
       
       // Function to load sample configuration

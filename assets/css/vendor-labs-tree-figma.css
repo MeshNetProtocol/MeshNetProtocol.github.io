@@ -1,0 +1,30 @@
+/**
+ * Configuration Tree Styles - Figma Design
+ * Direct copy from Figma's config-tree.tsx styling
+ */
+
+/* Tree Container */
+.config-tree {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Custom Scrollbar */
+.config-tree::-webkit-scrollbar {
+  width: 8px;
+}
+
+.config-tree::-webkit-scrollbar-track {
+  background: rgba(26, 27, 46, 0.3);
+}
+
+.config-tree::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #00d9ff, #0066ff);
+  border-radius: 4px;
+}
+
+.config-tree::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #00e5ff, #0070ff);
+}
+
+/* Figma uses inline Tailwind-style classes, minimal custom CSS needed */

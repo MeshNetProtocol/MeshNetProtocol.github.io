@@ -479,7 +479,8 @@
             setTimeout(() => {
                 if (window.LabsForm) window.LabsForm.init();
                 if (window.LabsPreview) window.LabsPreview.init();
-                if (window.LabsAnimation) window.LabsAnimation.init();
+                // Skip old Animation module - using network-flow instead
+                // if (window.LabsAnimation) window.LabsAnimation.init();
             }, 100);
         });
 

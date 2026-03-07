@@ -68,9 +68,34 @@
             const highlighted = syntaxHighlight(jsonString);
             
             state.previewElement.innerHTML = highlighted;
+            
+            // Update stats
+            updateStats(jsonString, config);
         } catch (error) {
             console.error("[Labs] Error rendering JSON:", error);
             state.previewElement.textContent = 'Error rendering JSON configuration';
+        }
+    }
+    
+    /**
+     * Update JSON stats display
+     */
+    function updateStats(jsonString, config) {
+        const sizeElement = document.getElementById('json-size');
+        const linesElement = document.getElementById('json-lines');
+        const nodesElement = document.getElementById('json-nodes');
+        
+        if (sizeElement) {
+            sizeElement.textContent = new Blob([jsonString]).size;
+        }
+        
+        if (linesElement) {
+            linesElement.textContent = jsonString.split('\n').length;
+        }
+        
+        if (nodesElement && config) {
+            // Count top-level nodes
+            nodesElement.textContent = Object.keys(config).length;
         }
     }
 
