@@ -154,44 +154,50 @@
         const { tagsInput, tagsList } = state.dom;
         
         function renderTags() {
+            if (!tagsList) return;
             tagsList.innerHTML = '';
             state.formData.basic.tags.forEach((tag, index) => {
                 const chip = document.createElement('div');
                 chip.className = 'tag-chip';
                 chip.innerHTML = `
                     <span>${tag}</span>
-                    <button type="button" onclick="window.LabsForm.removeTag(${index})">×</button>
+                    <button type="button" onclick="removeTag(${index})">×</button>
                 `;
                 tagsList.appendChild(chip);
             });
         }
 
-        tagsInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const value = tagsInput.value.trim();
-                if (value && !state.formData.basic.tags.includes(value)) {
-                    state.formData.basic.tags.push(value);
-                    state.formData.basic.tags = [...state.formData.basic.tags]; // trigger update
-                    tagsInput.value = '';
-                    renderTags();
-                    window.dispatchEvent(new CustomEvent('labs-form-updated'));
+        if (tagsInput) {
+            tagsInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const value = tagsInput.value.trim();
+                    if (value && !state.formData.basic.tags.includes(value)) {
+                        state.formData.basic.tags.push(value);
+                        state.formData.basic.tags = [...state.formData.basic.tags]; // trigger update
+                        tagsInput.value = '';
+                        renderTags();
+                        window.dispatchEvent(new CustomEvent('labs-form-updated'));
+                    }
                 }
-            }
-        });
-
-        window.LabsForm.removeTag = (index) => {
-            state.formData.basic.tags.splice(index, 1);
-            renderTags();
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        };
+            });
+        }
 
         return renderTags;
+    }
+
+    // ===== Tag Helper Function =====
+    function removeTag(index) {
+        state.formData.basic.tags.splice(index, 1);
+        state.formData.basic.tags = [...state.formData.basic.tags]; // trigger re-render
+        window.dispatchEvent(new CustomEvent('labs-form-updated'));
     }
 
     // ===== Dynamic List Renderers =====
     function renderDNSServers() {
         const container = state.dom.dnsServersContainer;
+        if (!container) return;
+        
         container.innerHTML = '';
         
         state.formData.dns.servers.forEach((server, index) => {
@@ -240,19 +246,20 @@
         });
     }
 
-    window.LabsForm.addDNSServer = () => {
+    // ===== DNS Helper Functions (defined but not executed yet) =====
+    function addDNSServer() {
         state.formData.dns.servers.push({ tag: `dns-${state.formData.dns.servers.length + 1}`, address: '', detour: 'direct' });
         renderDNSServers();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.removeDNSServer = (index) => {
+    function removeDNSServer(index) {
         state.formData.dns.servers.splice(index, 1);
         renderDNSServers();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.moveDNSServer = (index, direction) => {
+    function moveDNSServer(index, direction) {
         const newIndex = index + direction;
         if (newIndex >= 0 && newIndex < state.formData.dns.servers.length) {
             [state.formData.dns.servers[index], state.formData.dns.servers[newIndex]] = 
@@ -260,26 +267,15 @@
             renderDNSServers();
             window.dispatchEvent(new CustomEvent('labs-form-updated'));
         }
-    };
+    }
 
-    window.LabsForm.updateDNSServer = (index, field, value) => {
+    function updateDNSServer(index, field, value) {
         state.formData.dns.servers[index][field] = value;
         if (field === 'tag') {
             renderDNSServers(); // refresh dropdown
         }
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
-
-    // Initialize DNS button
-    state.dom.btnAddDns.addEventListener('click', window.LabsForm.addDNSServer);
-    state.dom.dnsFinal.addEventListener('change', (e) => {
-        state.formData.dns.final = e.target.value;
-        window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    });
-    state.dom.dnsStrategy.addEventListener('change', (e) => {
-        state.formData.dns.strategy = e.target.value;
-        window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    });
+    }
 
     // ===== DNS Rules Renderer =====
     function renderDnsRules() {
@@ -321,19 +317,20 @@
         });
     }
 
-    window.LabsForm.addDnsRule = () => {
+    // ===== DNS Rule Helper Functions =====
+    function addDnsRule() {
         state.formData.dns.rules.push({ rule_set: '', server: state.formData.dns.final });
         renderDnsRules();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.removeDnsRule = (index) => {
+    function removeDnsRule(index) {
         state.formData.dns.rules.splice(index, 1);
         renderDnsRules();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.moveDnsRule = (index, direction) => {
+    function moveDnsRule(index, direction) {
         const newIndex = index + direction;
         if (newIndex >= 0 && newIndex < state.formData.dns.rules.length) {
             [state.formData.dns.rules[index], state.formData.dns.rules[newIndex]] = 
@@ -341,12 +338,12 @@
             renderDnsRules();
             window.dispatchEvent(new CustomEvent('labs-form-updated'));
         }
-    };
+    }
 
-    window.LabsForm.updateDnsRule = (index, field, value) => {
+    function updateDnsRule(index, field, value) {
         state.formData.dns.rules[index][field] = value;
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
     // Initialize DNS Rule button
     if (state.dom.btnAddDnsRule) {
@@ -426,7 +423,8 @@
         });
     }
 
-    window.LabsForm.addRuleSet = () => {
+    // ===== Rule Set Helper Functions =====
+    function addRuleSet() {
         state.formData.route.rule_sets.push({
             type: 'remote',
             tag: `rule-set-${state.formData.route.rule_sets.length + 1}`,
@@ -437,15 +435,15 @@
         });
         renderRuleSets();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.removeRuleSet = (index) => {
+    function removeRuleSet(index) {
         state.formData.route.rule_sets.splice(index, 1);
         renderRuleSets();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.moveRuleSet = (index, direction) => {
+    function moveRuleSet(index, direction) {
         const newIndex = index + direction;
         if (newIndex >= 0 && newIndex < state.formData.route.rule_sets.length) {
             [state.formData.route.rule_sets[index], state.formData.route.rule_sets[newIndex]] = 
@@ -453,13 +451,13 @@
             renderRuleSets();
             window.dispatchEvent(new CustomEvent('labs-form-updated'));
         }
-    };
+    }
 
-    window.LabsForm.updateRuleSet = (index, field, value) => {
+    function updateRuleSet(index, field, value) {
         state.formData.route.rule_sets[index][field] = value;
         renderRuleSets(); // Re-render to show/hide fields based on type
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
     // Initialize Rule Set button
     if (state.dom.btnAddRuleSet) {
@@ -469,6 +467,8 @@
     // ===== Inbounds Renderer =====
     function renderInbounds() {
         const container = state.dom.inboundsContainer;
+        if (!container) return;
+        
         container.innerHTML = '';
         
         state.formData.inbounds.forEach((inbound, index) => {
@@ -539,7 +539,8 @@
         });
     }
 
-    window.LabsForm.addInbound = () => {
+    // ===== Inbound Helper Functions =====
+    function addInbound() {
         state.formData.inbounds.push({
             type: 'tun',
             tag: `tun-${state.formData.inbounds.length + 1}`,
@@ -550,15 +551,15 @@
         });
         renderInbounds();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.removeInbound = (index) => {
+    function removeInbound(index) {
         state.formData.inbounds.splice(index, 1);
         renderInbounds();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.moveInbound = (index, direction) => {
+    function moveInbound(index, direction) {
         const newIndex = index + direction;
         if (newIndex >= 0 && newIndex < state.formData.inbounds.length) {
             [state.formData.inbounds[index], state.formData.inbounds[newIndex]] = 
@@ -566,29 +567,36 @@
             renderInbounds();
             window.dispatchEvent(new CustomEvent('labs-form-updated'));
         }
-    };
+    }
 
-    window.LabsForm.updateInboundType = (index, value) => {
+    function updateInboundType(index, value) {
         state.formData.inbounds[index].type = value;
         renderInbounds(); // re-render to show type-specific fields
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.updateInbound = (index, field, value) => {
+    function updateInbound(index, field, value) {
         state.formData.inbounds[index][field] = value;
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.updateInboundAddress = (index, value) => {
+    function updateInboundAddress(index, value) {
         state.formData.inbounds[index].address = value.split(',').map(s => s.trim()).filter(s => s);
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    state.dom.btnAddInbound.addEventListener('click', window.LabsForm.addInbound);
+    // Initialize Inbound button (will be called in init())
+    function initInboundButton() {
+        if (state.dom.btnAddInbound) {
+            state.dom.btnAddInbound.addEventListener('click', addInbound);
+        }
+    }
 
     // ===== Outbounds Renderer =====
     function renderOutbounds() {
         const container = state.dom.outboundsContainer;
+        if (!container) return;
+        
         container.innerHTML = '';
         
         state.formData.outbounds.forEach((outbound, index) => {
@@ -634,7 +642,7 @@
                     </div>
                     <div class="form-group">
                         <label>Port *</label>
-                        <input type="number" class="form-control" value="${outbound.server_port}" 
+                        <input type="number" class="form-control" value="${typeof outbound.server_port === 'number' ? outbound.server_port : ''}" 
                                onchange="window.LabsForm.updateOutbound(${index}, 'server_port', this.value)" placeholder="<PORT>" required>
                     </div>
                 </div>
@@ -751,7 +759,8 @@
         });
     }
 
-    window.LabsForm.addOutbound = () => {
+    // ===== Outbound Helper Functions =====
+    function addOutbound() {
         state.formData.outbounds.push({
             type: 'shadowsocks',
             tag: `node-${state.formData.outbounds.length + 1}`,
@@ -762,15 +771,15 @@
         });
         renderOutbounds();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.removeOutbound = (index) => {
+    function removeOutbound(index) {
         state.formData.outbounds.splice(index, 1);
         renderOutbounds();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.moveOutbound = (index, direction) => {
+    function moveOutbound(index, direction) {
         const newIndex = index + direction;
         if (newIndex >= 0 && newIndex < state.formData.outbounds.length) {
             [state.formData.outbounds[index], state.formData.outbounds[newIndex]] = 
@@ -778,9 +787,9 @@
             renderOutbounds();
             window.dispatchEvent(new CustomEvent('labs-form-updated'));
         }
-    };
+    }
 
-    window.LabsForm.updateOutboundType = (index, value) => {
+    function updateOutboundType(index, value) {
         const newOutbound = { type: value, tag: `outbound-${index + 1}` };
         if (value === 'shadowsocks') {
             Object.assign(newOutbound, {
@@ -814,27 +823,34 @@
         state.formData.outbounds[index] = newOutbound;
         renderOutbounds();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.updateOutbound = (index, field, value) => {
+    function updateOutbound(index, field, value) {
         if (field === 'server_port') {
             value = parseInt(value) || value;
         }
         state.formData.outbounds[index][field] = value;
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.updateSelectorOutbounds = (index, value) => {
+    function updateSelectorOutbounds(index, value) {
         state.formData.outbounds[index].outbounds = value.split(',').map(s => s.trim()).filter(s => s);
         renderOutbounds(); // refresh dropdown
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    state.dom.btnAddOutbound.addEventListener('click', window.LabsForm.addOutbound);
+    // Initialize Outbound button (will be called in init())
+    function initOutboundButton() {
+        if (state.dom.btnAddOutbound) {
+            state.dom.btnAddOutbound.addEventListener('click', addOutbound);
+        }
+    }
 
     // ===== Route Rules Renderer =====
     function renderRouteRules() {
         const container = state.dom.routeRulesContainer;
+        if (!container) return;
+        
         container.innerHTML = '';
         
         state.formData.route.rules.forEach((rule, index) => {
@@ -957,22 +973,23 @@
         return 'protocol';
     }
 
-    window.LabsForm.addRouteRule = () => {
+    // ===== Route Rule Helper Functions =====
+    function addRouteRule() {
         state.formData.route.rules.push({
             protocol: 'dns',
             action: 'hijack-dns'
         });
         renderRouteRules();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.removeRouteRule = (index) => {
+    function removeRouteRule(index) {
         state.formData.route.rules.splice(index, 1);
         renderRouteRules();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.moveRouteRule = (index, direction) => {
+    function moveRouteRule(index, direction) {
         const newIndex = index + direction;
         if (newIndex >= 0 && newIndex < state.formData.route.rules.length) {
             [state.formData.route.rules[index], state.formData.route.rules[newIndex]] = 
@@ -980,9 +997,9 @@
             renderRouteRules();
             window.dispatchEvent(new CustomEvent('labs-form-updated'));
         }
-    };
+    }
 
-    window.LabsForm.updateRouteRuleType = (index, value) => {
+    function updateRouteRuleType(index, value) {
         // Clear existing rule properties
         const newRule = {};
         if (value === 'protocol') {
@@ -1010,84 +1027,111 @@
         state.formData.route.rules[index] = newRule;
         renderRouteRules();
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.updateRouteRule = (index, field, value) => {
+    function updateRouteRule(index, field, value) {
         state.formData.route.rules[index][field] = value;
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.updateRouteRuleDomainSuffix = (index, value) => {
+    function updateRouteRuleDomainSuffix(index, value) {
         state.formData.route.rules[index].domain_suffix = value.split(',').map(s => s.trim()).filter(s => s);
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.updateRouteRuleDomainKeyword = (index, value) => {
+    function updateRouteRuleDomainKeyword(index, value) {
         state.formData.route.rules[index].domain_keyword = value.split(',').map(s => s.trim()).filter(s => s);
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
+    }
 
-    window.LabsForm.updateRouteRuleIPCIDR = (index, value) => {
+    function updateRouteRuleIPCIDR(index, value) {
         state.formData.route.rules[index].ip_cidr = value.split(',').map(s => s.trim()).filter(s => s);
         window.dispatchEvent(new CustomEvent('labs-form-updated'));
-    };
-
-    state.dom.btnAddRoute.addEventListener('click', window.LabsForm.addRouteRule);
+    }
+    
+    // Initialize Route Rule button (will be called in init())
+    function initRouteRuleButton() {
+        if (state.dom.btnAddRoute) {
+            state.dom.btnAddRoute.addEventListener('click', addRouteRule);
+        }
+    }
 
     // ===== Main Form Bindings =====
     function bindBasicForm() {
         const { providerId, configName, configDesc, configAuthor, visibility, status, 
                 logLevel, logTimestamp, logOutput, routeFinal, autoDetectInterface } = state.dom;
 
-        // Basic Info
-        providerId.addEventListener('input', (e) => {
-            state.formData.basic.provider_id = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
-        configName.addEventListener('input', (e) => {
-            state.formData.basic.name = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
-        configDesc.addEventListener('input', (e) => {
-            state.formData.basic.description = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
-        configAuthor.addEventListener('input', (e) => {
-            state.formData.basic.author = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
-        visibility.addEventListener('change', (e) => {
-            state.formData.basic.visibility = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
-        status.addEventListener('change', (e) => {
-            state.formData.basic.status = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
+        // Basic Info - with null checks
+        if (providerId) {
+            providerId.addEventListener('input', (e) => {
+                state.formData.basic.provider_id = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (configName) {
+            configName.addEventListener('input', (e) => {
+                state.formData.basic.name = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (configDesc) {
+            configDesc.addEventListener('input', (e) => {
+                state.formData.basic.description = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (configAuthor) {
+            configAuthor.addEventListener('input', (e) => {
+                state.formData.basic.author = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (visibility) {
+            visibility.addEventListener('change', (e) => {
+                state.formData.basic.visibility = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (status) {
+            status.addEventListener('change', (e) => {
+                state.formData.basic.status = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
 
-        // Log
-        logLevel.addEventListener('change', (e) => {
-            state.formData.log.level = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
-        logTimestamp.addEventListener('change', (e) => {
-            state.formData.log.timestamp = e.target.checked;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
-        logOutput.addEventListener('input', (e) => {
-            state.formData.log.output = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
+        // Log - with null checks
+        if (logLevel) {
+            logLevel.addEventListener('change', (e) => {
+                state.formData.log.level = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (logTimestamp) {
+            logTimestamp.addEventListener('change', (e) => {
+                state.formData.log.timestamp = e.target.checked;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (logOutput) {
+            logOutput.addEventListener('input', (e) => {
+                state.formData.log.output = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
 
-        // Route
-        routeFinal.addEventListener('change', (e) => {
-            state.formData.route.final = e.target.value;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
-        autoDetectInterface.addEventListener('change', (e) => {
-            state.formData.route.auto_detect_interface = e.target.checked;
-            window.dispatchEvent(new CustomEvent('labs-form-updated'));
-        });
+        // Route - with null checks
+        if (routeFinal) {
+            routeFinal.addEventListener('change', (e) => {
+                state.formData.route.final = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (autoDetectInterface) {
+            autoDetectInterface.addEventListener('change', (e) => {
+                state.formData.route.auto_detect_interface = e.target.checked;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
     }
 
     // ===== Public API =====
@@ -1100,10 +1144,12 @@
     // ===== Initialization =====
     function init() {
         console.log("[Labs] Initializing Form Handler...");
-        initDom();
         
-        // Generate form sections HTML
+        // Generate form sections HTML first
         generateFormSections();
+        
+        // Then initialize DOM elements
+        initDom();
         
         const renderTags = initTagsInput();
         renderTags();
@@ -1114,6 +1160,29 @@
         renderOutbounds();
         renderRouteRules();
         bindBasicForm();
+        
+        // Initialize DNS button - only if elements exist
+        if (state.dom.btnAddDns) {
+            state.dom.btnAddDns.addEventListener('click', window.LabsForm.addDNSServer);
+        }
+        if (state.dom.dnsFinal) {
+            state.dom.dnsFinal.addEventListener('change', (e) => {
+                state.formData.dns.final = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        if (state.dom.dnsStrategy) {
+            state.dom.dnsStrategy.addEventListener('change', (e) => {
+                state.formData.dns.strategy = e.target.value;
+                window.dispatchEvent(new CustomEvent('labs-form-updated'));
+            });
+        }
+        
+        // Initialize other buttons
+        initInboundButton();
+        initOutboundButton();
+        initRouteRuleButton();
+        
         console.log("[Labs] Form Handler ready!");
     }
 

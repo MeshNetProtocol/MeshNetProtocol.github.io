@@ -463,45 +463,55 @@
             </div>
           </div>
 
-          <!-- Three Column Layout -->
-          <div class="labs-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <!-- Left Column: Form Editor -->
+          <!-- Three Column Layout: Tree | Form | River -->
+          <div class="labs-grid" style="display: grid; grid-template-columns: 350px 1fr 450px; gap: 1.5rem; align-items: start;">
+            <!-- Left Column: Configuration Tree -->
+            <div class="labs-tree-panel" style="background: #1e293b; border-radius: 0.75rem; padding: 1.5rem; border: 1px solid #334155; position: sticky; top: 1rem; max-height: calc(100vh - 200px); overflow-y: auto;">
+              <div class="panel-header" style="padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 2px solid #334155;">
+                <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">🌳 配置结构树</h3>
+                <p style="color: #94a3b8; font-size: 0.75rem; margin: 0.25rem 0 0;">Click to edit | Real-time structure</p>
+              </div>
+              <div id="config-tree-container" class="config-tree">
+                <!-- Tree structure will be dynamically generated -->
+              </div>
+            </div>
+
+            <!-- Middle Column: Form Editor -->
             <div class="labs-form-panel" style="background: #1e293b; border-radius: 0.75rem; padding: 1.5rem; border: 1px solid #334155;">
+              <div class="panel-header" style="padding-bottom: 1rem; margin-bottom: 1.5rem; border-bottom: 2px solid #334155;">
+                <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">📝 配置编辑器</h3>
+                <p style="color: #94a3b8; font-size: 0.75rem; margin: 0.25rem 0 0;">Edit configuration parameters</p>
+              </div>
               <form id="config-form" class="config-form">
                 <!-- Content will be dynamically generated -->
               </form>
             </div>
 
-            <!-- Right Column: Preview & Animation -->
-            <div class="labs-preview-panel" style="display: flex; flex-direction: column; gap: 1.5rem;">
-              <!-- JSON Preview Panel -->
-              <div class="panel json-preview-panel" style="background: #1e293b; border-radius: 0.75rem; border: 1px solid #334155; flex: 1; min-height: 400px;">
-                <div class="panel-header" style="padding: 1.25rem 1.5rem; background: #0f172a; border-bottom: 2px solid #334155; border-radius: 0.75rem 0.75rem 0 0;">
-                  <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">👁️ 实时 JSON 预览</h3>
-                  <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.5rem 0 0;">只读 - 自动同步表单编辑结果</p>
-                </div>
-                <div class="panel-body" style="padding: 0;">
-                  <pre id="json-preview" class="json-preview" style="margin: 0; padding: 1.5rem; height: calc(100% - 70px); overflow: auto; background: #1e293b; color: #e2e8f0; font-family: 'Monaco', 'Menlo', monospace; font-size: 0.85rem;"><code></code></pre>
-                </div>
+            <!-- Right Column: River Flow Visualization -->
+            <div class="labs-river-panel" style="background: #1e293b; border-radius: 0.75rem; padding: 0; border: 1px solid #334155; display: flex; flex-direction: column;">
+              <div class="panel-header" style="padding: 1.25rem 1.5rem; background: #0f172a; border-bottom: 2px solid #334155; border-radius: 0.75rem 0.75rem 0 0;">
+                <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">🌊 流量河流可视化</h3>
+                <p style="color: #94a3b8; font-size: 0.75rem; margin: 0.5rem 0 0;">Real-time packet flow animation</p>
               </div>
-
-              <!-- Network Animation Panel -->
-              <div class="panel animation-panel" style="background: #1e293b; border-radius: 0.75rem; border: 1px solid #334155; flex: 1; min-height: 400px;">
-                <div class="panel-header" style="padding: 1.25rem 1.5rem; background: #0f172a; border-bottom: 2px solid #334155; border-radius: 0.75rem 0.75rem 0 0;">
-                  <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">🌐 网络流量动画</h3>
-                  <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.5rem 0 0;">可视化路由决策过程</p>
+              <div class="panel-body" style="padding: 1.5rem; flex: 1; display: flex; flex-direction: column;">
+                <div id="river-flow-container" style="flex: 1; position: relative; min-height: 500px;">
+                  <!-- SVG River Flow will be dynamically generated -->
+                  <svg id="river-flow-svg" width="100%" height="100%" style="background: #0f172a; border-radius: 0.5rem;">
+                    <!-- Flow paths and nodes will be drawn here -->
+                  </svg>
                 </div>
-                <div class="panel-body" style="padding: 1.5rem;">
-                  <canvas id="topology-canvas" style="width: 100%; height: 320px; background: #0f172a; border-radius: 0.5rem;"></canvas>
-                  <div class="animation-legend" style="display: flex; gap: 1.5rem; margin-top: 1rem; justify-content: center;">
-                    <div class="legend-item" style="display: flex; align-items: center; gap: 0.5rem;">
-                      <div class="legend-color direct" style="width: 20px; height: 4px; background: #ef4444; border-radius: 2px;"></div>
-                      <span style="color: #94a3b8; font-size: 0.85rem;">直连</span>
-                    </div>
-                    <div class="legend-item" style="display: flex; align-items: center; gap: 0.5rem;">
-                      <div class="legend-color proxy" style="width: 20px; height: 4px; background: #22c55e; border-radius: 2px;"></div>
-                      <span style="color: #94a3b8; font-size: 0.85rem;">代理</span>
-                    </div>
+                <div class="river-legend" style="display: flex; gap: 1.5rem; margin-top: 1rem; justify-content: center; padding-top: 1rem; border-top: 1px solid #334155;">
+                  <div class="legend-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="legend-color dns" style="width: 20px; height: 4px; background: #3b82f6; border-radius: 2px;"></div>
+                    <span style="color: #94a3b8; font-size: 0.85rem;">DNS Query</span>
+                  </div>
+                  <div class="legend-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="legend-color proxy" style="width: 20px; height: 4px; background: #22c55e; border-radius: 2px;"></div>
+                    <span style="color: #94a3b8; font-size: 0.85rem;">Proxy Route</span>
+                  </div>
+                  <div class="legend-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="legend-color direct" style="width: 20px; height: 4px; background: #ef4444; border-radius: 2px;"></div>
+                    <span style="color: #94a3b8; font-size: 0.85rem;">Direct Route</span>
                   </div>
                 </div>
               </div>
@@ -516,20 +526,21 @@
 
   <!-- Lab Scripts -->
   <link rel="stylesheet" href="assets/css/vendor-labs-enhanced.css">
+  <link rel="stylesheet" href="assets/css/vendor-labs-tree-river.css">
+  <script src="assets/js/vendor-labs-tree.js"></script>
+  <script src="assets/js/vendor-labs-river.js"></script>
   <script src="assets/js/vendor-labs-form.js"></script>
-  <script src="assets/js/vendor-labs-preview.js"></script>
-  <script src="assets/js/vendor-labs-animation.js"></script>
   <script>
     // Initialize the lab when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
+      if (window.LabsTree) {
+        window.LabsTree.render({});
+      }
+      if (window.LabsRiver) {
+        window.LabsRiver.init();
+      }
       if (window.LabsForm) {
         window.LabsForm.init();
-      }
-      if (window.LabsPreview) {
-        window.LabsPreview.init();
-      }
-      if (window.LabsAnimation) {
-        window.LabsAnimation.init();
       }
     });
   </script>

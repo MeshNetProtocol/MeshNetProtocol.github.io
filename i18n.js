@@ -1106,7 +1106,11 @@ const i18n = {
                             protocol: "协议深钻：在 sing-box 基础上原生注入 x402 支付协议，支持按量、按时、按次等复杂结算。",
                             routing: "路由自定义：精准控制哪些流量走代理、哪些直连，甚至实现负载均衡与故障切换。",
                             templates: "模板库：内置常用的全平台通用加速模板、流媒体解锁模板等进阶 JSON 片段。",
-                            validation: "JSON 语法加固：内置校验引擎，确保您的每一行配置都符合 sing-box / MeshNet 标准。"
+                            validation: "JSON 语法加固：内置校验引擎，确保您的每一行配置都符合 sing-box / MeshNet 标准。",
+                            form: "表单编辑：每个参数都有专属输入框，实时生成 JSON 配置",
+                            preview: "实时预览：编辑时即可查看配置输出，支持语法高亮",
+                            animation: "网络动画：可视化流量路由，红色直连/绿色代理",
+                            docs: "官方文档：内置 sing-box 官方文档链接，随时查阅"
                         },
                         actionButton: "前往实验室 (Labs)"
                     }

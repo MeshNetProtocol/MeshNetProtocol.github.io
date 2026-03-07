@@ -13,6 +13,11 @@
         code: document.querySelector('#json-preview code'),
         status: document.getElementById('json-status')
     };
+    
+    // Check if elements exist
+    if (!dom.preview || !dom.code) {
+        console.warn("[Labs] Preview elements not found, module will be limited");
+    }
 
     // ===== JSON Generator =====
     function generateConfig() {
@@ -194,21 +199,35 @@
             const jsonString = JSON.stringify(config, null, 2);
             
             // Update content with syntax highlighting
-            dom.code.innerHTML = syntaxHighlight(jsonString);
+            if (dom.code) {
+                dom.code.innerHTML = syntaxHighlight(jsonString);
+            }
             
             // Update status
-            dom.status.textContent = '✅ 语法正确';
-            dom.status.classList.remove('error');
+            if (dom.status) {
+                dom.status.textContent = '✅ Valid JSON';
+                dom.status.classList.remove('error');
+            }
             
-            // Dispatch event for animation module
+            // Dispatch event for tree and river modules
             window.dispatchEvent(new CustomEvent('labs-config-updated', { 
                 detail: { config, jsonString } 
             }));
             
+            // Dispatch event for form updates (to update tree/river)
+            window.dispatchEvent(new CustomEvent('labs-form-updated', { 
+                detail: { config, formData: window.LabsForm ? window.LabsForm.getState() : null } 
+            }));
+            
         } catch (error) {
-            dom.code.textContent = `Error generating config:\n${error.message}`;
-            dom.status.textContent = '❌ 格式错误';
-            dom.status.classList.add('error');
+            if (dom.code) {
+                dom.code.textContent = `Error generating config:\n${error.message}`;
+            }
+            if (dom.status) {
+                dom.status.textContent = '❌ Format Error';
+                dom.status.classList.add('error');
+            }
+            console.error('[Labs] Config generation error:', error);
         }
     }
 
@@ -294,9 +313,14 @@
     }
 
     // ===== Event Listeners =====
+    let isUpdating = false;
+    
     window.addEventListener('labs-form-updated', () => {
+        if (isUpdating) return; // Prevent infinite loop
         console.log("[Preview] Form updated, refreshing preview...");
+        isUpdating = true;
         updatePreview();
+        setTimeout(() => { isUpdating = false; }, 100);
     });
 
     document.getElementById('btn-copy-config')?.addEventListener('click', copyConfig);

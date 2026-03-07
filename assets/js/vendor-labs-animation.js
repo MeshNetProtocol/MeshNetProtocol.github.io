@@ -9,7 +9,14 @@
     console.log("[Labs] Loading Animation Module...");
 
     const canvas = document.getElementById('topology-canvas');
-    const ctx = canvas.getContext('2d');
+    let ctx = null;
+    
+    // Check if canvas exists
+    if (!canvas) {
+        console.warn("[Labs] Topology canvas not found, animation module will be disabled");
+    } else {
+        ctx = canvas.getContext('2d');
+    }
     
     // Animation state
     const animationState = {
@@ -277,8 +284,19 @@
     function init() {
         console.log("[Labs] Initializing Animation Module...");
         
+        // Check if canvas exists
+        if (!canvas || !ctx) {
+            console.warn("[Labs] Canvas not available, skipping animation initialization");
+            return;
+        }
+        
         // Set canvas size
         const panel = canvas.parentElement;
+        if (!panel) {
+            console.warn("[Labs] Canvas parent element not found");
+            return;
+        }
+        
         canvas.width = panel.clientWidth;
         canvas.height = 400;
         

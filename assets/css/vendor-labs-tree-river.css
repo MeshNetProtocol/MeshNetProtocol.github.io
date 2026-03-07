@@ -1,0 +1,282 @@
+/**
+ * MeshNetProtocol - Sing-Box Configuration Lab
+ * Tree View and River Flow Styles
+ */
+
+/* ===== Configuration Tree Styles ===== */
+.config-tree {
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.tree-root {
+    position: relative;
+}
+
+.tree-node {
+    position: relative;
+    margin: 2px 0;
+    transition: all 0.2s ease;
+}
+
+.tree-node-content {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: 8px;
+}
+
+.tree-node-content:hover {
+    background: rgba(45, 212, 191, 0.1);
+}
+
+.tree-node-content.selected {
+    background: rgba(45, 212, 191, 0.15);
+    border-left: 3px solid #2dd4bf;
+}
+
+.tree-node-toggle {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.tree-node-toggle:hover {
+    color: #2dd4bf;
+    transform: scale(1.1);
+}
+
+.tree-node-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.tree-node-title {
+    color: #e2e8f0;
+    font-weight: 500;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-node-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.tree-node-children {
+    margin-top: 4px;
+    padding-left: 16px;
+    border-left: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.tree-node-section {
+    margin-bottom: 12px;
+}
+
+/* Section headers */
+.tree-node-section > .tree-node-content {
+    font-weight: 600;
+    color: #2dd4bf;
+    background: rgba(45, 212, 191, 0.05);
+    border-left: 3px solid transparent;
+}
+
+.tree-node-section > .tree-node-content:hover {
+    background: rgba(45, 212, 191, 0.1);
+    border-left-color: #2dd4bf;
+}
+
+/* Group nodes */
+.tree-node-group > .tree-node-content {
+    color: #94a3b8;
+    font-size: 0.8rem;
+}
+
+/* Leaf nodes */
+.tree-node-leaf > .tree-node-content {
+    padding-left: 28px;
+}
+
+.tree-node-leaf > .tree-node-content:hover {
+    background: rgba(148, 163, 184, 0.1);
+}
+
+/* Status colors */
+.tree-node-status.valid {
+    background-color: #22c55e;
+    box-shadow: 0 0 4px rgba(34, 197, 94, 0.4);
+}
+
+.tree-node-status.warning {
+    background-color: #eab308;
+    box-shadow: 0 0 4px rgba(234, 179, 8, 0.4);
+}
+
+.tree-node-status.error {
+    background-color: #ef4444;
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.4);
+}
+
+/* Type indicators */
+.tree-node-type-indicator {
+    font-size: 0.7em;
+    color: #64748b;
+    margin-left: 0.5rem;
+    font-style: italic;
+}
+
+/* Scrollbar styling */
+.config-tree::-webkit-scrollbar {
+    width: 6px;
+}
+
+.config-tree::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 3px;
+}
+
+.config-tree::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 3px;
+}
+
+.config-tree::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* ===== River Flow Styles ===== */
+#river-flow-svg {
+    width: 100%;
+    height: 100%;
+}
+
+#river-flow-svg text {
+    font-family: system-ui, -apple-system, sans-serif;
+    user-select: none;
+}
+
+#river-flow-svg circle {
+    transition: all 0.3s ease;
+}
+
+#river-flow-svg g:hover circle {
+    stroke: #2dd4bf;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 8px rgba(45, 212, 191, 0.6));
+}
+
+/* Path animations */
+#river-flow-svg path {
+    transition: stroke-opacity 0.3s ease;
+}
+
+/* Packet glow effects */
+#river-flow-svg circle[fill="#3b82f6"] {
+    filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.8));
+}
+
+#river-flow-svg circle[fill="#22c55e"] {
+    filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.8));
+}
+
+#river-flow-svg circle[fill="#ef4444"] {
+    filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.8));
+}
+
+/* Legend styling */
+.river-legend {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 8px;
+    padding: 0.75rem;
+}
+
+.legend-item {
+    transition: all 0.2s ease;
+}
+
+.legend-item:hover {
+    transform: scale(1.05);
+}
+
+.legend-color {
+    box-shadow: 0 0 4px currentColor;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .labs-grid {
+        grid-template-columns: 300px 1fr 400px !important;
+    }
+    
+    .tree-node-title {
+        font-size: 0.8rem;
+    }
+}
+
+/* Loading state */
+.config-tree.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Empty state */
+.config-tree:empty::after {
+    content: 'Loading configuration tree...';
+    color: #64748b;
+    font-size: 0.85rem;
+    padding: 2rem;
+    text-align: center;
+    display: block;
+}
+
+/* Animation for tree node expansion */
+.tree-node-children {
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover effect for clickable nodes */
+.tree-node-content:hover .tree-node-icon {
+    transform: scale(1.1);
+}
+
+.tree-node-content:hover .tree-node-toggle {
+    color: #2dd4bf;
+}
+
+/* Selected node highlight */
+.tree-node-content.selected::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #2dd4bf;
+    border-radius: 3px;
+}
