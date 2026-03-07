@@ -488,10 +488,10 @@ const i18n = {
                         title: "Advanced Laboratory (Advanced Labs)",
                         summary: "MeshNet Developer Paradise. If you are proficient in sing-box protocol, you can manually write extremely complex routing rules and traffic splitting logic here.",
                         features: {
-                            protocol: "Protocol Deep Dive: Natively inject x402 payment protocol on top of sing-box, supporting complex settlements such as pay-per-use, pay-per-time, pay-per-session.",
-                            routing: "Route Customization: Precisely control which traffic goes through proxy and which goes direct, even achieve load balancing and failover.",
-                            templates: "Template Library: Built-in common full-platform acceleration templates, streaming media unlock templates and other advanced JSON fragments.",
-                            validation: "JSON Syntax Reinforcement: Built-in validation engine to ensure every line of your configuration complies with sing-box / MeshNet standards."
+                            form: "Form Editing: Each parameter has a dedicated input field, real-time JSON configuration generation",
+                            preview: "Real-time Preview: View configuration output while editing, with syntax highlighting support",
+                            animation: "Network Animation: Visualize traffic routing, red for direct/green for proxy",
+                            docs: "Official Documentation: Built-in sing-box official documentation links, available anytime"
                         },
                         actionButton: "Go to Laboratory (Labs)"
                     }

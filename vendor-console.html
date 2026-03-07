@@ -176,27 +176,27 @@
               </div>
             </article>
 
-            <!-- Module 4: Advanced -->
+            <!-- Module 4: Advanced - Sing-Box Configuration Lab -->
             <article class="module-card module-advanced">
               <div class="module-wrapper">
                 <div class="module-header-wrap">
-                  <div class="module-icon-box">⚡</div>
+                  <div class="module-icon-box">🧪</div>
                   <div class="module-title-box">
-                    <h3 data-i18n="vendorConsole.privateWorkspace.modules.advanced.title">高级实验室 (Advanced Labs)</h3>
+                    <h3 data-i18n="vendorConsole.privateWorkspace.modules.advanced.title">Sing-Box 配置实验室</h3>
                   </div>
                 </div>
                 <p class="module-summary" data-i18n="vendorConsole.privateWorkspace.modules.advanced.summary">
-                  MeshNet 开发者乐园。如果您精通 sing-box 协议，可以在此手动编写极其复杂的路由规则与分流逻辑。
+                  交互式学习课件 - 深入理解 sing-box 配置参数
                 </p>
                 <ul class="module-features">
-                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.protocol">协议深钻：在 sing-box 基础上原生注入 x402 支付协议，支持按量、按时、按次等复杂结算。</strong></li>
-                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.routing">路由自定义：精准控制哪些流量走代理、哪些直连，甚至实现负载均衡与故障切换。</strong></li>
-                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.templates">模板库：内置常用的全平台通用加速模板、流媒体解锁模板等进阶 JSON 片段。</strong></li>
-                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.validation">JSON 语法加固：内置校验引擎，确保您的每一行配置都符合 sing-box / MeshNet 标准。</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.form">表单编辑：每个参数都有专用输入框，实时生成 JSON 配置</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.preview">实时预览：编辑时即时查看配置输出，支持语法高亮</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.animation">网络动画：可视化流量路由，红色直连/绿色代理</strong></li>
+                  <li><strong data-i18n="vendorConsole.privateWorkspace.modules.advanced.features.docs">官方文档：内置 sing-box 官方文档链接，随时查阅</strong></li>
                 </ul>
               </div>
               <div class="module-action">
-                <button id="btn-goto-advanced" class="btn-module" data-i18n="vendorConsole.privateWorkspace.modules.advanced.actionButton">前往实验室 (Labs)</button>
+                <button id="btn-goto-advanced" class="btn-module" data-i18n="vendorConsole.privateWorkspace.modules.advanced.actionButton">打开实验室 (Labs)</button>
               </div>
             </article>
           </div>
@@ -447,224 +447,92 @@
           </div>
         </div>
 
-        <!-- Advanced Editor sub-view -->
+        <!-- Advanced Editor sub-view - Sing-Box Configuration Lab -->
         <div id="subview-private-advanced" class="sub-view hidden">
-          <div class="json-editor-wrap">
-            <p style="font-size:0.85rem; color:#94a3b8;" data-i18n="vendorConsole.privateWorkspace.advanced.desc">基于 <a href="https://sing-box.sagernet.org/" target="_blank"
-                style="color:#6ee7d2;">sing-box</a> 协议，内置 x402 结算模块。请在下方编辑器修改您的原始 JSON 配置。</p>
-            <textarea id="advanced-json-editor" class="json-textarea" spellcheck="false">{
-  "provider_id": "com.<YourOrgnization>.<YourProduct>.<Version>",
-  "name": "<ProfileName>",
-  "description": "<Description>",
-  "tags": [
-    "<Tag1>",
-    "<Tag2>"
-  ],
-  "author": "<Author>",
-  "visibility": "public",
-  "status": "active",
-  "updated_at": "1970-01-01T00:00:00Z",
-  "package_hash": "seed-0",
-  "source_updated_at": "2026-03-04T02:23:26.945Z",
-  "config": {
-    "log": {
-      "level": "debug"
-    },
-    "dns": {
-      "servers": [
-        {
-          "tag": "local-dns",
-          "address": "<DNS IP>",
-          "detour": "direct"
-        },
-        {
-          "tag": "google-dns",
-          "address": "https://dns.google/dns-query",
-          "detour": "proxy"
-        }
-      ],
-      "rules": [
-        {
-          "rule_set": "geosite-geolocation-cn",
-          "server": "local-dns"
-        }
-      ],
-      "final": "google-dns",
-      "strategy": "prefer_ipv4"
-    },
-    "inbounds": [
-      {
-        "type": "tun",
-        "tag": "tun-in",
-        "address": [
-          "172.18.0.1/30",
-          "fd00::1/126"
-        ],
-        "auto_route": true,
-        "strict_route": false,
-        "route_exclude_address": [
-          "127.0.0.0/8",
-          "10.0.0.0/8",
-          "172.16.0.0/12",
-          "192.168.0.0/16",
-          "169.254.0.0/16",
-          "<IP>/32",
-          "::1/128",
-          "fc00::/7",
-          "fe80::/10"
-        ],
-        "route_exclude_address_set": [
-          "geoip-cn"
-        ],
-        "sniff": true,
-        "sniff_override_destination": true
-      }
-    ],
-    "outbounds": [
-      {
-        "type": "shadowsocks",
-        "tag": "<NodeName-1>",
-        "server": "<Server IP>",
-        "server_port": "<PORT>",
-        "method": "aes-256-gcm",
-        "password": "<PASSWORD>"
-      },
-      {
-        "type": "shadowsocks",
-        "tag": "<NodeName-2>",
-        "server": "<Server IP>",
-        "server_port": "<PORT>",
-        "method": "aes-256-gcm",
-        "password": "<PASSWORD>"
-      },
-      {
-        "type": "shadowsocks",
-        "tag": "<NodeName-3>",
-        "server": "<Server IP>",
-        "server_port": "<PORT>",
-        "method": "aes-256-gcm",
-        "password": "<PASSWORD>"
-      },
-      {
-        "type": "selector",
-        "tag": "proxy",
-        "outbounds": [
-          "<NodeName-1>",
-          "<NodeName-2>",
-          "<NodeName-3>"
-        ],
-        "default": "<NodeName-1>"
-      },
-      {
-        "type": "direct",
-        "tag": "direct"
-      }
-    ],
-    "route": {
-      "rules": [
-        {
-          "protocol": "dns",
-          "action": "hijack-dns"
-        },
-        {
-          "action": "sniff"
-        },
-        {
-          "domain_suffix": [
-            "google.com",
-            "googleapis.com",
-            "gstatic.com",
-            "googleusercontent.com",
-            "gvt1.com",
-            "gvt2.com",
-            "1e100.net",
-            "youtube.com",
-            "ytimg.com",
-            "ggpht.com",
-            "android.com",
-            "app-measurement.com",
-            "github.com",
-            "githubusercontent.com",
-            "twitter.com",
-            "telegram.org",
-            "claude.ai",
-            "openai.com",
-            "facebook.com",
-            "fbcdn.net",
-            "instagram.com",
-            "whatsapp.com",
-            "whatsapp.net",
-            "tiktok.com",
-            "byteoversea.com",
-            "netflix.com",
-            "bing.com",
-            "perplexity.ai",
-            "deepl.com"
-          ],
-          "outbound": "proxy"
-        },
-        {
-          "rule_set": "geosite-geolocation-cn",
-          "outbound": "direct"
-        },
-        {
-          "rule_set": "geoip-cn",
-          "outbound": "direct"
-        },
-        {
-          "domain_suffix": [
-            "localhost",
-            "local"
-          ],
-          "outbound": "direct"
-        },
-        {
-          "ip_is_private": true,
-          "outbound": "direct"
-        }
-      ],
-      "final": "proxy",
-      "auto_detect_interface": true,
-      "rule_set": [
-        {
-          "type": "remote",
-          "tag": "geoip-cn",
-          "format": "binary",
-          "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs",
-          "download_detour": "proxy",
-          "update_interval": "1d"
-        },
-        {
-          "type": "remote",
-          "tag": "geosite-geolocation-cn",
-          "format": "binary",
-          "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs",
-          "download_detour": "proxy",
-          "update_interval": "1d"
-        }
-      ]
-    }
-  },
-  "routing_rules": {
-    "version": 2,
-    "proxy": {
-      "domain": [],
-      "domain_suffix": []
-    }
-  }
-}</textarea>
-            <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
-              <button id="btn-check-json" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.advanced.checkButton">检查 JSON</button>
-              <button id="btn-copy-json" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.advanced.copyButton">复制 JSON 数据</button>
-              <button id="btn-save-file" class="btn btn-secondary" data-i18n="vendorConsole.privateWorkspace.advanced.saveButton">另存为 JSON 文件</button>
-              <button class="btn-cancel btn ghost" data-i18n="vendorConsole.privateWorkspace.advanced.backButton">返回</button>
+          <!-- Lab Header -->
+          <div class="labs-header" style="margin-bottom: 1.5rem;">
+            <div class="header-content">
+              <h2 style="color: #2dd4bf; margin-bottom: 0.5rem;">🧪 Sing-Box 配置实验室</h2>
+              <p style="color: #94a3b8; font-size: 0.9rem;">交互式学习课件 - 深入理解 sing-box 配置参数</p>
+            </div>
+            <div class="header-actions" style="display: flex; gap: 0.8rem; margin-top: 1rem;">
+              <button class="btn-cancel btn ghost" onclick="document.getElementById('entry-private-workspace').click()">← 返回</button>
+              <a href="https://sing-box.sagernet.org/configuration/" target="_blank" class="btn btn-info" style="background: #0ea5e9; color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem;">📖 官方文档</a>
+              <button id="btn-load-template" class="btn btn-secondary">加载模板</button>
+              <button id="btn-copy-config" class="btn btn-primary">复制配置</button>
             </div>
           </div>
+
+          <!-- Three Column Layout -->
+          <div class="labs-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <!-- Left Column: Form Editor -->
+            <div class="labs-form-panel" style="background: #1e293b; border-radius: 0.75rem; padding: 1.5rem; border: 1px solid #334155;">
+              <form id="config-form" class="config-form">
+                <!-- Content will be dynamically generated -->
+              </form>
+            </div>
+
+            <!-- Right Column: Preview & Animation -->
+            <div class="labs-preview-panel" style="display: flex; flex-direction: column; gap: 1.5rem;">
+              <!-- JSON Preview Panel -->
+              <div class="panel json-preview-panel" style="background: #1e293b; border-radius: 0.75rem; border: 1px solid #334155; flex: 1; min-height: 400px;">
+                <div class="panel-header" style="padding: 1.25rem 1.5rem; background: #0f172a; border-bottom: 2px solid #334155; border-radius: 0.75rem 0.75rem 0 0;">
+                  <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">👁️ 实时 JSON 预览</h3>
+                  <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.5rem 0 0;">只读 - 自动同步表单编辑结果</p>
+                </div>
+                <div class="panel-body" style="padding: 0;">
+                  <pre id="json-preview" class="json-preview" style="margin: 0; padding: 1.5rem; height: calc(100% - 70px); overflow: auto; background: #1e293b; color: #e2e8f0; font-family: 'Monaco', 'Menlo', monospace; font-size: 0.85rem;"><code></code></pre>
+                </div>
+              </div>
+
+              <!-- Network Animation Panel -->
+              <div class="panel animation-panel" style="background: #1e293b; border-radius: 0.75rem; border: 1px solid #334155; flex: 1; min-height: 400px;">
+                <div class="panel-header" style="padding: 1.25rem 1.5rem; background: #0f172a; border-bottom: 2px solid #334155; border-radius: 0.75rem 0.75rem 0 0;">
+                  <h3 style="color: #2dd4bf; font-size: 1rem; margin: 0;">🌐 网络流量动画</h3>
+                  <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.5rem 0 0;">可视化路由决策过程</p>
+                </div>
+                <div class="panel-body" style="padding: 1.5rem;">
+                  <canvas id="topology-canvas" style="width: 100%; height: 320px; background: #0f172a; border-radius: 0.5rem;"></canvas>
+                  <div class="animation-legend" style="display: flex; gap: 1.5rem; margin-top: 1rem; justify-content: center;">
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                      <div class="legend-color direct" style="width: 20px; height: 4px; background: #ef4444; border-radius: 2px;"></div>
+                      <span style="color: #94a3b8; font-size: 0.85rem;">直连</span>
+                    </div>
+                    <div class="legend-item" style="display: flex; align-items: center; gap: 0.5rem;">
+                      <div class="legend-color proxy" style="width: 20px; height: 4px; background: #22c55e; border-radius: 2px;"></div>
+                      <span style="color: #94a3b8; font-size: 0.85rem;">代理</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
       </div>
     </section>
   </main>
+
+  <!-- Lab Scripts -->
+  <link rel="stylesheet" href="assets/css/vendor-labs-enhanced.css">
+  <script src="assets/js/vendor-labs-form.js"></script>
+  <script src="assets/js/vendor-labs-preview.js"></script>
+  <script src="assets/js/vendor-labs-animation.js"></script>
+  <script>
+    // Initialize the lab when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.LabsForm) {
+        window.LabsForm.init();
+      }
+      if (window.LabsPreview) {
+        window.LabsPreview.init();
+      }
+      if (window.LabsAnimation) {
+        window.LabsAnimation.init();
+      }
+    });
+  </script>
 
   <script src="vendor-console.js"></script>
 </body>

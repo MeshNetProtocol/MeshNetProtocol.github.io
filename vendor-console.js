@@ -463,6 +463,7 @@
         });
         const gotoAdvancedBtn = document.getElementById("btn-goto-advanced");
         if (gotoAdvancedBtn) gotoAdvancedBtn.addEventListener("click", () => {
+            // Show the integrated Sing-Box Configuration Lab
             const lang = window.i18n && window.i18n.getCurrentLanguage ? window.i18n.getCurrentLanguage() : 'zh';
             const translations = window.i18n && window.i18n.translations ? window.i18n.translations[lang] : null;
             const titleKey = 'vendorConsole.privateWorkspace.modules.advanced.title';
@@ -471,8 +472,15 @@
                 const enTranslations = window.i18n && window.i18n.translations ? window.i18n.translations.en : null;
                 title = enTranslations && window.i18n.getTranslation ? window.i18n.getTranslation(enTranslations, 'vendorConsoleEn.privateWorkspace.modules.advanced.title') : null;
             }
-            if (!title) title = lang === 'zh' ? '高级 JSON 编辑器' : 'Advanced JSON Editor';
+            if (!title) title = lang === 'zh' ? 'Sing-Box 配置实验室' : 'Sing-Box Configuration Lab';
             switchSubView("advanced", title);
+            
+            // Initialize the lab modules
+            setTimeout(() => {
+                if (window.LabsForm) window.LabsForm.init();
+                if (window.LabsPreview) window.LabsPreview.init();
+                if (window.LabsAnimation) window.LabsAnimation.init();
+            }, 100);
         });
 
         // VPS Guide specific - Navigate to config after getting credentials
