@@ -1,6 +1,6 @@
 /**
  * MeshNetProtocol - Sing-Box Configuration Lab
- * Network Topology Animation Module
+ * Traffic Flow Animation Module - Pipe Flow Visualization
  */
 
 (function() {
@@ -8,320 +8,297 @@
 
     console.log("[Labs] Loading Animation Module...");
 
-    const canvas = document.getElementById('topology-canvas');
-    let ctx = null;
-    
-    // Check if canvas exists
-    if (!canvas) {
-        console.warn("[Labs] Topology canvas not found, animation module will be disabled");
-    } else {
-        ctx = canvas.getContext('2d');
-    }
-    
     // Animation state
-    const animationState = {
-        packets: [],
-        lastTime: 0,
-        config: null
+    const state = {
+        canvas: null,
+        ctx: null,
+        animationId: null,
+        config: null,
+        particles: [],
+        trafficStats: {
+            local: 0,
+            proxy: 0,
+            direct: 0
+        }
     };
 
-    // Node positions
-    const nodes = {
-        local: { x: 80, y: 200, label: '本地电脑', icon: '💻' },
-        route: { x: 250, y: 200, label: '路由决策', icon: '🛣️' },
-        firewall: { x: 350, y: 200, label: '防火墙', icon: '🔥' },
-        proxy: { x: 500, y: 100, label: 'VPN 服务器', icon: '🌐' },
-        destination: { x: 500, y: 300, label: '目标服务器', icon: '🎯' }
+    // Traffic colors
+    const COLORS = {
+        local: '#3b82f6',   // Blue - Local config
+        proxy: '#22c55e',   // Green - Proxy route
+        direct: '#ef4444',  // Red - Direct route
+        inactive: '#475569' // Gray - Inactive
     };
 
-    // ===== Drawing Functions =====
-    function drawNode(node) {
-        ctx.save();
-        
-        // Draw node circle
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, 35, 0, Math.PI * 2);
-        ctx.fillStyle = '#1e293b';
-        ctx.fill();
-        ctx.strokeStyle = '#667eea';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        
-        // Draw icon
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'white';
-        ctx.fillText(node.icon, node.x, node.y);
-        
-        // Draw label
-        ctx.font = '12px Arial';
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillText(node.label, node.x, node.y + 55);
-        
-        ctx.restore();
-    }
-
-    function drawPath(from, to, isProxy) {
-        ctx.save();
-        
-        // Create gradient
-        const gradient = ctx.createLinearGradient(from.x, from.y, to.x, to.y);
-        if (isProxy) {
-            gradient.addColorStop(0, '#22c55e');
-            gradient.addColorStop(1, '#16a34a');
-        } else {
-            gradient.addColorStop(0, '#ef4444');
-            gradient.addColorStop(1, '#dc2626');
-        }
-        
-        // Draw path line
-        ctx.beginPath();
-        ctx.moveTo(from.x, from.y);
-        
-        // Add control point for curved path
-        const midX = (from.x + to.x) / 2;
-        const midY = (from.y + to.y) / 2;
-        ctx.quadraticCurveTo(midX, midY - 20, to.x, to.y);
-        
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = isProxy ? 4 : 3;
-        ctx.setLineDash(isProxy ? [5, 5] : []);
-        ctx.stroke();
-        
-        // Draw arrow
-        const angle = Math.atan2(to.y - from.y, to.x - from.x);
-        const arrowLength = 10;
-        const arrowX = to.x - 35 * Math.cos(angle);
-        const arrowY = to.y - 35 * Math.sin(angle);
-        
-        ctx.beginPath();
-        ctx.moveTo(arrowX, arrowY);
-        ctx.lineTo(
-            arrowX - arrowLength * Math.cos(angle - Math.PI / 6),
-            arrowY - arrowLength * Math.sin(angle - Math.PI / 6)
-        );
-        ctx.lineTo(
-            arrowX - arrowLength * Math.cos(angle + Math.PI / 6),
-            arrowY - arrowLength * Math.sin(angle + Math.PI / 6)
-        );
-        ctx.closePath();
-        ctx.fillStyle = isProxy ? '#22c55e' : '#ef4444';
-        ctx.fill();
-        
-        ctx.restore();
-    }
-
-    function drawPacket(packet) {
-        ctx.save();
-        
-        // Draw packet circle
-        ctx.beginPath();
-        ctx.arc(packet.x, packet.y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = '#fbbf24';
-        ctx.fill();
-        
-        // Glow effect
-        ctx.shadowColor = '#fbbf24';
-        ctx.shadowBlur = 10;
-        ctx.fill();
-        
-        ctx.restore();
-    }
-
-    function drawNetworkTopology() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw background grid
-        drawBackgroundGrid();
-        
-        // Draw paths first (behind nodes)
-        drawPath(nodes.local, nodes.route, false);
-        drawPath(nodes.route, nodes.firewall, false);
-        
-        // Proxy path
-        drawPath(nodes.firewall, nodes.proxy, true);
-        drawPath(nodes.proxy, nodes.destination, true);
-        
-        // Direct path
-        drawPath(nodes.firewall, nodes.destination, false);
-        
-        // Draw nodes
-        Object.values(nodes).forEach(node => drawNode(node));
-        
-        // Draw packets
-        animationState.packets.forEach(packet => drawPacket(packet));
-    }
-
-    function drawBackgroundGrid() {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
-        ctx.lineWidth = 1;
-        
-        // Vertical lines
-        for (let x = 0; x < canvas.width; x += 40) {
-            ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, canvas.height);
-            ctx.stroke();
-        }
-        
-        // Horizontal lines
-        for (let y = 0; y < canvas.height; y += 40) {
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(canvas.width, y);
-            ctx.stroke();
-        }
-        
-        ctx.restore();
-    }
-
-    // ===== Packet Animation System =====
-    function spawnPacket(startNode, endNode, viaProxy = false) {
-        const packet = {
-            x: startNode.x,
-            y: startNode.y,
-            targetX: endNode.x,
-            targetY: endNode.y,
-            speed: 2,
-            progress: 0,
-            viaProxy: viaProxy,
-            reachedProxy: false
-        };
-        animationState.packets.push(packet);
-    }
-
-    function updatePackets(deltaTime) {
-        for (let i = animationState.packets.length - 1; i >= 0; i--) {
-            const packet = animationState.packets[i];
-            
-            if (packet.viaProxy && !packet.reachedProxy) {
-                // First go to proxy server
-                packet.targetX = nodes.proxy.x;
-                packet.targetY = nodes.proxy.y;
-                
-                if (Math.abs(packet.x - nodes.proxy.x) < 5 && Math.abs(packet.y - nodes.proxy.y) < 5) {
-                    packet.reachedProxy = true;
-                    packet.targetX = nodes.destination.x;
-                    packet.targetY = nodes.destination.y;
-                }
-            }
-            
-            // Move packet
-            const dx = packet.targetX - packet.x;
-            const dy = packet.targetY - packet.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < packet.speed) {
-                // Reached target
-                if (packet.viaProxy && !packet.reachedProxy) {
-                    // Continue to final destination
-                    packet.reachedProxy = true;
-                    packet.targetX = nodes.destination.x;
-                    packet.targetY = nodes.destination.y;
-                } else {
-                    // Remove packet
-                    animationState.packets.splice(i, 1);
-                    continue;
-                }
-            } else {
-                // Move towards target
-                packet.x += (dx / distance) * packet.speed;
-                packet.y += (dy / distance) * packet.speed;
-            }
-        }
-    }
-
-    function startAnimationLoop(currentTime) {
-        const deltaTime = currentTime - animationState.lastTime;
-        animationState.lastTime = currentTime;
-        
-        updatePackets(deltaTime);
-        drawNetworkTopology();
-        
-        requestAnimationFrame(startAnimationLoop);
-    }
-
-    // Spawn packets periodically based on config
-    function startPacketSpawner() {
-        setInterval(() => {
-            // Simulate traffic to different destinations
-            const isProxyTraffic = Math.random() > 0.5;
-            
-            if (isProxyTraffic) {
-                // Traffic that goes through proxy (e.g., google.com)
-                spawnPacket(nodes.local, nodes.destination, true);
-            } else {
-                // Direct traffic (e.g., local resources)
-                spawnPacket(nodes.local, nodes.destination, false);
-            }
-        }, 2000); // New packet every 2 seconds
-    }
-
-    // ===== Config-based Route Highlighting =====
-    function analyzeRoutes(config) {
-        if (!config || !config.config || !config.config.route) return;
-        
-        const rules = config.config.route.rules || [];
-        
-        // Analyze which domains use proxy vs direct
-        rules.forEach(rule => {
-            if (rule.domain_suffix && rule.outbound === 'proxy') {
-                console.log('[Animation] Proxy domains:', rule.domain_suffix);
-            }
-        });
-    }
-
-    // ===== Event Listeners =====
-    window.addEventListener('labs-config-updated', (e) => {
-        console.log("[Animation] Config updated, analyzing routes...");
-        animationState.config = e.detail.config;
-        analyzeRoutes(animationState.config);
-    });
-
-    // ===== Initialization =====
+    /**
+     * Initialize animation module
+     */
     function init() {
         console.log("[Labs] Initializing Animation Module...");
         
-        // Check if canvas exists
-        if (!canvas || !ctx) {
-            console.warn("[Labs] Canvas not available, skipping animation initialization");
+        state.canvas = document.getElementById('flow-animation-canvas');
+        if (!state.canvas) {
+            console.warn("[Labs] Animation canvas not found");
             return;
         }
         
-        // Set canvas size
-        const panel = canvas.parentElement;
-        if (!panel) {
-            console.warn("[Labs] Canvas parent element not found");
-            return;
-        }
+        state.ctx = state.canvas.getContext('2d');
+        resizeCanvas();
         
-        canvas.width = panel.clientWidth;
-        canvas.height = 400;
+        // Initial empty state
+        state.config = null;
+        state.trafficStats = { local: 0, proxy: 0, direct: 0 };
         
         // Start animation loop
-        requestAnimationFrame(startAnimationLoop);
-        
-        // Start packet spawner
-        startPacketSpawner();
+        animate();
         
         // Handle resize
-        window.addEventListener('resize', () => {
-            canvas.width = panel.clientWidth;
-        });
+        window.addEventListener('resize', resizeCanvas);
         
         console.log("[Labs] Animation Module ready!");
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+    /**
+     * Update animation with new config
+     */
+    function updateConfig(config) {
+        state.config = config;
+        analyzeTraffic(config);
+        resetParticles();
     }
 
-    // Expose API to window
+    /**
+     * Analyze config to determine traffic distribution
+     */
+    function analyzeTraffic(config) {
+        if (!config || !config.route || !config.route.rules) {
+            state.trafficStats = { local: 0, proxy: 0, direct: 0 };
+            return;
+        }
+
+        const rules = config.route.rules;
+        
+        // Count rules by outbound type
+        let localCount = 0;
+        let proxyCount = 0;
+        let directCount = 0;
+
+        rules.forEach(rule => {
+            const outbound = rule.outbound || '';
+            if (outbound === 'local' || outbound === 'block') {
+                localCount++;
+            } else if (outbound === 'proxy' || outbound.includes('proxy')) {
+                proxyCount++;
+            } else if (outbound === 'direct') {
+                directCount++;
+            }
+        });
+
+        // Calculate percentages
+        const total = localCount + proxyCount + directCount || 1;
+        state.trafficStats = {
+            local: Math.round((localCount / total) * 100),
+            proxy: Math.round((proxyCount / total) * 100),
+            direct: Math.round((directCount / total) * 100)
+        };
+    }
+
+    /**
+     * Reset particles based on traffic stats
+     */
+    function resetParticles() {
+        state.particles = [];
+        
+        // Create particles for each traffic type
+        const createParticles = (type, count, yOffset) => {
+            for (let i = 0; i < count; i++) {
+                state.particles.push({
+                    type,
+                    x: 80 + Math.random() * 20,
+                    y: yOffset + Math.random() * 20,
+                    speed: 2 + Math.random() * 2,
+                    size: 3 + Math.random() * 2,
+                    alpha: 0.6 + Math.random() * 0.4
+                });
+            }
+        };
+
+        // Adjust particle count based on stats
+        const baseCount = 5;
+        if (state.trafficStats.local > 0) {
+            createParticles('local', Math.max(2, Math.floor(state.trafficStats.local / 10)), 100);
+        }
+        if (state.trafficStats.proxy > 0) {
+            createParticles('proxy', Math.max(2, Math.floor(state.trafficStats.proxy / 10)), 180);
+        }
+        if (state.trafficStats.direct > 0) {
+            createParticles('direct', Math.max(2, Math.floor(state.trafficStats.direct / 10)), 260);
+        }
+    }
+
+    /**
+     * Resize canvas to fit container
+     */
+    function resizeCanvas() {
+        const container = state.canvas.parentElement;
+        if (!container) return;
+        
+        // Get the actual display size
+        const rect = state.canvas.getBoundingClientRect();
+        state.canvas.width = rect.width;
+        state.canvas.height = rect.height;
+        
+        console.log(`[Animation] Canvas resized: ${state.canvas.width}x${state.canvas.height}`);
+    }
+
+    /**
+     * Main animation loop
+     */
+    function animate() {
+        if (!state.ctx) return;
+        
+        const ctx = state.ctx;
+        const width = state.canvas.width;
+        const height = state.canvas.height;
+
+        // Clear canvas
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw pipes
+        drawPipes(ctx, width, height);
+
+        // Update and draw particles
+        updateParticles(ctx, width, height);
+
+        // Draw labels
+        drawLabels(ctx, width, height);
+
+        state.animationId = requestAnimationFrame(animate);
+    }
+
+    /**
+     * Draw the three pipes
+     */
+    function drawPipes(ctx, width, height) {
+        const pipePositions = [100, 180, 260];
+        const pipeTypes = ['local', 'proxy', 'direct'];
+        const pipeLabels = ['本地配置', '代理路由', '直连路由'];
+
+        pipePositions.forEach((y, index) => {
+            const type = pipeTypes[index];
+            const isActive = state.trafficStats[type] > 0;
+            
+            // Pipe background
+            ctx.beginPath();
+            ctx.moveTo(80, y);
+            ctx.lineTo(width - 80, y);
+            ctx.strokeStyle = isActive ? COLORS[type] : COLORS.inactive;
+            ctx.lineWidth = 20;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Pipe border
+            ctx.beginPath();
+            ctx.moveTo(80, y);
+            ctx.lineTo(width - 80, y);
+            ctx.strokeStyle = isActive ? 'rgba(255,255,255,0.3)' : 'rgba(100,116,139,0.3)';
+            ctx.lineWidth = 22;
+            ctx.stroke();
+        });
+    }
+
+    /**
+     * Update and draw particles
+     */
+    function updateParticles(ctx, width, height) {
+        state.particles.forEach((particle, index) => {
+            // Move particle
+            particle.x += particle.speed;
+            
+            // Reset particle when it goes off screen
+            if (particle.x > width - 80) {
+                particle.x = 80 + Math.random() * 20;
+            }
+
+            // Draw particle
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS[particle.type];
+            ctx.globalAlpha = particle.alpha;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            // Glow effect
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size + 2, 0, Math.PI * 2);
+            ctx.fillStyle = COLORS[particle.type];
+            ctx.globalAlpha = particle.alpha * 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        });
+    }
+
+    /**
+     * Draw labels and stats
+     */
+    function drawLabels(ctx, width, height) {
+        // Input label (left side)
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 14px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('用户设备', 40, height / 2);
+        ctx.font = '12px -apple-system, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('流量入口', 40, height / 2 + 20);
+
+        // Output label (right side)
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = 'bold 14px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('互联网', width - 40, height / 2);
+        ctx.font = '12px -apple-system, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('流量出口', width - 40, height / 2 + 20);
+
+        // Pipe labels
+        const pipeLabels = [
+            { type: 'local', label: '本地配置', y: 100 },
+            { type: 'proxy', label: '代理路由', y: 180 },
+            { type: 'direct', label: '直连路由', y: 260 }
+        ];
+
+        pipeLabels.forEach(({ type, label, y }) => {
+            const stats = state.trafficStats[type];
+            const isActive = stats > 0;
+            
+            ctx.fillStyle = isActive ? COLORS[type] : COLORS.inactive;
+            ctx.font = 'bold 12px -apple-system, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${label} (${stats}%)`, 90, y - 12);
+        });
+
+        // Arrows
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('▶', width / 2, 60);
+    }
+
+    /**
+     * Cleanup
+     */
+    function destroy() {
+        if (state.animationId) {
+            cancelAnimationFrame(state.animationId);
+        }
+        window.removeEventListener('resize', resizeCanvas);
+    }
+
+    // Expose API
     window.LabsAnimation = {
-        init
+        init,
+        updateConfig,
+        destroy
     };
 })();
