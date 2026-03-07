@@ -473,7 +473,6 @@
             }
             if (!title) title = lang === 'zh' ? '高级 JSON 编辑器' : 'Advanced JSON Editor';
             switchSubView("advanced", title);
-            if (dom.jsonEditor) dom.jsonEditor.value = JSON.stringify(SINGBOX_TEMPLATE, null, 2);
         });
 
         // VPS Guide specific - Navigate to config after getting credentials
