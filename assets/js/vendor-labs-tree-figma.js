@@ -303,21 +303,35 @@
                 ` : ''}
                 <span class="node-name">${node.name}</span>
                 ${node.editing ? `
-                    <input 
-                        type="${node.type === 'number' ? 'number' : 'text'}" 
-                        class="node-value-input" 
-                        value="${node.value}"
-                        data-node-id="${node.id}"
-                        onclick="event.stopPropagation()"
-                        onchange="window.LabsTree.updateNodeValue('${node.id}', this.value)"
-                        onblur="window.LabsTree.finishEditing('${node.id}')"
-                        onkeydown="if(event.key === 'Enter') this.blur()"
-                        autofocus
-                    />
+                    ${node.type === 'boolean' ? `
+                        <select 
+                            class="node-value-select" 
+                            data-node-id="${node.id}"
+                            onclick="event.stopPropagation()"
+                            onchange="window.LabsTree.updateNodeValue('${node.id}', this.value)"
+                            onblur="window.LabsTree.finishEditing('${node.id}', true)"
+                            autofocus
+                        >
+                            <option value="true" ${node.value === true ? 'selected' : ''}>true</option>
+                            <option value="false" ${node.value === false ? 'selected' : ''}>false</option>
+                        </select>
+                    ` : `
+                        <input 
+                            type="${node.type === 'number' ? 'number' : 'text'}" 
+                            class="node-value-input" 
+                            value="${node.value}"
+                            data-node-id="${node.id}"
+                            onclick="event.stopPropagation()"
+                            onchange="window.LabsTree.updateNodeValue('${node.id}', this.value)"
+                            onkeydown="if(event.key === 'Enter') this.blur()"
+                            onblur="window.LabsTree.finishEditing('${node.id}', true)"
+                            autofocus
+                        />
+                    `}
                 ` : (node.type !== 'object' && node.type !== 'array' ? `
                     <span class="node-separator"> = </span>
                     <span class="node-value ${node.type === 'boolean' ? 'boolean-value' : ''} ${node.type === 'enum' ? 'enum-value' : ''}" 
-                          onclick="${node.type === 'boolean' ? `window.LabsTree.toggleBooleanValue('${node.id}')` : ''}${node.type === 'enum' ? `window.LabsTree.editEnumValue('${node.id}')` : ''}">
+                          onclick="${node.type === 'enum' ? `window.LabsTree.editEnumValue('${node.id}')` : ''}">
                         ${formatValue(node.value, node.type)}
                         ${node.type === 'enum' ? ' ▼' : ''}
                     </span>
@@ -709,15 +723,27 @@
         if (node) {
             // For leaf nodes (non-object, non-array), enable editing
             if (node.type !== 'object' && node.type !== 'array') {
+                // Store original value for comparison
+                node.originalValue = node.value;
+                console.log('[EditNode] Setting originalValue for', node.name, '=', node.originalValue);
+                
                 node.editing = true;
+                console.log('[EditNode] Node', node.name, 'editing set to:', node.editing);
+                
                 render();
+                console.log('[EditNode] Render complete');
                 
                 // Focus the input
                 setTimeout(() => {
                     const input = document.querySelector(`input[data-node-id="${nodeId}"]`);
-                    if (input) {
-                        input.focus();
-                        input.select();
+                    const select = document.querySelector(`select[data-node-id="${nodeId}"]`);
+                    const element = input || select;
+                    if (element) {
+                        console.log('[EditNode] Focusing element:', element.tagName, 'value:', element.value);
+                        element.focus();
+                        if (input) element.select();
+                    } else {
+                        console.warn('[EditNode] Element not found for nodeId:', nodeId);
                     }
                 }, 100);
             }
@@ -749,12 +775,31 @@
     /**
      * Finish editing
      */
-    function finishEditing(nodeId) {
+    function finishEditing(nodeId, saveChanges = false) {
         const node = findNodeById(state.config, nodeId);
+        console.log('[FinishEditing] Called for nodeId:', nodeId, 'saveChanges:', saveChanges);
+        
         if (node) {
+            console.log('[FinishEditing] Node found:', node.name, 'current value:', node.value, 'original value:', node.originalValue, 'editing:', node.editing);
+            
+            // If saveChanges is true and value changed, notify config change
+            if (saveChanges && node.originalValue !== undefined && node.originalValue !== node.value) {
+                console.log('[FinishEditing] Value changed from', node.originalValue, 'to', node.value, '- saving');
+                // Value already updated in updateNodeValue, just notify
+            } else if (!saveChanges && node.originalValue !== undefined) {
+                console.log('[FinishEditing] Value unchanged or no save - reverting');
+                // Revert to original value if not saving
+                node.value = node.originalValue;
+            }
+            
+            // Clean up
             node.editing = false;
+            console.log('[FinishEditing] Node', node.name, 'editing set to:', node.editing);
             render();
-            // Don't notify config change - already notified in updateNodeValue
+            console.log('[FinishEditing] Render complete');
+            // Don't notify config change - already notified in updateNodeValue if changed
+        } else {
+            console.warn('[FinishEditing] Node NOT found for nodeId:', nodeId);
         }
     }
 
