@@ -40,14 +40,9 @@
             state.downloadButton.addEventListener('click', downloadJson);
         }
         
-        // Initial render with empty config
-        render({
-            log: { level: 'info', timestamp: true },
-            dns: { servers: [], final: 'local' },
-            inbounds: [],
-            outbounds: [],
-            route: { rules: [], final: 'direct' }
-        });
+        // Initial render with empty config - placeholder
+        // TODO: This will be populated by tree module when config structure is ready
+        render(null);
         
         console.log("[Labs] JSON Display Module ready!");
     }
@@ -59,6 +54,13 @@
         state.config = config;
         
         if (!state.previewElement) return;
+        
+        // If no config, show placeholder
+        if (!config) {
+            state.previewElement.innerHTML = '<span style="color: #64748b;">// JSON preview will be generated from tree structure\n// TODO: Implement config structure editor</span>';
+            updateStats('{}', {});
+            return;
+        }
         
         try {
             // Format JSON with indentation

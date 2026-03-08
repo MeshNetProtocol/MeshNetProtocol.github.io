@@ -450,16 +450,20 @@
         <!-- Advanced Editor sub-view - Sing-Box Configuration Lab -->
         <div id="subview-private-advanced" class="sub-view hidden">
           <!-- Lab Header -->
-          <div class="labs-header" style="margin-bottom: 1.5rem;">
-            <div class="header-content">
-              <h2 style="color: #2dd4bf; margin-bottom: 0.5rem;">🧪 Sing-Box 配置实验室</h2>
-              <p style="color: #94a3b8; font-size: 0.9rem;">交互式学习课件 - 深入理解 sing-box 配置参数</p>
+          <div class="labs-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: rgba(0, 217, 255, 0.05); border-bottom: 1px solid rgba(0, 217, 255, 0.1); border-radius: 0.75rem 0.75rem 0 0; margin: -1rem -1rem 1.5rem -1rem;">
+            <div class="header-content" style="flex: 1;">
+              <h2 style="color: #2dd4bf; font-size: 1.5rem; font-weight: 600; margin: 0 0 0.5rem 0;">🧪 Sing-Box 配置实验室</h2>
+              <p style="color: #64748b; font-size: 0.875rem; margin: 0;">交互式学习课件 - 深入理解 sing-box 配置参数</p>
             </div>
-            <div class="header-actions" style="display: flex; gap: 0.8rem; margin-top: 1rem;">
-              <button class="btn-cancel btn ghost" onclick="document.getElementById('entry-private-workspace').click()">← 返回</button>
-              <a href="https://sing-box.sagernet.org/configuration/" target="_blank" class="btn btn-info" style="background: #0ea5e9; color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem;">📖 官方文档</a>
-              <button id="btn-load-template" class="btn btn-secondary">📂 加载模板</button>
-              <button id="btn-load-sample" class="btn btn-secondary">✨ 示例配置</button>
+            <div class="header-actions" style="display: flex; gap: 0.75rem; flex-shrink: 0;">
+              <a href="https://sing-box.sagernet.org/configuration/" target="_blank" class="btn btn-info" style="background: #0ea5e9; color: white; text-decoration: none; padding: 0.625rem 1.25rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.2s;">
+                <span>📖</span>
+                <span>官方文档</span>
+              </a>
+              <button id="btn-load-config" class="btn btn-secondary" style="background: rgba(0, 217, 255, 0.1); border: 1px solid rgba(0, 217, 255, 0.2); color: #00d9ff; padding: 0.625rem 1.25rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <span>📂</span>
+                <span>加载配置</span>
+              </button>
             </div>
           </div>
 
@@ -547,10 +551,13 @@
         window.LabsJson.init();
       }
       
-      // Load sample config button
-      const btnLoadSample = document.getElementById('btn-load-sample');
-      if (btnLoadSample) {
-        btnLoadSample.addEventListener('click', loadSampleConfig);
+      // Load config button - TODO: implement file picker
+      const btnLoadConfig = document.getElementById('btn-load-config');
+      if (btnLoadConfig) {
+        btnLoadConfig.addEventListener('click', () => {
+          // TODO: Implement file picker to load config
+          console.log('[Load Config] Clicked - TODO: implement file picker');
+        });
       }
       
       // Listen for config changes
@@ -560,89 +567,42 @@
         if (window.LabsNetworkFlow && window.LabsNetworkFlow.setConfig) {
           window.LabsNetworkFlow.setConfig(config);
         }
-        if (window.LabsJson) {
-          window.LabsJson.render(config);
-        }
+        // JSON Display will be updated by tree module when config structure is ready
         // Tree updates automatically via event listener
       });
       
-      // Function to load sample configuration
-      function loadSampleConfig() {
-        const sampleConfig = {
-          log: {
-            level: 'info',
-            timestamp: true,
-            output: 'meshnet.log'
-          },
-          dns: {
-            servers: [
-              {
-                tag: 'google-dns',
-                address: '8.8.8.8',
-                detour: 'proxy'
-              },
-              {
-                tag: 'local-dns',
-                address: 'local',
-                detour: 'direct'
-              }
-            ],
-            final: 'local-dns'
-          },
-          inbounds: [
-            {
-              type: 'tun',
-              tag: 'tun-in',
-              mtu: 9000,
-              inet4_address: '172.19.0.1/30'
-            }
-          ],
-          outbounds: [
-            {
-              type: 'direct',
-              tag: 'direct'
-            },
-            {
-              type: 'block',
-              tag: 'block'
-            },
-            {
-              type: 'dns',
-              tag: 'dns-out'
-            }
-          ],
-          route: {
-            rules: [
-              {
-                type: 'logical',
-                mode: 'or',
-                rules: [
-                  { domain: 'google.com' },
-                  { domain: 'youtube.com' }
-                ],
-                outbound: 'proxy'
-              },
-              {
-                domain_suffix: ['.cn', '.中国'],
-                outbound: 'direct'
-              },
-              {
-                ip_cidr: ['10.0.0.0/8', '192.168.0.0/16'],
-                outbound: 'direct'
-              }
-            ],
-            final: 'direct'
-          }
-        };
-        
-        // Dispatch event to update all modules
-        window.dispatchEvent(new CustomEvent('config-updated', {
-          detail: sampleConfig
-        }));
-        
-        // Show feedback
-        alert('✅ 示例配置已加载！\n\n包含:\n- DNS 服务器配置\n- TUN 入站\n- 直连/阻止/ DNS 出站\n- 域名和 IP 路由规则');
-      }
+      // Initialize with empty config for now
+      // TODO: This will be populated by tree module later
+      const emptyConfig = {
+        log: {
+          level: 'info',
+          timestamp: true
+        },
+        dns: {
+          servers: [],
+          final: 'local'
+        },
+        ntp: {
+          enabled: false,
+          server: 'time.apple.com',
+          interval: '30m'
+        },
+        certificate: [],
+        endpoints: [],
+        inbounds: [],
+        outbounds: [],
+        route: {
+          rules: [],
+          final: 'direct'
+        },
+        services: [],
+        experimental: {}
+      };
+      
+      // Dispatch event to initialize all modules
+      window.dispatchEvent(new CustomEvent('config-updated', {
+        detail: emptyConfig
+      }));
     });
   </script>
 

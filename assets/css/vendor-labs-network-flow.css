@@ -61,10 +61,10 @@
 }
 
 /* Node Emoji Icon */
-.node-emoji {
-  font-size: 2rem;
-  line-height: 1;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+.node-icon svg {
+  width: 2rem;
+  height: 2rem;
+  stroke: currentColor;
 }
 
 /* Node Label */

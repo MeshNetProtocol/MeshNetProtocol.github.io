@@ -111,9 +111,6 @@
         state.container.innerHTML = `
             <div class="tree-header">
                 <h3 class="tree-title">配置结构</h3>
-                <button class="btn-add-root" onclick="window.LabsTree.addRootNode()">
-                    <span>+</span> 添加根节点
-                </button>
             </div>
             <div class="tree-content"></div>
         `;
@@ -132,58 +129,45 @@
         const canHaveChildren = node.type === 'object' || node.type === 'array';
         const isExpanded = node.expanded;
         const isSelected = state.selectedNode === node.id;
+        const isRootLevel = level === 0;
 
         const nodeElement = document.createElement('div');
         nodeElement.className = 'select-none';
 
         const nodeRow = document.createElement('div');
-        nodeRow.className = `flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-[#1a1b2e]/30 transition-all cursor-pointer group ${isSelected ? 'bg-[#2a2b3e]' : ''}`;
+        nodeRow.className = `tree-node-row ${isSelected ? 'selected' : ''}`;
         nodeRow.style.marginLeft = `${level * 24}px`;
         nodeRow.dataset.nodeId = node.id;
 
         nodeRow.innerHTML = `
             ${canHaveChildren ? `
-                <button
-                    onClick="(e) => { e.stopPropagation(); window.LabsTree.toggleExpand('${node.id}') }"
-                    className="w-5 h-5 flex items-center justify-center hover:bg-[#00d9ff]/20 rounded transition-all"
-                >
-                    <span className="toggle-icon ${isExpanded ? 'expanded' : ''}">▶</span>
+                <button class="btn-toggle" onclick="event.stopPropagation(); window.LabsTree.toggleExpand('${node.id}')">
+                    <span class="toggle-icon ${isExpanded ? 'expanded' : ''}">▶</span>
                 </button>
-            ` : '<div className="w-5"></div>'}
+            ` : '<div class="spacer"></div>'}
             
-            <div class="flex-1 flex items-center gap-2" onclick="window.LabsTree.selectNode('${node.id}')">
-                <span class="text-[#00d9ff] font-mono">${node.name}</span>
-                <span class="text-xs text-gray-500 font-mono">${node.type}</span>
+            <div class="node-content" onclick="window.LabsTree.selectNode('${node.id}')">
+                <span class="node-name">${node.name}</span>
+                <span class="node-type">${node.type}</span>
                 ${node.value !== undefined && node.type !== 'object' && node.type !== 'array' ? `
-                    <span class="text-sm text-gray-400 font-mono">= ${JSON.stringify(node.value)}</span>
+                    <span class="node-separator">=</span>
+                    <span class="node-value">${JSON.stringify(node.value)}</span>
                 ` : ''}
             </div>
 
-            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                ${canHaveChildren ? `
-                    <button
-                        onClick="(e) => { e.stopPropagation(); window.LabsTree.addChild('${node.id}') }"
-                        className="p-1.5 hover:bg-[#00d9ff]/20 rounded transition-all"
-                        title="添加子节点"
-                    >
-                        <span class="text-[#00d9ff]">+</span>
+            ${!isRootLevel && canHaveChildren ? `
+                <div class="node-actions ${isSelected ? 'visible' : ''}">
+                    <button class="btn-action btn-add" onclick="event.stopPropagation(); window.LabsTree.addChild('${node.id}')" title="添加子节点">
+                        <span>+</span>
                     </button>
-                ` : ''}
-                <button
-                    onClick="(e) => { e.stopPropagation(); window.LabsTree.editNode('${node.id}') }"
-                    className="p-1.5 hover:bg-[#00d9ff]/20 rounded transition-all"
-                    title="编辑"
-                >
-                    <span class="text-[#00d9ff]">✏️</span>
-                </button>
-                <button
-                    onClick="(e) => { e.stopPropagation(); window.LabsTree.deleteNode('${node.id}') }"
-                    className="p-1.5 hover:bg-red-500/20 rounded transition-all"
-                    title="删除"
-                >
-                    <span class="text-red-400">🗑️</span>
-                </button>
-            </div>
+                    <button class="btn-action btn-edit" onclick="event.stopPropagation(); window.LabsTree.editNode('${node.id}')" title="编辑">
+                        <span>✏️</span>
+                    </button>
+                    <button class="btn-action btn-delete" onclick="event.stopPropagation(); window.LabsTree.deleteNode('${node.id}')" title="删除">
+                        <span>🗑️</span>
+                    </button>
+                </div>
+            ` : ''}
         `;
 
         nodeElement.appendChild(nodeRow);
@@ -222,22 +206,6 @@
     }
 
     /**
-     * Add a root node
-     */
-    function addRootNode() {
-        const newNode = {
-            id: `root-${Date.now()}`,
-            name: 'new_section',
-            type: 'object',
-            children: [],
-            expanded: false
-        };
-        state.config.push(newNode);
-        render();
-        notifyConfigChange();
-    }
-
-    /**
      * Add a child node
      */
     function addChild(parentId) {
@@ -258,61 +226,6 @@
             render();
             notifyConfigChange();
         }
-    }
-
-    /**
-     * Edit a node
-     */
-    function editNode(nodeId) {
-        const node = findNodeById(state.config, nodeId);
-        if (node) {
-            const newName = prompt('Edit node name:', node.name);
-            if (newName !== null) {
-                node.name = newName;
-                render();
-                notifyConfigChange();
-            }
-        }
-    }
-
-    /**
-     * Delete a node
-     */
-    function deleteNode(nodeId) {
-        if (!confirm('确定要删除这个节点吗？')) return;
-
-        // Try to delete from root level
-        const rootIndex = state.config.findIndex(n => n.id === nodeId);
-        if (rootIndex !== -1) {
-            state.config.splice(rootIndex, 1);
-            render();
-            notifyConfigChange();
-            return;
-        }
-
-        // Search in children
-        deleteNodeRecursive(state.config, nodeId);
-        render();
-        notifyConfigChange();
-    }
-
-    /**
-     * Delete node recursively
-     */
-    function deleteNodeRecursive(nodes, nodeId) {
-        for (const node of nodes) {
-            if (node.children) {
-                const index = node.children.findIndex(n => n.id === nodeId);
-                if (index !== -1) {
-                    node.children.splice(index, 1);
-                    return true;
-                }
-                if (deleteNodeRecursive(node.children, nodeId)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
@@ -375,10 +288,7 @@
         render,
         toggleExpand,
         selectNode,
-        addRootNode,
-        addChild,
-        editNode,
-        deleteNode
+        addChild
     };
 
     // Initialize when DOM is ready

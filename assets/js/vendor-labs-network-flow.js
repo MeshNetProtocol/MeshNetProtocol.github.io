@@ -17,11 +17,11 @@
     };
 
     const NODES = [
-        { id: 'client', name: '客户端', x: 10, y: 50, icon: '🖥️' },
-        { id: 'router', name: '路由器', x: 30, y: 50, icon: '📡' },
-        { id: 'firewall', name: '防火墙', x: 50, y: 50, icon: '🛡️' },
-        { id: 'vpn', name: 'VPN 服务器', x: 70, y: 35, icon: '🖥️' },
-        { id: 'destination', name: '目标服务器', x: 90, y: 50, icon: '🌐' }
+        { id: 'client', name: '客户端', x: 10, y: 50, icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>' },
+        { id: 'router', name: '路由器', x: 30, y: 50, icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="2" y1="6" x2="22" y2="6"/><line x1="2" y1="18" x2="22" y2="18"/></svg>' },
+        { id: 'firewall', name: '防火墙', x: 50, y: 50, icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
+        { id: 'vpn', name: 'VPN 服务器', x: 70, y: 35, icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>' },
+        { id: 'destination', name: '目标服务器', x: 90, y: 50, icon: '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' }
     ];
 
     const PACKET_TYPES = {
@@ -112,11 +112,11 @@
             let borderColor = '#00d9ff';
             if (node.id === 'firewall') borderColor = '#ff4757';
             if (node.id === 'destination') borderColor = '#00ff88';
-
+    
             return `
-                <div class="network-node" style="left: ${node.x}%; top: ${node.y}%;">
-                    <div class="node-icon" style="border-color: ${borderColor}; box-shadow: 0 4px 12px ${borderColor}33;">
-                        <span class="node-emoji">${node.icon}</span>
+                <div class="network-node" style="left: ${node.x}%; top: ${node.y}%">
+                    <div class="node-icon" style="border-color: ${borderColor}; box-shadow: 0 4px 12px ${borderColor}33; color: ${borderColor};">
+                        ${node.icon}
                     </div>
                     <span class="node-label">${node.name}</span>
                 </div>

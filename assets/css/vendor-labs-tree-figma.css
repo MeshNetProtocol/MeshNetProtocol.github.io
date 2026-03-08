@@ -27,4 +27,196 @@
   background: linear-gradient(to bottom, #00e5ff, #0070ff);
 }
 
-/* Figma uses inline Tailwind-style classes, minimal custom CSS needed */
+/* Tree Content */
+.tree-content {
+  padding: 1rem;
+}
+
+/* Tree Header */
+.tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+}
+
+.tree-title {
+  font-size: 1rem;
+  color: #00d9ff;
+  font-weight: 600;
+}
+
+/* Node Row */
+.select-none {
+  user-select: none;
+}
+
+.tree-node-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.tree-node-row:hover {
+  background: rgba(26, 27, 46, 0.5);
+}
+
+.tree-node-row.selected {
+  background: rgba(42, 43, 62, 1);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+/* Toggle Button */
+.btn-toggle {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.btn-toggle:hover {
+  background: rgba(0, 217, 255, 0.2);
+}
+
+.toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00d9ff;
+  font-size: 0.625rem;
+  transition: transform 0.2s;
+}
+
+.toggle-icon.expanded {
+  transform: rotate(90deg);
+}
+
+/* Spacer for non-expandable nodes */
+.spacer {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Node Content */
+.node-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.node-name {
+  color: #00d9ff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 500;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.node-type {
+  color: #64748b;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.node-separator {
+  color: #94a3b8;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.875rem;
+}
+
+.node-value {
+  color: #94a3b8;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Action Buttons */
+.node-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.tree-node-row:hover .node-actions {
+  opacity: 1;
+}
+
+.node-actions.visible {
+  opacity: 1;
+}
+
+.btn-action {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.btn-action:hover {
+  background: rgba(0, 217, 255, 0.2);
+}
+
+.btn-action.btn-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.btn-add {
+  color: #00d9ff;
+}
+
+.btn-edit {
+  color: #00d9ff;
+}
+
+.btn-delete {
+  color: #ef4444;
+}
+
+/* Children Container */
+.tree-children {
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.children-animate {
+  animation: slideDown 0.2s ease-out;
+}
