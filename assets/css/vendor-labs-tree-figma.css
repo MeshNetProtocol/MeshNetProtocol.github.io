@@ -32,21 +32,6 @@
   padding: 1rem;
 }
 
-/* Tree Header */
-.tree-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  border-bottom: 1px solid rgba(0, 217, 255, 0.1);
-}
-
-.tree-title {
-  font-size: 1rem;
-  color: #00d9ff;
-  font-weight: 600;
-}
-
 /* Node Row */
 .select-none {
   user-select: none;
@@ -148,6 +133,44 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.node-value.boolean-value {
+  color: #00ff88;
+  font-weight: 500;
+}
+
+/* Array Index */
+.node-array-index {
+  color: #f472b6;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  margin-right: 0.25rem;
+}
+
+/* Inline Input Editor */
+.node-value-input {
+  background: rgba(26, 27, 46, 0.8);
+  border: 1px solid #00d9ff;
+  border-radius: 0.25rem;
+  color: #00d9ff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  min-width: 100px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.node-value-input:focus {
+  border-color: #00e5ff;
+  box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
+}
+
+/* Type Icons */
+.node-type-icon {
+  margin-right: 0.25rem;
+  font-size: 0.75rem;
 }
 
 /* Action Buttons */

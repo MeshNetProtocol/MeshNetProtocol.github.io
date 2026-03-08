@@ -78,6 +78,8 @@
             node.type = 'array';
             node.children = value.map((item, index) => {
                 const childNode = convertValueToNode(`${index}`, item);
+                childNode.type = 'array-index';  // Mark as array item
+                childNode.arrayIndex = index;    // Store index for display
                 return childNode;
             });
         } else if (typeof value === 'object' && value !== null) {
@@ -99,7 +101,46 @@
     function getValueType(value) {
         if (Array.isArray(value)) return 'array';
         if (value === null) return 'null';
+        
+        // Check for IP address pattern
+        if (typeof value === 'string') {
+            const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (ipRegex.test(value)) {
+                return 'ip';
+            }
+        }
+        
         return typeof value;
+    }
+
+    /**
+     * Get type icon
+     */
+    function getTypeIcon(type) {
+        const icons = {
+            'string': '🔤 ',
+            'number': '🔢 ',
+            'boolean': '✅ ',
+            'object': '📦 ',
+            'array': '📋 ',
+            'ip': '🌐 ',
+            'null': '⚪ '
+        };
+        return icons[type] || '';
+    }
+
+    /**
+     * Format value for display
+     */
+    function formatValue(value, type) {
+        if (type === 'boolean') {
+            return value ? 'true' : 'false';
+        } else if (type === 'null') {
+            return 'null';
+        } else if (type === 'ip') {
+            return value || '0.0.0.0';
+        }
+        return value;
     }
 
     /**
@@ -108,10 +149,8 @@
     function render() {
         if (!state.container || !state.config) return;
 
+        // Don't render header - it's already in the HTML panel header
         state.container.innerHTML = `
-            <div class="tree-header">
-                <h3 class="tree-title">配置结构</h3>
-            </div>
             <div class="tree-content"></div>
         `;
 
@@ -130,6 +169,7 @@
         const isExpanded = node.expanded;
         const isSelected = state.selectedNode === node.id;
         const isRootLevel = level === 0;
+        const isArrayItem = node.type === 'array-index';
 
         const nodeElement = document.createElement('div');
         nodeElement.className = 'select-none';
@@ -141,29 +181,44 @@
 
         nodeRow.innerHTML = `
             ${canHaveChildren ? `
-                <button class="btn-toggle" onclick="event.stopPropagation(); window.LabsTree.toggleExpand('${node.id}')">
+                <button class="btn-toggle" onclick="event.stopPropagation(); console.log('Button clicked for node:', '${node.id}'); window.LabsTree.toggleExpand('${node.id}')">
                     <span class="toggle-icon ${isExpanded ? 'expanded' : ''}">▶</span>
                 </button>
             ` : '<div class="spacer"></div>'}
             
             <div class="node-content" onclick="window.LabsTree.selectNode('${node.id}')">
-                <span class="node-name">${node.name}</span>
-                <span class="node-type">${node.type}</span>
-                ${node.value !== undefined && node.type !== 'object' && node.type !== 'array' ? `
-                    <span class="node-separator">=</span>
-                    <span class="node-value">${JSON.stringify(node.value)}</span>
+                ${isArrayItem ? `
+                    <span class="node-array-index">[${node.arrayIndex}]</span>
                 ` : ''}
+                <span class="node-name">${node.name}</span>
+                <span class="node-type">${getTypeIcon(node.type)}${node.type}</span>
+                ${node.editing ? `
+                    <input 
+                        type="${node.type === 'number' ? 'number' : node.type === 'boolean' ? 'text' : 'text'}" 
+                        class="node-value-input" 
+                        value="${node.value}"
+                        data-node-id="${node.id}"
+                        onclick="event.stopPropagation()"
+                        onchange="window.LabsTree.updateNodeValue('${node.id}', this.value)"
+                        onblur="window.LabsTree.finishEditing('${node.id}')"
+                        onkeydown="if(event.key === 'Enter') this.blur()"
+                        autofocus
+                    />
+                ` : (node.value !== undefined && node.type !== 'object' && node.type !== 'array' ? `
+                    <span class="node-separator">=</span>
+                    <span class="node-value ${node.type === 'boolean' ? 'boolean-value' : ''}">${formatValue(node.value, node.type)}</span>
+                ` : '')}
             </div>
 
             ${!isRootLevel && canHaveChildren ? `
                 <div class="node-actions ${isSelected ? 'visible' : ''}">
-                    <button class="btn-action btn-add" onclick="event.stopPropagation(); window.LabsTree.addChild('${node.id}')" title="添加子节点">
+                    <button class="btn-action btn-add" onclick="event.stopPropagation(); window.LabsTree.addChild('${node.id}')" title="Add child">
                         <span>+</span>
                     </button>
-                    <button class="btn-action btn-edit" onclick="event.stopPropagation(); window.LabsTree.editNode('${node.id}')" title="编辑">
+                    <button class="btn-action btn-edit" onclick="event.stopPropagation(); window.LabsTree.editNode('${node.id}')" title="Edit">
                         <span>✏️</span>
                     </button>
-                    <button class="btn-action btn-delete" onclick="event.stopPropagation(); window.LabsTree.deleteNode('${node.id}')" title="删除">
+                    <button class="btn-action btn-delete" onclick="event.stopPropagation(); window.LabsTree.deleteNode('${node.id}')" title="Delete">
                         <span>🗑️</span>
                     </button>
                 </div>
@@ -189,11 +244,17 @@
      * Toggle node expand/collapse
      */
     function toggleExpand(nodeId) {
+        console.log('[Labs Tree] toggleExpand called for:', nodeId);
         const node = findNodeById(state.config, nodeId);
         if (node) {
+            console.log('[Labs Tree] Found node, current expanded state:', node.expanded);
             node.expanded = !node.expanded;
+            console.log('[Labs Tree] New expanded state:', node.expanded);
             render();
-            notifyConfigChange();
+            console.log('[Labs Tree] Render complete');
+            // Don't notify config change - expand/collapse is UI only
+        } else {
+            console.warn('[Labs Tree] Node not found:', nodeId);
         }
     }
 
@@ -203,6 +264,7 @@
     function selectNode(nodeId) {
         state.selectedNode = nodeId;
         render();
+        // Don't notify config change - selection is UI only
     }
 
     /**
@@ -219,13 +281,117 @@
                 name: 'new_field',
                 type: 'string',
                 value: '',
-                expanded: false
+                expanded: false,
+                editing: false
             };
             parent.children.push(newNode);
             parent.expanded = true;
             render();
             notifyConfigChange();
+            
+            // Auto-focus the new node for editing
+            setTimeout(() => {
+                const input = document.querySelector(`input[data-node-id="${newNode.id}"]`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 100);
         }
+    }
+
+    /**
+     * Edit a node (start editing mode)
+     */
+    function editNode(nodeId) {
+        const node = findNodeById(state.config, nodeId);
+        if (node) {
+            node.editing = true;
+            render();
+            
+            // Focus the input
+            setTimeout(() => {
+                const input = document.querySelector(`input[data-node-id="${nodeId}"]`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 100);
+        }
+    }
+
+    /**
+     * Update node value
+     */
+    function updateNodeValue(nodeId, value) {
+        const node = findNodeById(state.config, nodeId);
+        if (node) {
+            // Type conversion
+            if (node.type === 'number') {
+                node.value = Number(value);
+            } else if (node.type === 'boolean') {
+                node.value = value === 'true' || value === 'yes';
+            } else if (node.type === 'ip') {
+                // Basic IP validation
+                const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+                node.value = ipRegex.test(value) ? value : '0.0.0.0';
+            } else {
+                node.value = value;
+            }
+            notifyConfigChange();
+        }
+    }
+
+    /**
+     * Finish editing
+     */
+    function finishEditing(nodeId) {
+        const node = findNodeById(state.config, nodeId);
+        if (node) {
+            node.editing = false;
+            render();
+            // Don't notify config change - already notified in updateNodeValue
+        }
+    }
+
+    /**
+     * Delete a node
+     */
+    function deleteNode(nodeId) {
+        if (!confirm('Are you sure you want to delete this node?')) return;
+
+        // Try to delete from root level
+        const rootIndex = state.config.findIndex(n => n.id === nodeId);
+        if (rootIndex !== -1) {
+            state.config.splice(rootIndex, 1);
+            render();
+            notifyConfigChange();
+            return;
+        }
+
+        // Search in children
+        deleteNodeRecursive(state.config, nodeId);
+        render();
+        notifyConfigChange();
+    }
+
+    /**
+     * Delete node recursively
+     */
+    function deleteNodeRecursive(nodes, nodeId) {
+        for (const node of nodes) {
+            if (node.children) {
+                const index = node.children.findIndex(n => n.id === nodeId);
+                if (index !== -1) {
+                    node.children.splice(index, 1);
+                    return true;
+                }
+                if (deleteNodeRecursive(node.children, nodeId)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -288,7 +454,11 @@
         render,
         toggleExpand,
         selectNode,
-        addChild
+        addChild,
+        editNode,
+        updateNodeValue,
+        finishEditing,
+        deleteNode
     };
 
     // Initialize when DOM is ready
