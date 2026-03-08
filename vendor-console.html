@@ -482,29 +482,32 @@
           </div>
 
           <!-- New Professional Dashboard Layout (Figma Design) -->
-          <!-- Layout: Left Tree (1/3) + Right Top Animation (2/3) + Right Bottom JSON (2/3) -->
+          <!-- New Layout: Top Row (Tree 50% + Flow 50%) + Bottom JSON -->
           <div class="labs-figma-grid">
             
-            <!-- Left Panel: Configuration Tree -->
-            <div class="labs-tree-panel-figma">
-              <div class="panel-header-figma">
-                <h3 style="color: #00d9ff; font-size: 1rem; margin: 0;">🌳 配置结构</h3>
+            <!-- Top Row: Configuration Tree + Network Flow Animation -->
+            <div class="labs-top-row">
+              <!-- Left Panel: Configuration Tree -->
+              <div class="labs-tree-panel-figma">
+                <div class="panel-header-figma">
+                  <h3 style="color: #00d9ff; font-size: 1rem; margin: 0;">🌳 配置结构</h3>
+                </div>
+                <div id="config-tree-container" class="config-tree"></div>
               </div>
-              <div id="config-tree-container" class="config-tree"></div>
+              
+              <!-- Right Panel: Network Flow Animation -->
+              <div class="labs-animation-panel-figma">
+                <div class="panel-header-figma">
+                  <h3 style="color: #00d9ff; font-size: 1rem; margin: 0;">🌊 数据流向动画</h3>
+                  <p style="color: #94a3b8; font-size: 0.75rem; margin: 0;">实时展示网络数据的流动路径</p>
+                </div>
+                <div class="animation-wrapper-figma">
+                  <!-- Network flow will be rendered here by JS -->
+                </div>
+              </div>
             </div>
             
-            <!-- Right Top: Network Flow Animation -->
-            <div class="labs-animation-panel-figma">
-              <div class="panel-header-figma">
-                <h3 style="color: #00d9ff; font-size: 1rem; margin: 0;">🌊 数据流向动画</h3>
-                <p style="color: #94a3b8; font-size: 0.75rem; margin: 0;">实时展示网络数据的流动路径</p>
-              </div>
-              <div class="animation-wrapper-figma">
-                <!-- Network flow will be rendered here by JS -->
-              </div>
-            </div>
-            
-            <!-- Right Bottom: JSON Preview -->
+            <!-- Bottom: JSON Preview -->
             <div class="labs-json-panel-figma">
               <div class="panel-header-figma">
                 <h3 style="color: #00d9ff; font-size: 1rem; margin: 0;">📄 JSON 配置预览</h3>

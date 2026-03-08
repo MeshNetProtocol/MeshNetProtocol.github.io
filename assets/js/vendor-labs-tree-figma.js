@@ -142,10 +142,39 @@
     function convertValueToNode(name, value, parentPath = '') {
         const currentPath = parentPath ? `${parentPath}.${name}` : name;
         
+        // Determine type
+        let type;
+        if (Array.isArray(value)) {
+            type = 'array';
+        } else if (value === null) {
+            type = 'null';
+        } else if (typeof value === 'object') {
+            type = 'object';
+        } else {
+            // Check if it's an enum type
+            const enumKey = currentPath;
+            if (ENUM_DEFINITIONS[enumKey]) {
+                type = 'enum';
+                console.log('[ConvertValueToNode] Detected enum type:', enumKey);
+            } else {
+                // Check for IP address pattern
+                if (typeof value === 'string') {
+                    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+                    if (ipRegex.test(value)) {
+                        type = 'ip';
+                    } else {
+                        type = typeof value;
+                    }
+                } else {
+                    type = typeof value;
+                }
+            }
+        }
+        
         const node = {
             id: `node-${name}-${Date.now()}-${Math.random()}`,
             name: name,
-            type: getValueType(value),
+            type: type,
             expanded: false,
             path: currentPath  // Store full path for enum lookup
         };
@@ -204,6 +233,18 @@
             'enum': '🔀 '  // For enum types
         };
         return icons[type] || '';
+    }
+
+    /**
+     * Generate enum options HTML
+     */
+    function generateEnumOptions(node) {
+        const enumDef = ENUM_DEFINITIONS[node.path];
+        if (!enumDef) return '<option value="">Unknown</option>';
+        
+        return enumDef.values.map(v => 
+            `<option value="${v}" ${node.value === v ? 'selected' : ''}>${v}</option>`
+        ).join('');
     }
 
     /**
@@ -315,6 +356,17 @@
                             <option value="true" ${node.value === true ? 'selected' : ''}>true</option>
                             <option value="false" ${node.value === false ? 'selected' : ''}>false</option>
                         </select>
+                    ` : node.type === 'enum' ? `
+                        <select 
+                            class="node-value-select" 
+                            data-node-id="${node.id}"
+                            onclick="event.stopPropagation()"
+                            onchange="window.LabsTree.updateNodeValue('${node.id}', this.value)"
+                            onblur="window.LabsTree.finishEditing('${node.id}', true)"
+                            autofocus
+                        >
+                            ${generateEnumOptions(node)}
+                        </select>
                     ` : `
                         <input 
                             type="${node.type === 'number' ? 'number' : 'text'}" 
@@ -330,10 +382,8 @@
                     `}
                 ` : (node.type !== 'object' && node.type !== 'array' ? `
                     <span class="node-separator"> = </span>
-                    <span class="node-value ${node.type === 'boolean' ? 'boolean-value' : ''} ${node.type === 'enum' ? 'enum-value' : ''}" 
-                          onclick="${node.type === 'enum' ? `window.LabsTree.editEnumValue('${node.id}')` : ''}">
+                    <span class="node-value ${node.type === 'boolean' ? 'boolean-value' : ''} ${node.type === 'enum' ? 'enum-value' : ''}">
                         ${formatValue(node.value, node.type)}
-                        ${node.type === 'enum' ? ' ▼' : ''}
                     </span>
                 ` : `
                     <span class="node-type">${getTypeIcon(node.type)}${node.type}</span>
@@ -733,7 +783,7 @@
                 render();
                 console.log('[EditNode] Render complete');
                 
-                // Focus the input
+                // Focus the input/select
                 setTimeout(() => {
                     const input = document.querySelector(`input[data-node-id="${nodeId}"]`);
                     const select = document.querySelector(`select[data-node-id="${nodeId}"]`);

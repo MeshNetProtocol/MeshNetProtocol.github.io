@@ -5,23 +5,38 @@
  */
 
 /* ============================================
-   Figma Grid Layout - 3 Panels
-   Left Tree (1/3) + Right Top Animation (2/3) + Right Bottom JSON (2/3)
+   New Layout Structure
+   Top: Tree (50%) + Flow (50%)
+   Bottom: JSON Preview (100% width, auto height)
    ============================================ */
 
 .labs-figma-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  grid-template-rows: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  height: calc(100vh - 220px);
-  min-height: 650px;
+  height: auto;
+  min-height: auto;
   margin-top: 1rem;
 }
 
-/* Left Panel - Full Height */
+/* Top Row - Tree + Flow */
+.labs-top-row {
+  display: grid;
+  grid-template-columns: 300px 1fr; /* Fixed width for tree, rest for flow */
+  gap: 1rem;
+  height: 600px; /* Fixed height for top row */
+}
+
+/* Left Panel - Tree */
 .labs-tree-panel-figma {
-  grid-row: 1 / span 2;
+  height: 100%;
+  min-width: 0; /* Prevent flex overflow */
+}
+
+/* Right Panel - Flow Animation */
+.labs-animation-panel-figma {
+  height: 100%;
+  min-width: 0; /* Prevent flex overflow */
 }
 
 /* ============================================
@@ -164,9 +179,25 @@
    JSON Panel - Figma Design
    ============================================ */
 
+.labs-json-panel-figma {
+  background: #1a1b2e;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.05);
+  overflow: hidden; /* No scrollbars */
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.labs-json-panel-figma:hover {
+  border-color: rgba(0, 217, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 217, 255, 0.1);
+}
+
 .json-content-figma {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: hidden; /* No scrollbars */
   padding: 1rem;
   background: rgba(10, 11, 30, 0.8);
 }
