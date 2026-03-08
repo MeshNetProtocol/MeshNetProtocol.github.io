@@ -11,8 +11,6 @@
     const state = {
         config: null,
         container: null,
-        packets: [],
-        packetIdCounter: 0,
         initialized: false
     };
 
@@ -25,9 +23,9 @@
     ];
 
     const PACKET_TYPES = {
-        direct: { color: '#00ff88', label: '直连' },
-        vpn: { color: '#00d9ff', label: 'VPN 代理' },
-        blocked: { color: '#ff4757', label: '被阻塞' }
+        geo: { color: '#00ff88', label: 'Geo Data' },
+        domain: { color: '#ff6b35', label: 'Domain Suffix' },
+        undefined: { color: '#a855f7', label: 'Undefined' }
     };
 
     /**
@@ -53,8 +51,9 @@
         state.initialized = true;
 
         render();
-        startPacketGeneration();
-        startPacketAnimation();
+        // Animation disabled - static display only
+        // startPacketGeneration();
+        // startPacketAnimation();
     }
 
     /**
@@ -81,7 +80,8 @@
             </div>
 
             <!-- Animated Data Packets Container -->
-            <div id="packets-container" class="packets-container"></div>
+            <!-- Disabled - static display only -->
+            <!-- <div id="packets-container" class="packets-container"></div> -->
 
             <!-- Legend -->
             <div class="flow-legend-figma">
@@ -89,15 +89,15 @@
                 <div class="legend-items">
                     <div class="legend-item">
                         <div class="legend-dot" style="background: #00ff88;"></div>
-                        <span>直连</span>
+                        <span>Geo Data</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-dot" style="background: #00d9ff;"></div>
-                        <span>VPN 代理</span>
+                        <div class="legend-dot" style="background: #ff6b35;"></div>
+                        <span>Domain Suffix</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-dot" style="background: #ff4757;"></div>
-                        <span>被阻塞</span>
+                        <div class="legend-dot" style="background: #a855f7;"></div>
+                        <span>Undefined</span>
                     </div>
                 </div>
             </div>
@@ -150,9 +150,13 @@
 
     /**
      * Create a new data packet
+     * Disabled - static display only
      */
     function createPacket() {
-        const types = ['direct', 'vpn', 'blocked'];
+        // Animation disabled
+        return;
+        
+        const types = ['geo', 'domain', 'undefined'];
         const type = types[Math.floor(Math.random() * types.length)];
         
         const packet = {
@@ -168,8 +172,12 @@
 
     /**
      * Render a single packet
+     * Disabled - static display only
      */
     function renderPacket(packet) {
+        // Animation disabled
+        return;
+        
         const pos = getPacketPath(packet.type, packet.progress);
         const color = PACKET_TYPES[packet.type].color;
 
@@ -188,6 +196,7 @@
 
     /**
      * Remove a packet from the DOM
+     * Disabled - static display only
      */
     function removePacket(packet) {
         if (packet.element) {
@@ -198,6 +207,7 @@
 
     /**
      * Get packet position based on type and progress
+     * Disabled - static display only
      */
     function getPacketPath(type, progress) {
         const stages = [
@@ -239,8 +249,12 @@
 
     /**
      * Start generating packets at intervals
+     * Disabled - static display only
      */
     function startPacketGeneration() {
+        // Animation disabled
+        return;
+        
         setInterval(() => {
             createPacket();
 
@@ -257,8 +271,12 @@
 
     /**
      * Animate all packets
+     * Disabled - static display only
      */
     function startPacketAnimation() {
+        // Animation disabled
+        return;
+        
         function animate() {
             state.packets.forEach(packet => {
                 packet.progress = Math.min(packet.progress + 2, 100);
