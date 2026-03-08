@@ -73,6 +73,18 @@
         // Listen to config updates
         window.addEventListener('config-updated', handleConfigUpdate);
         
+        // Event delegation for delete buttons
+        state.container.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.btn-delete');
+            if (deleteBtn) {
+                e.stopPropagation();
+                const nodeId = deleteBtn.dataset.nodeId;
+                if (nodeId) {
+                    deleteNode(nodeId);
+                }
+            }
+        });
+        
         state.initialized = true;
         console.log("[Labs] Tree Module ready!");
     }
@@ -83,7 +95,30 @@
     function handleConfigUpdate(event) {
         const config = event.detail;
         console.log("[Labs Tree] Received config:", config);
-        state.config = convertToTreeNodes(config);
+        
+        // Preserve expanded state from old tree
+        const oldExpandedState = new Map();
+        if (state.config) {
+            state.config.forEach(node => {
+                console.log('[HandleConfigUpdate] Saving expanded state for node:', node.name, '=', node.expanded);
+                oldExpandedState.set(node.name, node.expanded);
+            });
+        }
+        
+        // Convert to tree nodes
+        const newTree = convertToTreeNodes(config);
+        
+        // Restore expanded state
+        newTree.forEach(node => {
+            console.log('[HandleConfigUpdate] Checking node:', node.name, 'has old state:', oldExpandedState.has(node.name));
+            if (oldExpandedState.has(node.name)) {
+                const oldState = oldExpandedState.get(node.name);
+                console.log('[HandleConfigUpdate] Restoring', node.name, 'expanded to:', oldState);
+                node.expanded = oldState;
+            }
+        });
+        
+        state.config = newTree;
         console.log("[Labs Tree] Converted to tree nodes:", state.config);
         render();
     }
@@ -199,6 +234,8 @@
         state.config.forEach((node, index) => {
             treeContent.appendChild(renderNode(node, 0, [index]));
         });
+        
+        // Note: Delete button events are handled by event delegation in init()
     }
 
     /**
@@ -209,12 +246,27 @@
         buttonRow.className = 'tree-node-row add-field-row';
         buttonRow.style.marginLeft = `${level * 24}px`;
         
-        buttonRow.innerHTML = `
-            <div class="spacer"></div>
-            <button class="btn-add-field" onclick="event.stopPropagation(); window.LabsTree.showAddFieldMenu('${parentNode.id}', '${parentNode.path}')">
-                <span>+</span> Add Field
-            </button>
-        `;
+        // Check if all fields are already added
+        const schema = SCHEMA_DEFINITIONS[parentNode.path];
+        if (!schema) {
+            return buttonRow;
+        }
+        
+        const existingFields = new Set(parentNode.children ? parentNode.children.map(c => c.name) : []);
+        const availableFields = Object.keys(schema.fields).filter(f => !existingFields.has(f));
+        
+        // Only show button if there are available fields
+        if (availableFields.length > 0) {
+            buttonRow.innerHTML = `
+                <div class="spacer"></div>
+                <button class="btn-add-field" onclick="event.stopPropagation(); window.LabsTree.showAddFieldMenu('${parentNode.id}', '${parentNode.path}')">
+                    <span>+</span> Add Field
+                </button>
+            `;
+        } else {
+            // No available fields, hide button
+            buttonRow.style.display = 'none';
+        }
         
         return buttonRow;
     }
@@ -250,10 +302,9 @@
                     <span class="node-array-index">[${node.arrayIndex}]</span>
                 ` : ''}
                 <span class="node-name">${node.name}</span>
-                <span class="node-type">${getTypeIcon(node.type)}${node.type}</span>
                 ${node.editing ? `
                     <input 
-                        type="${node.type === 'number' ? 'number' : node.type === 'boolean' ? 'text' : 'text'}" 
+                        type="${node.type === 'number' ? 'number' : 'text'}" 
                         class="node-value-input" 
                         value="${node.value}"
                         data-node-id="${node.id}"
@@ -263,25 +314,29 @@
                         onkeydown="if(event.key === 'Enter') this.blur()"
                         autofocus
                     />
-                ` : (node.value !== undefined && node.type !== 'object' && node.type !== 'array' ? `
-                    <span class="node-separator">=</span>
+                ` : (node.type !== 'object' && node.type !== 'array' ? `
+                    <span class="node-separator"> = </span>
                     <span class="node-value ${node.type === 'boolean' ? 'boolean-value' : ''} ${node.type === 'enum' ? 'enum-value' : ''}" 
-                          onclick="${node.type === 'enum' ? `window.LabsTree.editEnumValue('${node.id}')` : ''}">
+                          onclick="${node.type === 'boolean' ? `window.LabsTree.toggleBooleanValue('${node.id}')` : ''}${node.type === 'enum' ? `window.LabsTree.editEnumValue('${node.id}')` : ''}">
                         ${formatValue(node.value, node.type)}
                         ${node.type === 'enum' ? ' ▼' : ''}
                     </span>
-                ` : '')}
+                ` : `
+                    <span class="node-type">${getTypeIcon(node.type)}${node.type}</span>
+                `)}
             </div>
 
-            ${!isRootLevel && canHaveChildren ? `
+            ${!isRootLevel ? `
                 <div class="node-actions ${isSelected ? 'visible' : ''}">
-                    <button class="btn-action btn-add" onclick="event.stopPropagation(); window.LabsTree.addChild('${node.id}')" title="Add child">
-                        <span>+</span>
-                    </button>
+                    ${canHaveChildren ? `
+                        <button class="btn-action btn-add" onclick="event.stopPropagation(); window.LabsTree.addChild('${node.id}')" title="Add child">
+                            <span>+</span>
+                        </button>
+                    ` : ''}
                     <button class="btn-action btn-edit" onclick="event.stopPropagation(); window.LabsTree.editNode('${node.id}')" title="Edit">
                         <span>✏️</span>
                     </button>
-                    <button class="btn-action btn-delete" onclick="event.stopPropagation(); window.LabsTree.deleteNode('${node.id}')" title="Delete">
+                    <button class="btn-action btn-delete" data-node-id="${node.id}" title="Delete">
                         <span>🗑️</span>
                     </button>
                 </div>
@@ -463,8 +518,10 @@
             });
 
             item.addEventListener('click', () => {
-                addFieldToNode(parentNode, fieldName, fieldDef);
+                // Remove menu first to avoid interference
                 menu.remove();
+                // Then add field and render
+                addFieldToNode(parentNode, fieldName, fieldDef);
             });
 
             menu.appendChild(item);
@@ -519,9 +576,16 @@
         };
 
         parentNode.children.push(newNode);
+        // Keep parent node expanded after adding field
+        console.log('[Add Field] Before setting expanded, parentNode:', parentNode.name, 'expanded:', parentNode.expanded);
         parentNode.expanded = true;
+        console.log('[Add Field] After setting expanded, parentNode.expanded:', parentNode.expanded);
+        
         render();
+        console.log('[Add Field] Render complete');
+        
         notifyConfigChange();
+        console.log('[Add Field] notifyConfigChange called');
 
         // Auto-focus for editing if it's a simple type
         if (fieldDef.type !== 'object' && fieldDef.type !== 'array') {
@@ -626,22 +690,37 @@
     }
 
     /**
+     * Toggle boolean value (true/false)
+     */
+    function toggleBooleanValue(nodeId) {
+        const node = findNodeById(state.config, nodeId);
+        if (node && node.type === 'boolean') {
+            node.value = !node.value;
+            render();
+            notifyConfigChange();
+        }
+    }
+
+    /**
      * Edit a node (start editing mode)
      */
     function editNode(nodeId) {
         const node = findNodeById(state.config, nodeId);
         if (node) {
-            node.editing = true;
-            render();
-            
-            // Focus the input
-            setTimeout(() => {
-                const input = document.querySelector(`input[data-node-id="${nodeId}"]`);
-                if (input) {
-                    input.focus();
-                    input.select();
-                }
-            }, 100);
+            // For leaf nodes (non-object, non-array), enable editing
+            if (node.type !== 'object' && node.type !== 'array') {
+                node.editing = true;
+                render();
+                
+                // Focus the input
+                setTimeout(() => {
+                    const input = document.querySelector(`input[data-node-id="${nodeId}"]`);
+                    if (input) {
+                        input.focus();
+                        input.select();
+                    }
+                }, 100);
+            }
         }
     }
 
@@ -680,14 +759,217 @@
     }
 
     /**
+     * Show a beautiful confirmation dialog
+     */
+    function showConfirmDialog(title, message) {
+        return new Promise((resolve) => {
+            // Create modal backdrop
+            const backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop';
+            backdrop.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.75);
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                z-index: 2147483647 !important;
+                opacity: 1;
+                pointer-events: auto !important;
+            `;
+            
+            // Create modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: linear-gradient(135deg, rgba(26, 27, 46, 0.98), rgba(15, 16, 32, 0.98));
+                border: 1px solid #00d9ff;
+                border-radius: 12px;
+                padding: 2rem;
+                max-width: 400px;
+                box-shadow: 0 20px 60px rgba(0, 217, 255, 0.3);
+                z-index: 2147483647 !important;
+                pointer-events: auto !important;
+            `;
+            
+            // Title
+            const titleEl = document.createElement('h3');
+            titleEl.textContent = title;
+            titleEl.style.cssText = `
+                margin: 0 0 1rem 0;
+                color: #00d9ff;
+                font-size: 1.25rem;
+                font-weight: 600;
+            `;
+            
+            // Message
+            const messageEl = document.createElement('p');
+            messageEl.textContent = message;
+            messageEl.style.cssText = `
+                margin: 0 0 1.5rem 0;
+                color: #94a3b8;
+                font-size: 0.95rem;
+                line-height: 1.6;
+            `;
+            
+            // Buttons container
+            const buttonsEl = document.createElement('div');
+            buttonsEl.style.cssText = `
+                display: flex;
+                gap: 1rem;
+                justify-content: flex-end;
+            `;
+            
+            // Cancel button
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.className = 'btn ghost';
+            cancelBtn.style.cssText = `
+                padding: 0.625rem 1.25rem;
+                border: 1px solid #64748b;
+                border-radius: 6px;
+                background: transparent;
+                color: #94a3b8;
+                cursor: pointer;
+                font-size: 0.875rem;
+                transition: all 0.2s;
+            `;
+            cancelBtn.onmouseenter = () => {
+                cancelBtn.style.background = 'rgba(100, 116, 139, 0.1)';
+                cancelBtn.style.borderColor = '#94a3b8';
+            };
+            cancelBtn.onmouseleave = () => {
+                cancelBtn.style.background = 'transparent';
+                cancelBtn.style.borderColor = '#64748b';
+            };
+            
+            // Confirm button
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = 'Delete';
+            confirmBtn.className = 'btn btn-danger';
+            confirmBtn.style.cssText = `
+                padding: 0.625rem 1.25rem;
+                border: 1px solid #ef4444;
+                border-radius: 6px;
+                background: linear-gradient(135deg, #ef4444, #dc2626);
+                color: white;
+                cursor: pointer;
+                font-size: 0.875rem;
+                font-weight: 500;
+                transition: all 0.2s;
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+            `;
+            confirmBtn.onmouseenter = () => {
+                confirmBtn.style.transform = 'translateY(-1px)';
+                confirmBtn.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.4)';
+            };
+            confirmBtn.onmouseleave = () => {
+                confirmBtn.style.transform = 'translateY(0)';
+                confirmBtn.style.boxShadow = '0 2px 8px rgba(239, 68, 68, 0.3)';
+            };
+            
+            // Button click handlers
+            cancelBtn.addEventListener('click', () => {
+                console.log('[Dialog] Cancel button clicked!');
+                backdrop.style.display = 'none';
+                setTimeout(() => {
+                    console.log('[Dialog] Removing backdrop, resolving false');
+                    backdrop.remove();
+                    resolve(false);
+                }, 0);
+            });
+            
+            confirmBtn.addEventListener('click', () => {
+                console.log('[Dialog] Confirm (Delete) button clicked!');
+                backdrop.style.display = 'none';
+                setTimeout(() => {
+                    console.log('[Dialog] Removing backdrop, resolving true');
+                    backdrop.remove();
+                    resolve(true);
+                }, 0);
+            });
+            
+            // Assemble modal
+            buttonsEl.appendChild(cancelBtn);
+            buttonsEl.appendChild(confirmBtn);
+            modal.appendChild(titleEl);
+            modal.appendChild(messageEl);
+            modal.appendChild(buttonsEl);
+            backdrop.appendChild(modal);
+            document.body.appendChild(backdrop);
+            
+            // Debug: Add global click listener to verify buttons are clickable
+            setTimeout(() => {
+                console.log('[Dialog] Backdrop in DOM, adding test listener');
+                
+                // Add document-level click listener to capture all clicks
+                document.addEventListener('click', (e) => {
+                    console.log('[Dialog] DOCUMENT CLICK DETECTED on:', e.target, 'tagName:', e.target.tagName, 'class:', e.target.className);
+                }, { once: true });
+                
+                cancelBtn.addEventListener('click', (e) => {
+                    console.log('[Dialog] TEST: Cancel button IS clickable! Event:', e);
+                    e.stopPropagation();
+                });
+                confirmBtn.addEventListener('click', (e) => {
+                    console.log('[Dialog] TEST: Confirm button IS clickable! Event:', e);
+                    e.stopPropagation();
+                });
+                
+                // Log button properties
+                console.log('[Dialog] Cancel button:', cancelBtn, 'style:', cancelBtn.style.cssText);
+                console.log('[Dialog] Confirm button:', confirmBtn, 'style:', confirmBtn.style.cssText);
+            }, 50);
+            
+            // Close on backdrop click
+            backdrop.onclick = (e) => {
+                if (e.target === backdrop) {
+                    backdrop.style.display = 'none';
+                    setTimeout(() => {
+                        backdrop.remove();
+                        resolve(false);
+                    }, 0);
+                }
+            };
+            
+            // ESC key to close
+            const escHandler = (e) => {
+                if (e.key === 'Escape') {
+                    console.log('[Dialog] ESC pressed, closing...');
+                    document.removeEventListener('keydown', escHandler);
+                    backdrop.style.display = 'none';
+                    setTimeout(() => {
+                        backdrop.remove();
+                        resolve(false);
+                    }, 0);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
+            
+            console.log('[Dialog] Modal created and appended to body');
+        });
+    }
+
+    /**
      * Delete a node
      */
-    function deleteNode(nodeId) {
-        if (!confirm('Are you sure you want to delete this node?')) return;
+    async function deleteNode(nodeId) {
+        console.log('[Delete] Starting delete for node:', nodeId);
+        const confirmed = await showConfirmDialog(
+            '🗑️ Delete Configuration Field',
+            'Are you sure you want to delete this configuration field? This action cannot be undone.'
+        );
+        
+        console.log('[Delete] User confirmed:', confirmed);
+        if (!confirmed) return;
 
+        console.log('[Delete] Proceeding with deletion...');
         // Try to delete from root level
         const rootIndex = state.config.findIndex(n => n.id === nodeId);
         if (rootIndex !== -1) {
+            console.log('[Delete] Deleting from root level');
             state.config.splice(rootIndex, 1);
             render();
             notifyConfigChange();
@@ -785,7 +1067,8 @@
         updateNodeValue,
         finishEditing,
         deleteNode,
-        editEnumValue
+        editEnumValue,
+        toggleBooleanValue
     };
 
     // Initialize when DOM is ready

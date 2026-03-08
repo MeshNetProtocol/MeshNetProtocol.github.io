@@ -131,12 +131,11 @@
   font-family: 'IBM Plex Mono', monospace;
   font-size: 0.875rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Remove overflow for boolean values to show full text */
 }
 
 .node-value.boolean-value {
-  color: #00ff88;
+  color: #c084fc;  /* Purple color for boolean, same as other primitive types */
   font-weight: 500;
 }
 
@@ -314,4 +313,34 @@
 
 .enum-option:hover {
   background: rgba(0, 217, 255, 0.2) !important;
+}
+
+/* Modal Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
