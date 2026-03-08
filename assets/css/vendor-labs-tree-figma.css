@@ -140,6 +140,17 @@
   font-weight: 500;
 }
 
+.node-value.enum-value {
+  color: #f472b6;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.node-value.enum-value:hover {
+  color: #00d9ff;
+  text-decoration: underline;
+}
+
 /* Array Index */
 .node-array-index {
   color: #f472b6;
@@ -242,4 +253,65 @@
 
 .children-animate {
   animation: slideDown 0.2s ease-out;
+}
+
+/* Add Field Button */
+.add-field-row {
+  margin-top: 0.5rem;
+}
+
+.btn-add-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.3);
+  border-radius: 0.375rem;
+  color: #00d9ff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-field:hover {
+  background: rgba(0, 217, 255, 0.2);
+  border-color: #00d9ff;
+}
+
+.btn-add-field span {
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 600;
+}
+
+/* Add Field Menu */
+.add-field-menu {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.menu-item:hover {
+  background: rgba(0, 217, 255, 0.1) !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Enum Dropdown */
+.enum-dropdown {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.enum-option:hover {
+  background: rgba(0, 217, 255, 0.2) !important;
 }

@@ -127,6 +127,7 @@
                 config: document.getElementById("subview-private-config"),
                 vps: document.getElementById("subview-private-vps"),
                 import: document.getElementById("subview-private-import"),
+                "json-preview": document.getElementById("subview-private-json-preview"),
                 advanced: document.getElementById("subview-private-advanced")
             },
             viewTitle: document.getElementById("private-view-title"),
@@ -484,6 +485,62 @@
             }, 100);
         });
 
+        // Helper function: Show JSON preview modal
+        function showJsonPreviewModal(jsonStr) {
+            // Create modal if not exists
+            let modal = document.getElementById('json-preview-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'json-preview-modal';
+                modal.className = 'modal-backdrop';
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 800px;">
+                        <h3 style="margin-top:0;">📄 JSON 配置预览</h3>
+                        <p style="font-size:0.9rem; color:#94a3b8; margin-bottom:1rem;">以下是根据当前配置生成的 sing-box 配置文件：</p>
+                        <textarea id="modal-json-textarea" class="json-textarea" style="height:400px; font-family:'IBM Plex Mono',monospace; font-size:0.875rem;"></textarea>
+                        <div style="display:flex; gap:1rem; justify-content:flex-end; margin-top:1rem;">
+                            <button id="modal-copy-json" class="btn btn-primary">📋 复制</button>
+                            <button id="modal-download-json" class="btn btn-secondary">💾 下载</button>
+                            <button id="modal-close-json" class="btn ghost">关闭</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                // Bind modal events
+                modal.querySelector('#modal-close-json').addEventListener('click', () => {
+                    modal.classList.remove('shown');
+                });
+                
+                modal.querySelector('#modal-copy-json').addEventListener('click', () => {
+                    const textarea = modal.querySelector('#modal-json-textarea');
+                    navigator.clipboard.writeText(textarea.value);
+                    notify('已复制到剪贴板', '成功');
+                });
+                
+                modal.querySelector('#modal-download-json').addEventListener('click', () => {
+                    const textarea = modal.querySelector('#modal-json-textarea');
+                    const blob = new Blob([textarea.value], { type: 'application/json' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'mesh-config.json';
+                    a.click();
+                    notify('下载已开始', '成功');
+                });
+                
+                // Close on backdrop click
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('shown');
+                    }
+                });
+            }
+            
+            // Show modal with JSON
+            modal.querySelector('#modal-json-textarea').value = jsonStr;
+            modal.classList.add('shown');
+        }
+
         // VPS Guide specific - Navigate to config after getting credentials
         const btnVpsToConfig = document.getElementById("btn-vps-to-config");
         if (btnVpsToConfig) btnVpsToConfig.addEventListener("click", () => {
@@ -647,18 +704,46 @@
                     domain_suffix: []
                 }
             };
-            switchSubView("advanced", "JSON 预览与导出");
-            if (dom.jsonEditor) dom.jsonEditor.value = JSON.stringify(final, null, 2);
+            
+            // Switch to new JSON preview sub-view (for generated config)
+            switchSubView("json-preview", "JSON 配置预览");
+            const previewTextarea = document.getElementById("generated-json-preview");
+            if (previewTextarea) {
+                previewTextarea.value = JSON.stringify(final, null, 2);
+            }
         });
 
         const checkJsonBtn = document.getElementById("btn-check-json");
-        if (checkJsonBtn) checkJsonBtn.addEventListener("click", () => { try { JSON.parse(dom.jsonEditor.value); notify("语法正确。", "校验成功"); } catch (e) { notify("格式错误: " + e.message, "失败"); } });
+        if (checkJsonBtn) checkJsonBtn.addEventListener("click", () => { try { JSON.parse(dom.jsonEditor.value); notify("语法正确。", "校验成功"); } catch (e) { notify("格式错误：" + e.message, "失败"); } });
         const copyJsonBtn = document.getElementById("btn-copy-json");
         if (copyJsonBtn) copyJsonBtn.addEventListener("click", () => { navigator.clipboard.writeText(dom.jsonEditor.value); notify("已复制", "成功"); });
         const saveFileBtn = document.getElementById("btn-save-file");
         if (saveFileBtn) saveFileBtn.addEventListener("click", () => {
             const blob = new Blob([dom.jsonEditor.value], { type: "application/json" });
             const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "mesh-config.json"; a.click();
+        });
+        
+        // Generated JSON Preview buttons
+        const copyGeneratedJsonBtn = document.getElementById("btn-copy-generated-json");
+        if (copyGeneratedJsonBtn) copyGeneratedJsonBtn.addEventListener("click", () => {
+            const textarea = document.getElementById("generated-json-preview");
+            if (textarea) {
+                navigator.clipboard.writeText(textarea.value);
+                notify("已复制到剪贴板", "成功");
+            }
+        });
+                
+        const downloadGeneratedJsonBtn = document.getElementById("btn-download-generated-json");
+        if (downloadGeneratedJsonBtn) downloadGeneratedJsonBtn.addEventListener("click", () => {
+            const textarea = document.getElementById("generated-json-preview");
+            if (textarea) {
+                const blob = new Blob([textarea.value], { type: "application/json" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "mesh-config.json";
+                a.click();
+                notify("下载已开始", "成功");
+            }
         });
 
         if (utils.hasMetaMask()) {

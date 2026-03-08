@@ -17,6 +17,44 @@
         initialized: false
     };
 
+    // Enum definitions for sing-box configuration
+    const ENUM_DEFINITIONS = {
+        'log.level': {
+            values: ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic'],
+            title: 'Log Level'
+        }
+    };
+
+    // Schema definitions for sing-box configuration
+    const SCHEMA_DEFINITIONS = {
+        'log': {
+            type: 'object',
+            fields: {
+                'disabled': {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Disable logging'
+                },
+                'level': {
+                    type: 'enum',
+                    default: 'info',
+                    values: ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic'],
+                    description: 'Log level'
+                },
+                'output': {
+                    type: 'string',
+                    default: 'box.log',
+                    description: 'Output file path'
+                },
+                'timestamp': {
+                    type: 'boolean',
+                    default: true,
+                    description: 'Add timestamp to each line'
+                }
+            }
+        }
+    };
+
     /**
      * Initialize tree module
      */
@@ -66,18 +104,21 @@
     /**
      * Convert a value to a tree node
      */
-    function convertValueToNode(name, value) {
+    function convertValueToNode(name, value, parentPath = '') {
+        const currentPath = parentPath ? `${parentPath}.${name}` : name;
+        
         const node = {
             id: `node-${name}-${Date.now()}-${Math.random()}`,
             name: name,
             type: getValueType(value),
-            expanded: false
+            expanded: false,
+            path: currentPath  // Store full path for enum lookup
         };
 
         if (Array.isArray(value)) {
             node.type = 'array';
             node.children = value.map((item, index) => {
-                const childNode = convertValueToNode(`${index}`, item);
+                const childNode = convertValueToNode(`${index}`, item, currentPath);
                 childNode.type = 'array-index';  // Mark as array item
                 childNode.arrayIndex = index;    // Store index for display
                 return childNode;
@@ -86,7 +127,7 @@
             node.type = 'object';
             node.children = [];
             for (const [key, val] of Object.entries(value)) {
-                node.children.push(convertValueToNode(key, val));
+                node.children.push(convertValueToNode(key, val, currentPath));
             }
         } else {
             node.value = value;
@@ -124,7 +165,8 @@
             'object': '📦 ',
             'array': '📋 ',
             'ip': '🌐 ',
-            'null': '⚪ '
+            'null': '⚪ ',
+            'enum': '🔀 '  // For enum types
         };
         return icons[type] || '';
     }
@@ -149,7 +191,6 @@
     function render() {
         if (!state.container || !state.config) return;
 
-        // Don't render header - it's already in the HTML panel header
         state.container.innerHTML = `
             <div class="tree-content"></div>
         `;
@@ -158,6 +199,24 @@
         state.config.forEach((node, index) => {
             treeContent.appendChild(renderNode(node, 0, [index]));
         });
+    }
+
+    /**
+     * Render add field button for a parent node
+     */
+    function renderAddFieldButton(parentNode, level) {
+        const buttonRow = document.createElement('div');
+        buttonRow.className = 'tree-node-row add-field-row';
+        buttonRow.style.marginLeft = `${level * 24}px`;
+        
+        buttonRow.innerHTML = `
+            <div class="spacer"></div>
+            <button class="btn-add-field" onclick="event.stopPropagation(); window.LabsTree.showAddFieldMenu('${parentNode.id}', '${parentNode.path}')">
+                <span>+</span> Add Field
+            </button>
+        `;
+        
+        return buttonRow;
     }
 
     /**
@@ -206,7 +265,11 @@
                     />
                 ` : (node.value !== undefined && node.type !== 'object' && node.type !== 'array' ? `
                     <span class="node-separator">=</span>
-                    <span class="node-value ${node.type === 'boolean' ? 'boolean-value' : ''}">${formatValue(node.value, node.type)}</span>
+                    <span class="node-value ${node.type === 'boolean' ? 'boolean-value' : ''} ${node.type === 'enum' ? 'enum-value' : ''}" 
+                          onclick="${node.type === 'enum' ? `window.LabsTree.editEnumValue('${node.id}')` : ''}">
+                        ${formatValue(node.value, node.type)}
+                        ${node.type === 'enum' ? ' ▼' : ''}
+                    </span>
                 ` : '')}
             </div>
 
@@ -234,6 +297,18 @@
             node.children.forEach((child, index) => {
                 childrenContainer.appendChild(renderNode(child, level + 1, [...path, index]));
             });
+            
+            // Add "Add Field" button for object nodes with schema (after children)
+            if (node.type === 'object' && SCHEMA_DEFINITIONS[node.name]) {
+                childrenContainer.appendChild(renderAddFieldButton(node, level + 1));
+            }
+            
+            nodeElement.appendChild(childrenContainer);
+        } else if (isExpanded && node.type === 'object' && SCHEMA_DEFINITIONS[node.name]) {
+            // Show "Add Field" button even when empty
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'tree-children';
+            childrenContainer.appendChild(renderAddFieldButton(node, level + 1));
             nodeElement.appendChild(childrenContainer);
         }
 
@@ -296,6 +371,256 @@
                     input.focus();
                     input.select();
                 }
+            }, 100);
+        }
+    }
+
+    /**
+     * Show add field menu
+     */
+    function showAddFieldMenu(parentId, parentPath) {
+        const parentNode = findNodeById(state.config, parentId);
+        if (!parentNode) return;
+
+        const schema = SCHEMA_DEFINITIONS[parentPath];
+        if (!schema) {
+            console.warn('[Labs Tree] Schema not found for:', parentPath);
+            return;
+        }
+
+        // Get existing field names
+        const existingFields = new Set(parentNode.children ? parentNode.children.map(c => c.name) : []);
+
+        // Create dropdown menu
+        const menu = document.createElement('div');
+        menu.className = 'add-field-menu';
+        menu.style.position = 'absolute';
+        menu.style.background = 'rgba(26, 27, 46, 0.98)';
+        menu.style.border = '1px solid #00d9ff';
+        menu.style.borderRadius = '0.5rem';
+        menu.style.padding = '0.5rem';
+        menu.style.zIndex = '1000';
+        menu.style.minWidth = '200px';
+        menu.style.boxShadow = '0 4px 12px rgba(0, 217, 255, 0.3)';
+
+        const title = document.createElement('div');
+        title.textContent = `Add field to ${parentPath}`;
+        title.style.padding = '0.5rem 0.75rem';
+        title.style.color = '#94a3b8';
+        title.style.fontSize = '0.75rem';
+        title.style.marginBottom = '0.5rem';
+        title.style.borderBottom = '1px solid rgba(0, 217, 255, 0.1)';
+        menu.appendChild(title);
+
+        // Create menu items for available fields
+        Object.entries(schema.fields).forEach(([fieldName, fieldDef]) => {
+            if (existingFields.has(fieldName)) {
+                return; // Skip existing fields
+            }
+
+            const item = document.createElement('div');
+            item.className = 'menu-item';
+            item.style.padding = '0.5rem 0.75rem';
+            item.style.cursor = 'pointer';
+            item.style.borderRadius = '0.25rem';
+            item.style.marginBottom = '0.25rem';
+            item.style.display = 'flex';
+            item.style.justifyContent = 'space-between';
+            item.style.alignItems = 'center';
+            item.style.transition = 'all 0.2s';
+
+            const left = document.createElement('div');
+            left.style.display = 'flex';
+            left.style.alignItems = 'center';
+            left.style.gap = '0.5rem';
+
+            const icon = document.createElement('span');
+            icon.textContent = getTypeIcon(fieldDef.type);
+            left.appendChild(icon);
+
+            const name = document.createElement('span');
+            name.textContent = fieldName;
+            name.style.color = '#00d9ff';
+            name.style.fontFamily = 'IBM Plex Mono, monospace';
+            name.style.fontSize = '0.875rem';
+            left.appendChild(name);
+
+            const type = document.createElement('span');
+            type.textContent = fieldDef.type;
+            type.style.color = '#64748b';
+            type.style.fontSize = '0.75rem';
+            type.style.fontFamily = 'IBM Plex Mono, monospace';
+            left.appendChild(type);
+
+            item.appendChild(left);
+
+            item.addEventListener('mouseenter', () => {
+                item.style.background = 'rgba(0, 217, 255, 0.1)';
+            });
+
+            item.addEventListener('mouseleave', () => {
+                item.style.background = 'transparent';
+            });
+
+            item.addEventListener('click', () => {
+                addFieldToNode(parentNode, fieldName, fieldDef);
+                menu.remove();
+            });
+
+            menu.appendChild(item);
+        });
+
+        // If no fields available
+        if (menu.children.length === 1) { // Only title
+            const noFields = document.createElement('div');
+            noFields.textContent = 'All fields added';
+            noFields.style.padding = '0.5rem 0.75rem';
+            noFields.style.color = '#64748b';
+            noFields.style.fontSize = '0.875rem';
+            menu.appendChild(noFields);
+        }
+
+        // Position menu
+        const buttonElement = document.querySelector(`[onclick*="showAddFieldMenu('${parentId}'"]`);
+        if (buttonElement) {
+            const rect = buttonElement.getBoundingClientRect();
+            menu.style.left = `${rect.left}px`;
+            menu.style.top = `${rect.bottom + 5}px`;
+            document.body.appendChild(menu);
+
+            // Close menu when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!menu.contains(e.target)) {
+                        menu.remove();
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }, 100);
+        }
+    }
+
+    /**
+     * Add field to node
+     */
+    function addFieldToNode(parentNode, fieldName, fieldDef) {
+        if (!parentNode.children) {
+            parentNode.children = [];
+        }
+
+        const newNode = {
+            id: `node-${fieldName}-${Date.now()}`,
+            name: fieldName,
+            type: fieldDef.type,
+            value: fieldDef.default,
+            expanded: false,
+            editing: false,
+            path: `${parentNode.path}.${fieldName}`
+        };
+
+        parentNode.children.push(newNode);
+        parentNode.expanded = true;
+        render();
+        notifyConfigChange();
+
+        // Auto-focus for editing if it's a simple type
+        if (fieldDef.type !== 'object' && fieldDef.type !== 'array') {
+            setTimeout(() => {
+                editNode(newNode.id);
+            }, 100);
+        }
+    }
+
+    /**
+     * Edit enum value (show dropdown)
+     */
+    function editEnumValue(nodeId) {
+        const node = findNodeById(state.config, nodeId);
+        if (!node) return;
+
+        // Find enum definition
+        const enumKey = `${node.path}`;
+        const enumDef = ENUM_DEFINITIONS[enumKey];
+        
+        if (!enumDef) {
+            console.warn('[Labs Tree] Enum definition not found for:', enumKey);
+            return;
+        }
+
+        // Create dropdown UI
+        showEnumDropdown(node, enumDef);
+    }
+
+    /**
+     * Show enum dropdown
+     */
+    function showEnumDropdown(node, enumDef) {
+        // Remove existing dropdown if any
+        const existingDropdown = document.querySelector('.enum-dropdown');
+        if (existingDropdown) {
+            existingDropdown.remove();
+        }
+
+        // Create dropdown element
+        const dropdown = document.createElement('div');
+        dropdown.className = 'enum-dropdown';
+        dropdown.style.position = 'absolute';
+        dropdown.style.background = 'rgba(26, 27, 46, 0.98)';
+        dropdown.style.border = '1px solid #00d9ff';
+        dropdown.style.borderRadius = '0.5rem';
+        dropdown.style.padding = '0.5rem';
+        dropdown.style.zIndex = '1000';
+        dropdown.style.minWidth = '150px';
+        dropdown.style.boxShadow = '0 4px 12px rgba(0, 217, 255, 0.3)';
+
+        // Create options
+        enumDef.values.forEach(value => {
+            const option = document.createElement('div');
+            option.className = 'enum-option';
+            option.textContent = value;
+            option.style.padding = '0.5rem 0.75rem';
+            option.style.cursor = 'pointer';
+            option.style.borderRadius = '0.25rem';
+            option.style.marginBottom = '0.25rem';
+            option.style.color = value === node.value ? '#00d9ff' : '#94a3b8';
+            option.style.background = value === node.value ? 'rgba(0, 217, 255, 0.1)' : 'transparent';
+            
+            option.addEventListener('mouseenter', () => {
+                option.style.background = 'rgba(0, 217, 255, 0.2)';
+            });
+            
+            option.addEventListener('mouseleave', () => {
+                if (value !== node.value) {
+                    option.style.background = 'transparent';
+                }
+            });
+            
+            option.addEventListener('click', () => {
+                node.value = value;
+                render();
+                notifyConfigChange();
+                dropdown.remove();
+            });
+            
+            dropdown.appendChild(option);
+        });
+
+        // Position dropdown near the node
+        const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
+        if (nodeElement) {
+            const rect = nodeElement.getBoundingClientRect();
+            dropdown.style.left = `${rect.left}px`;
+            dropdown.style.top = `${rect.bottom + 5}px`;
+            document.body.appendChild(dropdown);
+
+            // Close dropdown when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeDropdown(e) {
+                    if (!dropdown.contains(e.target)) {
+                        dropdown.remove();
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                });
             }, 100);
         }
     }
@@ -455,10 +780,12 @@
         toggleExpand,
         selectNode,
         addChild,
+        showAddFieldMenu,
         editNode,
         updateNodeValue,
         finishEditing,
-        deleteNode
+        deleteNode,
+        editEnumValue
     };
 
     // Initialize when DOM is ready

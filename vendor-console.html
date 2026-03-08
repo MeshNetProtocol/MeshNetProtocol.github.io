@@ -447,6 +447,20 @@
           </div>
         </div>
 
+        <!-- JSON Preview sub-view (for generated config from Profile Builder) -->
+        <div id="subview-private-json-preview" class="sub-view hidden">
+          <div class="json-editor-wrap">
+            <h3 style="color: #2dd4bf; margin-bottom: 0.5rem;">📄 JSON 配置预览</h3>
+            <p style="font-size:0.85rem; color:#94a3b8; margin-bottom: 1rem;">以下是根据当前配置生成的 sing-box 配置文件，可直接用于 APP。</p>
+            <textarea id="generated-json-preview" class="json-textarea" spellcheck="false" readonly></textarea>
+            <div style="display:flex; gap:0.8rem; flex-wrap:wrap; margin-top: 1rem;">
+              <button id="btn-copy-generated-json" class="btn btn-primary">📋 复制 JSON</button>
+              <button id="btn-download-generated-json" class="btn btn-secondary">💾 下载 JSON 文件</button>
+              <button class="btn-cancel btn ghost">返回</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Advanced Editor sub-view - Sing-Box Configuration Lab -->
         <div id="subview-private-advanced" class="sub-view hidden">
           <!-- Lab Header -->
@@ -573,10 +587,7 @@
       // Initialize with empty config for now
       // TODO: This will be populated by tree module later
       const emptyConfig = {
-        log: {
-          level: 'info',
-          timestamp: true
-        },
+        log: {},  // Empty log configuration - use "+ Add Field" to add fields
         dns: {
           servers: [],
           final: 'local'

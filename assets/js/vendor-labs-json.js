@@ -40,6 +40,13 @@
             state.downloadButton.addEventListener('click', downloadJson);
         }
         
+        // Listen to config updates from tree module
+        window.addEventListener('config-updated', (event) => {
+            const config = event.detail;
+            console.log('[Labs JSON] Received config update:', config);
+            render(config);
+        });
+        
         // Initial render with empty config - placeholder
         // TODO: This will be populated by tree module when config structure is ready
         render(null);
