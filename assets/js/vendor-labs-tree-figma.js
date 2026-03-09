@@ -60,11 +60,37 @@
         'dns': {
             type: 'object',
             fields: {
+                'servers': {
+                    type: 'array',
+                    description: 'List of DNS servers',
+                    itemSchema: {
+                        type: 'object',
+                        fields: {
+                            'tag': {
+                                type: 'string',
+                                default: 'new-dns',
+                                description: 'Tag for the DNS server'
+                            },
+                            'type': {
+                                type: 'enum',
+                                default: 'udp',
+                                description: 'Type of the DNS server'
+                            }
+                        }
+                    }
+                },
+                'rules': {
+                    type: 'array',
+                    description: 'List of DNS rules'
+                },
+                'fakeip': {
+                    type: 'object',
+                    description: 'FakeIP configuration'
+                },
                 'final': {
                     type: 'string',
                     default: '',
                     description: 'Default DNS server tag (First server used if empty)'
-                    // TODO: Future enhancement - dropdown to select from configured DNS servers
                 },
                 'strategy': {
                     type: 'enum',
@@ -99,8 +125,8 @@
                 },
                 'client_subnet': {
                     type: 'string',
-                    default: '',
-                    description: 'EDNS0 client subnet'
+                    default: '1.1.1.1',
+                    description: 'EDNS0 client subnet (e.g. 1.1.1.1 or 192.168.1.0/24). If an IP is provided, /32 or /128 will be appended automatically.'
                 }
             }
         }
@@ -243,10 +269,14 @@
                 type = 'enum';
                 console.log('[ConvertValueToNode] Detected enum type:', enumKey);
             } else {
-                // Check for IP address pattern
+                // Check for IP or CIDR address pattern
                 if (typeof value === 'string') {
-                    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-                    if (ipRegex.test(value)) {
+                    // IPv4 or IPv4 with mask
+                    const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$/;
+                    // Basic IPv6 check
+                    const ipv6CidrRegex = /^([0-9a-fA-F]{1,4}:){1,7}[0-9a-fA-F]{1,4}(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$/;
+                    
+                    if (ipv4CidrRegex.test(value) || ipv6CidrRegex.test(value)) {
                         type = 'ip';
                     } else {
                         type = typeof value;
@@ -476,7 +506,7 @@
                             data-node-id="${node.id}"
                             onclick="event.stopPropagation()"
                             onchange="window.LabsTree.updateNodeValue('${node.id}', this.value)"
-                            onkeydown="if(event.key === 'Enter') this.blur()"
+                            onkeydown="if(event.key === 'Enter') this.blur(); if(event.key === 'Escape') window.LabsTree.finishEditing('${node.id}', false)"
                             onblur="window.LabsTree.finishEditing('${node.id}', true)"
                             autofocus
                         />
@@ -518,17 +548,25 @@
                 childrenContainer.appendChild(renderNode(child, level + 1, [...path, index]));
             });
             
-            // Add "Add Field" button for object nodes with schema (after children)
-            if (node.type === 'object' && SCHEMA_DEFINITIONS[node.name]) {
+            // Add "Add Field" or "Add Item" button
+            if (node.type === 'object' && findSchemaForPath(node.path)) {
                 childrenContainer.appendChild(renderAddFieldButton(node, level + 1));
+            } else if (node.type === 'array' && findSchemaForPath(node.path)?.itemSchema) {
+                childrenContainer.appendChild(renderAddItemButton(node, level + 1));
             }
             
             nodeElement.appendChild(childrenContainer);
-        } else if (isExpanded && node.type === 'object' && SCHEMA_DEFINITIONS[node.name]) {
+        } else if (isExpanded && node.type === 'object' && findSchemaForPath(node.path)) {
             // Show "Add Field" button even when empty
             const childrenContainer = document.createElement('div');
             childrenContainer.className = 'tree-children';
             childrenContainer.appendChild(renderAddFieldButton(node, level + 1));
+            nodeElement.appendChild(childrenContainer);
+        } else if (isExpanded && node.type === 'array' && findSchemaForPath(node.path)?.itemSchema) {
+            // Show "Add Item" button even when empty
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'tree-children';
+            childrenContainer.appendChild(renderAddItemButton(node, level + 1));
             nodeElement.appendChild(childrenContainer);
         }
 
@@ -851,14 +889,53 @@
                     node.value = value === 'yes' || value === '1';
                 }
             } else if (node.type === 'ip') {
-                // Basic IP validation
-                const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-                node.value = ipRegex.test(value) ? value : '0.0.0.0';
+                node.value = value; 
             } else {
                 node.value = value;
             }
-            notifyConfigChange();
+            
+            // Check validity for visual feedback
+            const isValid = validateNodeValue(node, node.value);
+            const input = document.querySelector(`.node-value-input[data-node-id="${nodeId}"]`);
+            if (input) {
+                if (!isValid) {
+                    input.classList.add('invalid');
+                } else {
+                    input.classList.remove('invalid');
+                }
+            }
+            
+            // If it's an enum, we can notify immediately as it's from a dropdown
+            if (node.type === 'enum' || node.type === 'boolean') {
+                notifyConfigChange();
+            }
         }
+    }
+
+    /**
+     * Validate node value based on its type
+     */
+    function validateNodeValue(node, value) {
+        if (node.type === 'number') {
+            return !isNaN(value) && typeof value === 'number';
+        } else if (node.type === 'ip') {
+            // IPv4 or IPv4 with mask
+            const ipv4CidrRegex = /^(\d{1,3}\.){3}\d{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$/;
+            // Basic IPv6 check
+            const ipv6CidrRegex = /^([0-9a-fA-F]{1,4}:){1,7}[0-9a-fA-F]{1,4}(\/([0-9]|[1-9][0-9]|1[0-1][0-9]|12[0-8]))?$/;
+            
+            if (ipv4CidrRegex.test(value) || ipv6CidrRegex.test(value)) {
+                // Further check for IPv4 segments
+                if (ipv4CidrRegex.test(value)) {
+                    const ipPart = value.split('/')[0];
+                    const segments = ipPart.split('.');
+                    return segments.every(s => parseInt(s) <= 255);
+                }
+                return true;
+            }
+            return false;
+        }
+        return true; // Other types default to true for now
     }
 
     /**
@@ -869,26 +946,32 @@
         console.log('[FinishEditing] Called for nodeId:', nodeId, 'saveChanges:', saveChanges);
         
         if (node) {
-            console.log('[FinishEditing] Node found:', node.name, 'current value:', node.value, 'original value:', node.originalValue, 'editing:', node.editing);
-            
-            // If saveChanges is true and value changed, notify config change
-            if (saveChanges && node.originalValue !== undefined && node.originalValue !== node.value) {
-                console.log('[FinishEditing] Value changed from', node.originalValue, 'to', node.value, '- saving');
-                // Value already updated in updateNodeValue, just notify
-            } else if (!saveChanges && node.originalValue !== undefined) {
-                console.log('[FinishEditing] Value unchanged or no save - reverting');
-                // Revert to original value if not saving
+            if (saveChanges) {
+                // Perform validation before saving
+                const isValid = validateNodeValue(node, node.value);
+                if (!isValid) {
+                    console.warn('[FinishEditing] Invalid value, staying in edit mode');
+                    const input = document.querySelector(`.node-value-input[data-node-id="${nodeId}"]`);
+                    if (input) {
+                        input.classList.add('invalid');
+                        input.focus();
+                    }
+                    return; // Prevent closing
+                }
+                
+                // Value changed, notify
+                if (node.originalValue !== undefined && node.originalValue !== node.value) {
+                    console.log('[FinishEditing] Value changed from', node.originalValue, 'to', node.value, '- saving');
+                    notifyConfigChange();
+                }
+            } else if (node.originalValue !== undefined) {
+                console.log('[FinishEditing] Reverting to original value:', node.originalValue);
                 node.value = node.originalValue;
             }
             
-            // Clean up
             node.editing = false;
-            console.log('[FinishEditing] Node', node.name, 'editing set to:', node.editing);
+            node.originalValue = undefined;
             render();
-            console.log('[FinishEditing] Render complete');
-            // Don't notify config change - already notified in updateNodeValue if changed
-        } else {
-            console.warn('[FinishEditing] Node NOT found for nodeId:', nodeId);
         }
     }
 
@@ -1148,6 +1231,58 @@
                 if (found) return found;
             }
         }
+        return null;
+    }
+
+    /**
+     * Find schema definition for a path (handles array items).
+     */
+    function findSchemaForPath(path) {
+        // Direct match
+        if (SCHEMA_DEFINITIONS[path]) {
+            return SCHEMA_DEFINITIONS[path];
+        }
+
+        // Match for array items (e.g., dns.servers.0.tag -> dns.servers.tag)
+        const parts = path.split('.');
+        if (parts.length > 2) {
+            const lastPart = parts.pop();
+            const secondLastPart = parts.pop();
+            if (!isNaN(parseInt(secondLastPart, 10))) {
+                const arrayPath = parts.join('.');
+                const arraySchema = SCHEMA_DEFINITIONS[arrayPath];
+                if (arraySchema && arraySchema.itemSchema && arraySchema.itemSchema.fields[lastPart]) {
+                    return arraySchema.itemSchema.fields[lastPart];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Find enum definition for a path (handles array items)
+     */
+    function findEnumDefinition(path) {
+        // Direct match
+        if (ENUM_DEFINITIONS[path]) {
+            return ENUM_DEFINITIONS[path];
+        }
+
+        // Match for array items (e.g., dns.servers.0.type -> dns.servers.type)
+        const parts = path.split('.');
+        if (parts.length > 2) {
+            const lastPart = parts.pop();
+            const secondLastPart = parts.pop();
+            if (!isNaN(parseInt(secondLastPart, 10))) {
+                const arrayPath = parts.join('.');
+                const enumKey = `${arrayPath}.${lastPart}`;
+                if (ENUM_DEFINITIONS[enumKey]) {
+                    return ENUM_DEFINITIONS[enumKey];
+                }
+            }
+        }
+
         return null;
     }
 
