@@ -46,6 +46,11 @@
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 0.25rem;
+  position: relative;
+}
+
+.tree-node-row:has(.custom-select-wrapper.active) {
+  z-index: 1001;
 }
 
 .tree-node-row:hover {
@@ -214,11 +219,12 @@
   border: 1px solid #00d9ff;
   border-radius: 0.5rem;
   padding: 0.5rem;
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+  z-index: 9999;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   display: none;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 120px;
 }
 
 .custom-select-wrapper.active .custom-select-options {
@@ -234,6 +240,19 @@
   transition: all 0.2s;
   color: #94a3b8;
   background: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.option-label {
+  flex: 1;
+}
+
+.option-check {
+  color: #00d9ff;
+  font-weight: bold;
+  font-size: 1rem;
 }
 
 .custom-option:hover {
@@ -306,7 +325,7 @@
 
 /* Children Container */
 .tree-children {
-  overflow: hidden;
+  /* Removed overflow: hidden to prevent clipping of dropdowns */
 }
 
 @keyframes slideDown {

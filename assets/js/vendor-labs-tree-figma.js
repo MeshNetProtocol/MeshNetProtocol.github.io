@@ -343,7 +343,10 @@
         if (!enumDef) return '<div class="custom-option">Unknown enum</div>';
         
         return enumDef.values.map(v => 
-            `<div class="custom-option ${node.value === v ? 'selected' : ''}" data-value="${v}">${v}</div>`
+            `<div class="custom-option ${node.value === v ? 'selected' : ''}" data-value="${v}">
+                <span class="option-label">${v}</span>
+                ${node.value === v ? '<span class="option-check">✓</span>' : ''}
+            </div>`
         ).join('');
     }
 
@@ -448,8 +451,14 @@
                         <div class="custom-select-wrapper" data-node-id="${node.id}">
                             <div class="custom-select-value" onclick="event.stopPropagation(); this.parentElement.classList.toggle('active')">${node.value ? 'true' : 'false'}</div>
                             <div class="custom-select-options">
-                                <div class="custom-option ${node.value === true ? 'selected' : ''}" data-value="true">true</div>
-                                <div class="custom-option ${node.value === false ? 'selected' : ''}" data-value="false">false</div>
+                                <div class="custom-option ${node.value === true ? 'selected' : ''}" data-value="true">
+                                    <span class="option-label">true</span>
+                                    ${node.value === true ? '<span class="option-check">✓</span>' : ''}
+                                </div>
+                                <div class="custom-option ${node.value === false ? 'selected' : ''}" data-value="false">
+                                    <span class="option-label">false</span>
+                                    ${node.value === false ? '<span class="option-check">✓</span>' : ''}
+                                </div>
                             </div>
                         </div>
                     ` : node.type === 'enum' ? `
@@ -752,100 +761,6 @@
     }
 
     /**
-     * Edit enum value (show dropdown)
-     */
-    function editEnumValue(nodeId) {
-        const node = findNodeById(state.config, nodeId);
-        if (!node) return;
-
-        // Find enum definition
-        const enumKey = `${node.path}`;
-        const enumDef = ENUM_DEFINITIONS[enumKey];
-        
-        if (!enumDef) {
-            console.warn('[Labs Tree] Enum definition not found for:', enumKey);
-            return;
-        }
-
-        // Create dropdown UI
-        showEnumDropdown(node, enumDef);
-    }
-
-    /**
-     * Show enum dropdown
-     */
-    function showEnumDropdown(node, enumDef) {
-        // Remove existing dropdown if any
-        const existingDropdown = document.querySelector('.enum-dropdown');
-        if (existingDropdown) {
-            existingDropdown.remove();
-        }
-
-        // Create dropdown element
-        const dropdown = document.createElement('div');
-        dropdown.className = 'enum-dropdown';
-        dropdown.style.position = 'absolute';
-        dropdown.style.background = 'rgba(26, 27, 46, 0.98)';
-        dropdown.style.border = '1px solid #00d9ff';
-        dropdown.style.borderRadius = '0.5rem';
-        dropdown.style.padding = '0.5rem';
-        dropdown.style.zIndex = '1000';
-        dropdown.style.minWidth = '150px';
-        dropdown.style.boxShadow = '0 4px 12px rgba(0, 217, 255, 0.3)';
-
-        // Create options
-        enumDef.values.forEach(value => {
-            const option = document.createElement('div');
-            option.className = 'enum-option';
-            option.textContent = value;
-            option.style.padding = '0.5rem 0.75rem';
-            option.style.cursor = 'pointer';
-            option.style.borderRadius = '0.25rem';
-            option.style.marginBottom = '0.25rem';
-            option.style.color = value === node.value ? '#00d9ff' : '#94a3b8';
-            option.style.background = value === node.value ? 'rgba(0, 217, 255, 0.1)' : 'transparent';
-            
-            option.addEventListener('mouseenter', () => {
-                option.style.background = 'rgba(0, 217, 255, 0.2)';
-            });
-            
-            option.addEventListener('mouseleave', () => {
-                if (value !== node.value) {
-                    option.style.background = 'transparent';
-                }
-            });
-            
-            option.addEventListener('click', () => {
-                node.value = value;
-                render();
-                notifyConfigChange();
-                dropdown.remove();
-            });
-            
-            dropdown.appendChild(option);
-        });
-
-        // Position dropdown near the node
-        const nodeElement = document.querySelector(`[data-node-id="${node.id}"]`);
-        if (nodeElement) {
-            const rect = nodeElement.getBoundingClientRect();
-            dropdown.style.left = `${rect.left}px`;
-            dropdown.style.top = `${rect.bottom + 5}px`;
-            document.body.appendChild(dropdown);
-
-            // Close dropdown when clicking outside
-            setTimeout(() => {
-                document.addEventListener('click', function closeDropdown(e) {
-                    if (!dropdown.contains(e.target)) {
-                        dropdown.remove();
-                        document.removeEventListener('click', closeDropdown);
-                    }
-                });
-            }, 100);
-        }
-    }
-
-    /**
      * Toggle boolean value (true/false)
      */
     function toggleBooleanValue(nodeId) {
@@ -863,12 +778,17 @@
     function handleEditClick(nodeId, nodeType) {
         console.log('[HandleEditClick] Called for nodeId:', nodeId, 'type:', nodeType);
         
-        if (nodeType === 'enum') {
-            // Use dropdown for enum types
-            editEnumValue(nodeId);
-        } else if (nodeType === 'boolean') {
-            // Use dropdown for boolean types (true/false)
+        // Both boolean and enum use the same inline dropdown editor now
+        if (nodeType === 'enum' || nodeType === 'boolean') {
             editNode(nodeId);
+            
+            // Auto-open the dropdown for these types
+            setTimeout(() => {
+                const wrapper = document.querySelector(`.custom-select-wrapper[data-node-id="${nodeId}"]`);
+                if (wrapper) {
+                    wrapper.classList.add('active');
+                }
+            }, 150);
         } else {
             // Use text input for other types
             editNode(nodeId);
@@ -1282,7 +1202,6 @@
         updateNodeValue,
         finishEditing,
         deleteNode,
-        editEnumValue,
         toggleBooleanValue
     };
 
