@@ -158,6 +158,25 @@
     }
 
     /**
+     * Analyze inbounds configuration
+     * @param {Array} inbounds - Array of inbound configurations
+     */
+    function analyzeInboundsConfig(inbounds) {
+        console.log('[Config To Flow] Analyzing inbounds:', inbounds);
+        
+        inbounds.forEach((inbound, index) => {
+            // Add inbound data flow
+            state.flows.push({
+                type: 'inbound',
+                source: `${inbound.type || 'unknown'}:${inbound.listen_port || inbound.port || 'unknown'}`,
+                destination: 'Router',
+                path: ['inbound', 'router'],
+                disabled: false
+            });
+        });
+    }
+
+    /**
      * Analyze a single route rule
      * @param {Object} rule - Route rule object
      * @param {number} index - Rule index

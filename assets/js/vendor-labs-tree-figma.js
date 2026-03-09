@@ -22,6 +22,10 @@
         'log.level': {
             values: ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic'],
             title: 'Log Level'
+        },
+        'dns.strategy': {
+            values: ['prefer_ipv4', 'prefer_ipv6', 'ipv4_only', 'ipv6_only'],
+            title: 'DNS Strategy'
         }
     };
 
@@ -50,6 +54,53 @@
                     type: 'boolean',
                     default: true,
                     description: 'Add timestamp to each line'
+                }
+            }
+        },
+        'dns': {
+            type: 'object',
+            fields: {
+                'final': {
+                    type: 'string',
+                    default: '',
+                    description: 'Default DNS server tag (First server used if empty)'
+                    // TODO: Future enhancement - dropdown to select from configured DNS servers
+                },
+                'strategy': {
+                    type: 'enum',
+                    default: 'prefer_ipv4',
+                    values: ['prefer_ipv4', 'prefer_ipv6', 'ipv4_only', 'ipv6_only'],
+                    description: 'Default domain strategy for resolving domain names'
+                },
+                'disable_cache': {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Disable DNS cache'
+                },
+                'disable_expire': {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Disable DNS cache expire'
+                },
+                'independent_cache': {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Independent cache per server'
+                },
+                'cache_capacity': {
+                    type: 'number',
+                    default: 0,
+                    description: 'LRU cache capacity'
+                },
+                'reverse_mapping': {
+                    type: 'boolean',
+                    default: false,
+                    description: 'Store reverse IP mappings'
+                },
+                'client_subnet': {
+                    type: 'string',
+                    default: '',
+                    description: 'EDNS0 client subnet'
                 }
             }
         }
@@ -81,6 +132,40 @@
                 const nodeId = deleteBtn.dataset.nodeId;
                 if (nodeId) {
                     deleteNode(nodeId);
+                }
+            }
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-select-wrapper')) {
+                const activeWrappers = state.container.querySelectorAll('.custom-select-wrapper.active');
+                activeWrappers.forEach(wrapper => {
+                    wrapper.classList.remove('active');
+                });
+            }
+        });
+        
+        // Event delegation for custom select options
+        state.container.addEventListener('click', (e) => {
+            const customOption = e.target.closest('.custom-option');
+            if (customOption) {
+                e.stopPropagation();
+                const wrapper = customOption.closest('.custom-select-wrapper');
+                const nodeId = wrapper?.dataset.nodeId;
+                const value = customOption.dataset.value;
+                
+                if (nodeId && value !== undefined) {
+                    // Convert string value to appropriate type
+                    let actualValue = value;
+                    if (value === 'true') actualValue = true;
+                    else if (value === 'false') actualValue = false;
+                    
+                    updateNodeValue(nodeId, actualValue);
+                    finishEditing(nodeId, true);
+                    
+                    // Close dropdown
+                    wrapper.classList.remove('active');
                 }
             }
         });
@@ -153,6 +238,7 @@
         } else {
             // Check if it's an enum type
             const enumKey = currentPath;
+            console.log('[ConvertValueToNode] Checking enum:', enumKey, 'exists:', !!ENUM_DEFINITIONS[enumKey]);
             if (ENUM_DEFINITIONS[enumKey]) {
                 type = 'enum';
                 console.log('[ConvertValueToNode] Detected enum type:', enumKey);
@@ -244,6 +330,20 @@
         
         return enumDef.values.map(v => 
             `<option value="${v}" ${node.value === v ? 'selected' : ''}>${v}</option>`
+        ).join('');
+    }
+
+    /**
+     * Generate enum custom options HTML (for custom dropdown)
+     */
+    function generateEnumCustomOptions(node) {
+        console.log('[GenerateEnumCustomOptions] node.path:', node.path, 'node.value:', node.value);
+        const enumDef = ENUM_DEFINITIONS[node.path];
+        console.log('[GenerateEnumCustomOptions] enumDef:', enumDef);
+        if (!enumDef) return '<div class="custom-option">Unknown enum</div>';
+        
+        return enumDef.values.map(v => 
+            `<div class="custom-option ${node.value === v ? 'selected' : ''}" data-value="${v}">${v}</div>`
         ).join('');
     }
 
@@ -345,28 +445,20 @@
                 <span class="node-name">${node.name}</span>
                 ${node.editing ? `
                     ${node.type === 'boolean' ? `
-                        <select 
-                            class="node-value-select" 
-                            data-node-id="${node.id}"
-                            onclick="event.stopPropagation()"
-                            onchange="window.LabsTree.updateNodeValue('${node.id}', this.value)"
-                            onblur="window.LabsTree.finishEditing('${node.id}', true)"
-                            autofocus
-                        >
-                            <option value="true" ${node.value === true ? 'selected' : ''}>true</option>
-                            <option value="false" ${node.value === false ? 'selected' : ''}>false</option>
-                        </select>
+                        <div class="custom-select-wrapper" data-node-id="${node.id}">
+                            <div class="custom-select-value" onclick="event.stopPropagation(); this.parentElement.classList.toggle('active')">${node.value ? 'true' : 'false'}</div>
+                            <div class="custom-select-options">
+                                <div class="custom-option ${node.value === true ? 'selected' : ''}" data-value="true">true</div>
+                                <div class="custom-option ${node.value === false ? 'selected' : ''}" data-value="false">false</div>
+                            </div>
+                        </div>
                     ` : node.type === 'enum' ? `
-                        <select 
-                            class="node-value-select" 
-                            data-node-id="${node.id}"
-                            onclick="event.stopPropagation()"
-                            onchange="window.LabsTree.updateNodeValue('${node.id}', this.value)"
-                            onblur="window.LabsTree.finishEditing('${node.id}', true)"
-                            autofocus
-                        >
-                            ${generateEnumOptions(node)}
-                        </select>
+                        <div class="custom-select-wrapper" data-node-id="${node.id}">
+                            <div class="custom-select-value" onclick="event.stopPropagation(); this.parentElement.classList.toggle('active')">${node.value}</div>
+                            <div class="custom-select-options">
+                                ${generateEnumCustomOptions(node)}
+                            </div>
+                        </div>
                     ` : `
                         <input 
                             type="${node.type === 'number' ? 'number' : 'text'}" 
@@ -397,7 +489,7 @@
                             <span>+</span>
                         </button>
                     ` : ''}
-                    <button class="btn-action btn-edit" onclick="event.stopPropagation(); window.LabsTree.editNode('${node.id}')" title="Edit">
+                    <button class="btn-action btn-edit" onclick="event.stopPropagation(); window.LabsTree.handleEditClick('${node.id}', '${node.type}')" title="Edit">
                         <span>✏️</span>
                     </button>
                     <button class="btn-action btn-delete" data-node-id="${node.id}" title="Delete">
@@ -766,6 +858,24 @@
     }
 
     /**
+     * Handle edit click - route to appropriate editor
+     */
+    function handleEditClick(nodeId, nodeType) {
+        console.log('[HandleEditClick] Called for nodeId:', nodeId, 'type:', nodeType);
+        
+        if (nodeType === 'enum') {
+            // Use dropdown for enum types
+            editEnumValue(nodeId);
+        } else if (nodeType === 'boolean') {
+            // Use dropdown for boolean types (true/false)
+            editNode(nodeId);
+        } else {
+            // Use text input for other types
+            editNode(nodeId);
+        }
+    }
+
+    /**
      * Edit a node (start editing mode)
      */
     function editNode(nodeId) {
@@ -810,7 +920,16 @@
             if (node.type === 'number') {
                 node.value = Number(value);
             } else if (node.type === 'boolean') {
-                node.value = value === 'true' || value === 'yes';
+                // Handle both string and boolean values
+                if (typeof value === 'boolean') {
+                    node.value = value;
+                } else if (value === 'true') {
+                    node.value = true;
+                } else if (value === 'false') {
+                    node.value = false;
+                } else {
+                    node.value = value === 'yes' || value === '1';
+                }
             } else if (node.type === 'ip') {
                 // Basic IP validation
                 const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -1158,6 +1277,7 @@
         selectNode,
         addChild,
         showAddFieldMenu,
+        handleEditClick,
         editNode,
         updateNodeValue,
         finishEditing,

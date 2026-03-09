@@ -362,6 +362,11 @@
   height: calc(100vh - 150px);
 }
 
+/* Allow full-width container to extend beyond normal bounds */
+#subview-private-advanced .labs-full-width-container {
+  overflow: visible;
+}
+
 /* Loading state */
 .loading {
   opacity: 0.6;

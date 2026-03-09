@@ -190,6 +190,15 @@
         Object.values(dom.subviews).forEach(v => { if (v) v.classList.add("hidden"); });
         if (dom.subviews[viewKey]) dom.subviews[viewKey].classList.remove("hidden");
         if (dom.viewTitle) dom.viewTitle.textContent = title;
+        
+        // Add/remove advanced lab class on console-shell for width control
+        if (dom.privateArea) {
+            if (viewKey === "advanced") {
+                dom.privateArea.closest(".console-shell").classList.add("advanced-lab-active");
+            } else {
+                dom.privateArea.closest(".console-shell").classList.remove("advanced-lab-active");
+            }
+        }
     }
 
     function showPrompt(title, message, buttons = []) {

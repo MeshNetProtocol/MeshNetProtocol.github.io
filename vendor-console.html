@@ -462,9 +462,9 @@
         </div>
 
         <!-- Advanced Editor sub-view - Sing-Box Configuration Lab -->
-        <div id="subview-private-advanced" class="sub-view hidden">
+        <div id="subview-private-advanced" class="sub-view advanced-lab-view hidden">
           <!-- Lab Header -->
-          <div class="labs-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: rgba(0, 217, 255, 0.05); border-bottom: 1px solid rgba(0, 217, 255, 0.1); border-radius: 0.75rem 0.75rem 0 0; margin: -1rem -1rem 1.5rem -1rem;">
+          <div class="labs-header" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; background: rgba(0, 217, 255, 0.05); border-bottom: 1px solid rgba(0, 217, 255, 0.1); border-radius: 0.75rem 0.75rem 0 0; margin: 0 0 1.5rem 0;">
             <div class="header-content" style="flex: 1;">
               <h2 style="color: #2dd4bf; font-size: 1.5rem; font-weight: 600; margin: 0 0 0.5rem 0;">🧪 Sing-Box 配置实验室</h2>
               <p style="color: #64748b; font-size: 0.875rem; margin: 0;">交互式学习课件 - 深入理解 sing-box 配置参数</p>
@@ -481,9 +481,12 @@
             </div>
           </div>
 
-          <!-- New Professional Dashboard Layout (Figma Design) -->
-          <!-- New Layout: Top Row (Tree 50% + Flow 50%) + Bottom JSON -->
-          <div class="labs-figma-grid">
+          <!-- Full-width container for advanced lab only -->
+          <div class="labs-full-width-container" 
+               style="padding: 1.5rem; background: transparent;">
+            <!-- New Professional Dashboard Layout (Figma Design) -->
+            <!-- New Layout: Top Row (Tree 40% + Flow 60%) + Bottom JSON -->
+            <div class="labs-figma-grid">
             
             <!-- Top Row: Configuration Tree + Network Flow Animation -->
             <div class="labs-top-row">
@@ -527,6 +530,7 @@
             </div>
             
           </div>
+          </div> <!-- Close labs-full-width-container -->
         </div>
         </div>
       </div>
@@ -592,10 +596,7 @@
       // TODO: This will be populated by tree module later
       const emptyConfig = {
         log: {},  // Empty log configuration - use "+ Add Field" to add fields
-        dns: {
-          servers: [],
-          final: 'local'
-        },
+        dns: {},  // Empty DNS configuration - use "+ Add Field" to add fields
         ntp: {
           enabled: false,
           server: 'time.apple.com',

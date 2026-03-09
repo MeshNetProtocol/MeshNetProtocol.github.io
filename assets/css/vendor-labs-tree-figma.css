@@ -177,8 +177,13 @@
   box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
 }
 
-/* Boolean Select Editor */
-.node-value-select {
+/* Custom Select Wrapper (Boolean and Enum) */
+.custom-select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.custom-select-value {
   background: linear-gradient(135deg, rgba(26, 27, 46, 0.95), rgba(15, 16, 32, 0.95));
   border: 1px solid #00d9ff;
   border-radius: 0.25rem;
@@ -187,26 +192,59 @@
   font-size: 0.875rem;
   padding: 0.25rem 1.5rem 0.25rem 0.5rem;
   min-width: 80px;
-  outline: none;
   cursor: pointer;
   transition: all 0.2s;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2300d9ff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
 }
 
-.node-value-select:focus {
+.custom-select-value:hover {
   border-color: #00e5ff;
-  box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
+  background-color: rgba(0, 217, 255, 0.05);
 }
 
-.node-value-select option {
-  background: rgba(26, 27, 46, 0.98);
-  color: #00d9ff;
+.custom-select-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  background: linear-gradient(135deg, rgba(26, 27, 46, 0.98), rgba(15, 16, 32, 0.98));
+  border: 1px solid #00d9ff;
+  border-radius: 0.5rem;
   padding: 0.5rem;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+  display: none;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.custom-select-wrapper.active .custom-select-options {
+  display: flex;
+}
+
+.custom-option {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  color: #94a3b8;
+  background: transparent;
+}
+
+.custom-option:hover {
+  background: rgba(0, 217, 255, 0.2);
+  color: #00d9ff;
+}
+
+.custom-option.selected {
+  color: #00d9ff;
+  background: rgba(0, 217, 255, 0.1);
+  font-weight: 500;
 }
 
 /* Type Icons */

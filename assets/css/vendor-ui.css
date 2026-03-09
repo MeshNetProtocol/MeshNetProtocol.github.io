@@ -1,6 +1,6 @@
 
     :root {
-      --panel-max: 1180px;
+      --panel-max: 1180px; /* Keep original width for most pages */
     }
 
     .topbar {
@@ -83,7 +83,14 @@
       min-height: calc(100vh - 86px);
       display: grid;
       align-items: center;
-      padding: 2.2rem 1.15rem 3rem;
+      padding: 2.2rem 1.15rem 3rem; /* Restore original padding */
+    }
+    
+    /* Remove width constraint for advanced lab page */
+    .console-shell.advanced-lab-active {
+      max-width: none !important;
+      padding-left: 2rem !important;  /* Increase gap on left */
+      padding-right: 2rem !important; /* Increase gap on right */
     }
 
     .entry-stage {
@@ -368,10 +375,26 @@
       border: 1px solid rgba(41, 176, 160, 0.4);
       background: linear-gradient(180deg, rgba(10, 35, 52, 0.9), rgba(8, 23, 37, 0.9));
       border-radius: 20px;
-      padding: 1.5rem;
+      padding: 0; /* Remove padding to allow full-width content */
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
+    }
+    
+    /* Restore padding for operation-header only */
+    .private-operation-area .operation-header {
+      padding: 0 1.5rem;
+    }
+    
+    /* Add padding back to sub-views except advanced lab */
+    .private-operation-area .sub-view:not(#subview-private-advanced) {
+      padding: 1.5rem;
+    }
+    
+    /* Remove padding for advanced lab to allow full-width */
+    .private-operation-area #subview-private-advanced {
+      padding: 0;
+      margin: 0; /* Remove negative margin to prevent overflow */
     }
 
     .operation-header {
