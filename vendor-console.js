@@ -52,19 +52,19 @@
             "dns": {
                 "servers": [
                     { "tag": "local-dns", "address": "223.5.5.5", "detour": "direct" },
-                    { "tag": "google-dns", "address": "https://dns.google/dns-query", "detour": "proxy" }
+                    { "tag": "google-dns", "address": "https://dns.google/dns-query", "detour": "primary-selector" }
                 ],
                 "rules": [
                     { "rule_set": "geosite-geolocation-cn", "server": "local-dns" }
                 ],
                 "final": "google-dns",
-                "strategy": "prefer_ipv4"
+                "strategy": "ipv4_only"
             },
             "inbounds": [
                 {
                     "type": "tun",
                     "tag": "tun-in",
-                    "address": ["172.18.0.1/30", "fd00::1/126"],
+                    "address": ["198.18.0.1/15", "fdfe:dcba::1/126"],
                     "auto_route": true,
                     "sniff": true,
                     "sniff_override_destination": true
@@ -73,18 +73,18 @@
             "outbounds": [],
             "route": {
                 "rules": [
-                    { "protocol": "dns", "action": "hijack-dns" },
                     { "action": "sniff" },
+                    { "protocol": "dns", "action": "hijack-dns" },
                     // MANUAL PROXY OVERRIDE GOES HERE (Index 2)
                     { "rule_set": "geosite-geolocation-cn", "outbound": "direct" },
                     { "rule_set": "geoip-cn", "outbound": "direct" },
                     { "ip_is_private": true, "outbound": "direct" }
                 ],
-                "final": "proxy",
+                "final": "primary-selector",
                 "auto_detect_interface": true,
                 "rule_set": [
-                    { "type": "remote", "tag": "geoip-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "proxy", "update_interval": "1d" },
-                    { "type": "remote", "tag": "geosite-geolocation-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs", "download_detour": "proxy", "update_interval": "1d" }
+                    { "type": "remote", "tag": "geoip-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs", "download_detour": "primary-selector", "update_interval": "1d" },
+                    { "type": "remote", "tag": "geosite-geolocation-cn", "format": "binary", "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-cn.srs", "download_detour": "primary-selector", "update_interval": "1d" }
                 ]
             }
         },
@@ -618,7 +618,7 @@
 
                 // SmartRouting V2: Detection priority
                 if (data.config && data.config.route && Array.isArray(data.config.route.rules)) {
-                    const proxyRule = data.config.route.rules.find(r => r.domain_suffix && r.outbound === 'proxy');
+                    const proxyRule = data.config.route.rules.find(r => r.domain_suffix && (r.outbound === 'primary-selector' || r.outbound === 'proxy'));
                     if (proxyRule && Array.isArray(proxyRule.domain_suffix)) {
                         suffixes = proxyRule.domain_suffix;
                     }
@@ -690,7 +690,7 @@
                     password: s.pass
                 };
             });
-            const proxyGroup = { tag: "proxy", type: "selector", outbounds: nodes.map(n => n.tag), default: nodes[0].tag };
+            const proxyGroup = { tag: "primary-selector", type: "selector", outbounds: nodes.map(n => n.tag), default: nodes[0].tag };
             final.config.outbounds = [...nodes, proxyGroup, { type: "direct", tag: "direct", domain_strategy: "ipv4_only", fallback_delay: "300ms" }];
             // 确保后缀不带点，遵循 standard 规范
             const domains = [...AI_DOMAIN_PRESETS];
@@ -703,7 +703,7 @@
             // SmartRouting V2: Inject high-priority proxy override rule at index 2
             final.config.route.rules.splice(2, 0, {
                 domain_suffix: manualProxySet,
-                outbound: "proxy"
+                outbound: "primary-selector"
             });
 
             final.routing_rules = {

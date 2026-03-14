@@ -89,7 +89,7 @@
                 let suffixes = [];
 
                 if (data.config && data.config.route && Array.isArray(data.config.route.rules)) {
-                    const proxyRule = data.config.route.rules.find(r => r.domain_suffix && r.outbound === 'proxy');
+                    const proxyRule = data.config.route.rules.find(r => r.domain_suffix && (r.outbound === 'primary-selector' || r.outbound === 'proxy'));
                     if (proxyRule && Array.isArray(proxyRule.domain_suffix)) {
                         suffixes = proxyRule.domain_suffix;
                     }
@@ -142,7 +142,7 @@
             final.description = document.getElementById("config-desc").value.trim();
             final.updated_at = new Date().toISOString();
             const nodes = userServers.map((s, i) => ({ type: "shadowsocks", tag: `node-${i + 1}`, server: s.ip, server_port: s.port, method: "aes-256-gcm", password: s.pass }));
-            const proxyGroup = { tag: "proxy", type: "selector", outbounds: nodes.map(n => n.tag), default: nodes[0].tag };
+            const proxyGroup = { tag: "primary-selector", type: "selector", outbounds: nodes.map(n => n.tag), default: nodes[0].tag };
             final.config.outbounds = [...nodes, proxyGroup, { type: "direct", tag: "direct", domain_strategy: "ipv4_only", fallback_delay: "300ms" }];
 
             const domains = [...Constants.CORE_DOMAIN_PRESETS];
@@ -155,7 +155,7 @@
             // SmartRouting V2: Inject high-priority proxy override rule at index 2
             final.config.route.rules.splice(2, 0, {
                 domain_suffix: manualProxySet,
-                outbound: "proxy"
+                outbound: "primary-selector"
             });
 
             // Ensure the deprecated field explicitly remains completely empty like V2 shell
