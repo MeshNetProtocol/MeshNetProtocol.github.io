@@ -1,7 +1,7 @@
 {
-  "provider_id": "com.meshnetprotocol.profile.v17",
-  "name": "种子V17",
-  "description": "V17版本的种子，包含动态标签测试",
+  "provider_id": "com.meshnetprotocol.profile.v19",
+  "name": "种子V19",
+  "description": "V19版本的种子，包含动态标签测试",
   "tags": [
     "Seeds",
     "SmartRouting",
