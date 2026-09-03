@@ -93,19 +93,29 @@ elif [ -f /etc/debian_version ]; then
 fi
 
 # --- 3. Downloading Sing-Box ---
-echo -e "${YELLOW}[*] Fetching the latest sing-box core...${NC}"
+echo -e "${YELLOW}[*] Fetching sing-box core...${NC}"
 
 # Stop existing service if any
 systemctl stop sing-box >/dev/null 2>&1
 
-# Hardcoded or dynamic fetch (Using a dynamic latest release fetch from github)
-LATEST_URL=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest | grep "browser_download_url.*linux-amd64.tar.gz" | cut -d '"' -f 4)
-wget -qO sing-box.tar.gz "$LATEST_URL"
+# Pin to the same sing-box version used by the MeshFlux client (go-cli-lib go.mod: github.com/sagernet/sing-box)
+SING_BOX_VERSION="1.12.17"
+SING_BOX_URL="https://github.com/SagerNet/sing-box/releases/download/v${SING_BOX_VERSION}/sing-box-${SING_BOX_VERSION}-linux-amd64.tar.gz"
+echo -e "    - sing-box version: ${SING_BOX_VERSION}"
+wget -qO sing-box.tar.gz "$SING_BOX_URL"
 
 tar -xzf sing-box.tar.gz
 # Move binary to local bin
 mv sing-box-*/sing-box /usr/local/bin/
 chmod +x /usr/local/bin/sing-box
+
+# Verify the installed binary matches the pinned client version
+INSTALLED_VERSION=$(/usr/local/bin/sing-box version 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -n 1)
+if [ "$INSTALLED_VERSION" != "$SING_BOX_VERSION" ]; then
+    echo -e "${RED}[ERROR] sing-box version mismatch: expected ${SING_BOX_VERSION}, got ${INSTALLED_VERSION:-unknown}${NC}"
+    exit 1
+fi
+echo -e "${GREEN}    - Version verified: ${INSTALLED_VERSION}${NC}"
 
 # Cleanup
 rm -rf sing-box.tar.gz sing-box-*/
