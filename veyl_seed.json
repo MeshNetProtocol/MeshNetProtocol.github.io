@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "updated_at": "2026-11-03T13:53:52Z",
+  "nodes": [
+    {
+      "name": "meshflux69 [美国]",
+      "server": "64.177.43.69",
+      "port": 13774,
+      "method": "aes-256-gcm",
+      "password": "WJfF7rZhy2pux5kZ"
+    },
+    {
+      "name": "meshflux10 [美国2]",
+      "server": "104.156.231.216",
+      "port": 15509,
+      "method": "aes-256-gcm",
+      "password": "liixTbfNE4Y8j4Gr"
+    }
+  ]
+}
