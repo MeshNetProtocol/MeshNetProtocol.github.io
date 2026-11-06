@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "updated_at": "2026-11-04T13:36:45Z",
+  "updated_at": "2026-11-06T01:01:28Z",
   "nodes": [
     {
       "name": "meshflux69 [美国]",
       "server": "64.177.43.69",
-      "port": 13774,
+      "port": 31131,
       "method": "aes-256-gcm",
-      "password": "WJfF7rZhy2pux5kZ"
+      "password": "xyof7xsxoyouTRzf"
     },
     {
       "name": "meshflux10 [美国2]",
