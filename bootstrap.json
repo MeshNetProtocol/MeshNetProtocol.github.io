@@ -72,9 +72,9 @@
         "type": "shadowsocks",
         "tag": "meshflux69 [美国1]",
         "server": "64.177.43.69",
-        "server_port": 15733,
+        "server_port": 30322,
         "method": "aes-256-gcm",
-        "password": "mQ7K8J92IuLXWeYv"
+        "password": "bGEnoY0DJGkqI0SG"
       },
       {
         "type": "shadowsocks",
